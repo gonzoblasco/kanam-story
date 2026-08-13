@@ -1,5 +1,5 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
-import { povLabel } from '@/lib/labels';
+import { povLabel, styleText } from '@/lib/labels';
 
 export interface AgentSources {
   project: Project;
@@ -57,10 +57,16 @@ export function buildAgentContext(sources: AgentSources): string {
 
   parts.push(`Título: ${project.name}`);
   if (project.genre) parts.push(`Género: ${project.genre}`);
+  if (project.genres && project.genres.length > 0) parts.push(`Géneros: ${project.genres.join(', ')}`);
   if (project.tone) parts.push(`Tono: ${project.tone}`);
   if (project.pov) parts.push(`Punto de vista: ${povLabel(project.pov)}`);
-  if (project.style) parts.push(`Estilo: ${project.style}`);
-  if (project.description) parts.push(`Sinopsis: ${project.description}`);
+  const style = styleText(project.style);
+  if (style) parts.push(`Estilo: ${style}`);
+  const synopsis = project.synopsis || project.description;
+  if (synopsis) parts.push(`Sinopsis: ${synopsis}`);
+
+  // Braindump: volcado libre de ideas del autor (contexto de bajo peso, no regla).
+  if (project.braindump) parts.push(`\nBRAINDUMP (ideas del autor, contexto de bajo peso):\n${project.braindump}`);
 
   // Brújula Narrativa: orientación que el agente debe respetar.
   if (project.premise || project.promise || project.theme || project.protagonist) {

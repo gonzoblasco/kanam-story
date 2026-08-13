@@ -19,13 +19,14 @@ export default function NewProjectModal({
     const name = String(fd.get('name') || '').trim();
     if (!name) return;
     const pov = String(fd.get('pov') || 'third-limited') as Project['pov'];
+    const style = String(fd.get('style') || '').trim();
     createProject({
       name,
       description: String(fd.get('description') || ''),
       genre: String(fd.get('genre') || ''),
       tone: String(fd.get('tone') || ''),
       pov,
-      style: String(fd.get('style') || ''),
+      style: style ? { mode: 'custom', custom: style } : { mode: 'custom', custom: '' },
     });
     onClose();
   }

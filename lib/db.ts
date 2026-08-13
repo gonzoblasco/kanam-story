@@ -14,7 +14,7 @@ import type {
 } from '@/types';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -24,7 +24,7 @@ function getDB() {
   }
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade: async (db, oldVersion) => {
         if (!db.objectStoreNames.contains('projects')) {
           db.createObjectStore('projects', { keyPath: 'id' });
         }
@@ -71,6 +71,16 @@ function getDB() {
           store.createIndex('by-project', 'projectId');
           store.createIndex('by-chapter', 'chapterId');
           store.createIndex('by-scene', 'sceneId');
+        }
+
+        // v3 → v4: migrate `style` from string to ProjectStyle object.
+        if (oldVersion < 4 && db.objectStoreNames.contains('projects')) {
+          const store = db.transaction('projects').objectStore('projects');
+          const projects = await store.getAll();
+          for (const p of projects) {
+            const style = typeof p.style === 'string' ? { mode: 'custom', custom: p.style } : p.style;
+            await db.put('projects', { ...p, style });
+          }
         }
       },
     });

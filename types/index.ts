@@ -1,11 +1,35 @@
+export type StyleMode = 'featured' | 'custom' | 'match';
+
+/** Narrative style of the project. `match` (Match My Style) arrives in Slice 9. */
+export interface ProjectStyle {
+  mode: StyleMode;
+  featured?: string;   // preset elegido
+  custom?: string;     // instrucciones libres
+  profile?: StyleProfile; // perfil de Match My Style (Slice 9)
+}
+
+/** Extracted author style profile (Match My Style, Slice 9). */
+export interface StyleProfile {
+  tone: string;
+  rhythm: string;
+  sentenceLength: string;
+  vocabulary: string;
+  dialogue: string;
+  imagery: string;
+  subtext: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
   genre: string;
+  genres?: string[];       // Slice 6: multi-select con tags
   tone: string;
   pov: 'first' | 'third-limited' | 'third-omniscient' | 'second';
-  style: string;
+  style: ProjectStyle;     // Slice 6: objeto (antes string)
+  braindump?: string;      // Slice 6: volcado libre de ideas (contexto de bajo peso)
+  synopsis?: string;       // Slice 6: override manual sobre la sección auto-generada
   // Brújula Narrativa (Slice 4)
   premise?: string;      // la idea en 1-2 frases
   promise?: string;      // qué le prometemos al lector

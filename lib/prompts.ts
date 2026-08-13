@@ -1,14 +1,19 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, StoryBible } from '@/types';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
+import { povLabel, styleText } from '@/lib/labels';
 
 export function buildContext(project: Project, characters: Character[], world: WorldEntity[]): string {
   const parts: string[] = [];
   parts.push(`Título: ${project.name}`);
   if (project.genre) parts.push(`Género: ${project.genre}`);
+  if (project.genres && project.genres.length > 0) parts.push(`Géneros: ${project.genres.join(', ')}`);
   if (project.tone) parts.push(`Tono: ${project.tone}`);
   if (project.pov) parts.push(`Punto de vista: ${povLabel(project.pov)}`);
-  if (project.style) parts.push(`Estilo: ${project.style}`);
-  if (project.description) parts.push(`Sinopsis: ${project.description}`);
+  const style = styleText(project.style);
+  if (style) parts.push(`Estilo: ${style}`);
+  const synopsis = project.synopsis || project.description;
+  if (synopsis) parts.push(`Sinopsis: ${synopsis}`);
+  if (project.braindump) parts.push(`\nBRAINDUMP (ideas del autor, contexto de bajo peso):\n${project.braindump}`);
 
   if (characters.length > 0) {
     parts.push('\nPersonajes:');
@@ -28,19 +33,6 @@ export function buildContext(project: Project, characters: Character[], world: W
   }
 
   return parts.join('\n');
-}
-
-function povLabel(pov: Project['pov']): string {
-  switch (pov) {
-    case 'first':
-      return 'Primera persona';
-    case 'third-limited':
-      return 'Tercera persona (limitado)';
-    case 'third-omniscient':
-      return 'Tercera persona (omnisciente)';
-    case 'second':
-      return 'Segunda persona';
-  }
 }
 
 function categoryLabel(c: WorldEntity['category']): string {

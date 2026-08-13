@@ -17,7 +17,7 @@ const baseProject: Project = {
   genre: '',
   tone: '',
   pov: 'third-limited',
-  style: '',
+  style: { mode: 'custom', custom: '' },
   createdAt: 0,
   updatedAt: 0,
 };
@@ -27,7 +27,7 @@ const fullProject: Project = {
   description: 'Una historia sobre el olvido.',
   genre: 'thriller',
   tone: 'oscuro',
-  style: 'prosa escueta',
+  style: { mode: 'custom', custom: 'prosa escueta' },
 };
 
 describe('buildContext', () => {
@@ -41,7 +41,7 @@ describe('buildContext', () => {
 
   it('uses Spanish labels for every POV variant', () => {
     const variants: Project['pov'][] = ['first', 'third-limited', 'third-omniscient', 'second'];
-    const labels = ['Primera persona', 'Tercera persona (limitado)', 'Tercera persona (omnisciente)', 'Segunda persona'];
+    const labels = ['Primera persona', 'Tercera (limitado)', 'Tercera (omnisciente)', 'Segunda persona'];
     for (const pov of variants) {
       const ctx = buildContext({ ...baseProject, pov }, [], []);
       const idx = labels.indexOf(ctx.match(/Punto de vista: (.+)/)?.[1] ?? '');
@@ -55,6 +55,25 @@ describe('buildContext', () => {
     expect(ctx).toContain('Tono: oscuro');
     expect(ctx).toContain('Estilo: prosa escueta');
     expect(ctx).toContain('Sinopsis: Una historia sobre el olvido.');
+  });
+
+  it('includes genres, braindump, synopsis override and featured style (Slice 6)', () => {
+    const ctx = buildContext(
+      {
+        ...baseProject,
+        genres: ['thriller', 'noir'],
+        braindump: 'Un faro que no alumbra.',
+        synopsis: 'Sinopsis manual.',
+        style: { mode: 'featured', featured: 'lirica' },
+      },
+      [],
+      [],
+    );
+    expect(ctx).toContain('Géneros: thriller, noir');
+    expect(ctx).toContain('BRAINDUMP');
+    expect(ctx).toContain('Un faro que no alumbra.');
+    expect(ctx).toContain('Sinopsis: Sinopsis manual.');
+    expect(ctx).toContain('Estilo: Lírica');
   });
 
   it('formats characters with role and persona fields, skipping empty ones', () => {

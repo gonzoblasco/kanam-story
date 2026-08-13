@@ -7,9 +7,10 @@ import BrainstormPanel from '@/components/BrainstormPanel';
 import CharactersPanel from '@/components/CharactersPanel';
 import WorldPanel from '@/components/WorldPanel';
 import StoryBiblePanel from '@/components/StoryBiblePanel';
+import StoryBibleSettingsPanel from '@/components/StoryBibleSettingsPanel';
 import CompassPanel from '@/components/CompassPanel';
 
-type Tab = 'chat' | 'brainstorm' | 'characters' | 'world' | 'bible' | 'compass';
+type Tab = 'chat' | 'brainstorm' | 'characters' | 'world' | 'bible' | 'bible-settings' | 'compass';
 
 export default function RightPanel() {
   const { settings, setSettings } = useApp();
@@ -67,6 +68,13 @@ export default function RightPanel() {
         </button>
         <button
           className="icon-btn mb-2"
+          title="Story Bible"
+          onClick={() => selectTab('bible-settings')}
+        >
+          <i className="bi bi-journal-text" />
+        </button>
+        <button
+          className="icon-btn mb-2"
           title="Brújula"
           onClick={() => selectTab('compass')}
         >
@@ -110,6 +118,12 @@ export default function RightPanel() {
           <i className="bi bi-book me-1" /> Biblia
         </button>
         <button
+          className={`right-panel-tab ${tab === 'bible-settings' ? 'active' : ''}`}
+          onClick={() => setTab('bible-settings')}
+        >
+          <i className="bi bi-journal-text me-1" /> Story Bible
+        </button>
+        <button
           className={`right-panel-tab ${tab === 'compass' ? 'active' : ''}`}
           onClick={() => setTab('compass')}
         >
@@ -129,6 +143,7 @@ export default function RightPanel() {
         {tab === 'characters' ? <CharactersPanel /> : null}
         {tab === 'world' ? <WorldPanel /> : null}
         {tab === 'bible' ? <StoryBiblePanel /> : null}
+        {tab === 'bible-settings' ? <StoryBibleSettingsPanel /> : null}
         {tab === 'compass' ? <CompassPanel /> : null}
       </div>
     </>

@@ -9,7 +9,7 @@ const project: Project = {
   genre: 'drama',
   tone: 'melancólico',
   pov: 'third-limited',
-  style: 'sobrio',
+  style: { mode: 'custom', custom: 'sobrio' },
   createdAt: 0,
   updatedAt: 0,
 };
@@ -176,6 +176,43 @@ describe('buildAgentContext', () => {
       storyBible: null,
     });
     expect(ctx).not.toContain('BRÚJULA NARRATIVA');
+  });
+
+  it('incluye braindump, géneros, estilo y sinopsis editable (Slice 6)', () => {
+    const withBible: Project = {
+      ...project,
+      braindump: 'Idea suelta: un torneo clandestino en el sótano.',
+      genres: ['drama', 'thriller'],
+      style: { mode: 'featured', featured: 'prosa-tensa' },
+      synopsis: 'Sinopsis manual override.',
+    };
+    const ctx = buildAgentContext({
+      project: withBible,
+      characters: [],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('BRAINDUMP');
+    expect(ctx).toContain('Idea suelta: un torneo clandestino');
+    expect(ctx).toContain('Géneros: drama, thriller');
+    expect(ctx).toContain('Estilo: Prosa tensa');
+    expect(ctx).toContain('Sinopsis: Sinopsis manual override.');
+  });
+
+  it('usa la descripción como sinopsis si no hay override manual', () => {
+    const ctx = buildAgentContext({
+      project,
+      characters: [],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('Sinopsis: Un ajedrecista retirado vuelve al tablero.');
   });
 });
 
