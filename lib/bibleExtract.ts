@@ -162,20 +162,20 @@ export function parseCharacterEntries(text: string): ExtractedCharacter[] {
   return out;
 }
 
-const CATEGORY_KEYWORDS: Array<{ kind: WorldEntity['kind']; words: string[] }> = [
+const KIND_KEYWORDS: Array<{ kind: WorldEntity['kind']; words: string[] }> = [
   { kind: 'rule', words: ['regla', 'ley', 'prohibido', 'magic system', 'sistema de magia'] },
   { kind: 'place', words: ['lugar', 'ciudad', 'reino', 'mapa', 'continente', 'isla', 'castillo', 'bosque'] },
   { kind: 'lore', words: ['historia', 'lore', 'leyenda', 'mito', 'tradición', 'religión', 'religiosa'] },
   { kind: 'item', words: ['objeto', 'arma', 'libro', 'piedra', 'artefacto', 'espada', 'anillo'] },
   { kind: 'organization', words: ['organización', 'faccion', 'facción', 'gremio', 'orden', 'sociedad', 'clan'] },
-  { kind: 'key_event', words: ['evento', 'batalla', 'guerra', 'catástrofe', 'catastrofe', 'invasión', 'invasión'] },
+  { kind: 'key_event', words: ['evento', 'batalla', 'guerra', 'catástrofe', 'catastrofe', 'invasión'] },
   { kind: 'clue', words: ['pista', 'clue', 'secreto', 'indicio', 'misterio'] },
   { kind: 'magic_system', words: ['magia', 'hechizo', 'conjuro', 'poderes', 'poder', 'mana'] },
 ];
 
-function inferCategory(name: string, description: string): WorldEntity['kind'] {
+function inferKind(name: string, description: string): WorldEntity['kind'] {
   const haystack = `${name}\n${description}`.toLowerCase();
-  for (const { kind, words } of CATEGORY_KEYWORDS) {
+  for (const { kind, words } of KIND_KEYWORDS) {
     if (words.some((w) => haystack.includes(w))) return kind;
   }
   return 'other';
@@ -191,7 +191,7 @@ export function parseWorldEntries(text: string): ExtractedWorld[] {
     if (!current) return;
     const description = current.description.trim() || buf.join('\n').trim();
     if (current.name && description) {
-      const kind = current.kind === 'other' ? inferCategory(current.name, description) : current.kind;
+      const kind = current.kind === 'other' ? inferKind(current.name, description) : current.kind;
       out.push({ name: current.name, kind, description });
     }
     current = null;
