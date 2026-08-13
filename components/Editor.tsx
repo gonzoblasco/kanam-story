@@ -44,9 +44,14 @@ export default function Editor() {
     world,
     settings,
     updateScene,
+    beats,
   } = useApp();
 
   const scene = scenes.find((s) => s.id === currentSceneId) || null;
+
+  const sceneBeats = currentSceneId
+    ? beats.filter((b) => b.sceneId === currentSceneId).sort((a, b) => a.position - b.position)
+    : [];
 
   const [titleDraft, setTitleDraft] = useState('');
   const [summaryDraft, setSummaryDraft] = useState('');
@@ -254,6 +259,16 @@ export default function Editor() {
           onBlur={saveSummaryBlur}
           placeholder="Resumen de la escena (un beat en una oración)…"
         />
+
+        {sceneBeats.length > 0 ? (
+          <div className="editor-beats">
+            {sceneBeats.map((b) => (
+              <span key={b.id} className={`editor-beat editor-beat-${b.status}`} title={b.description}>
+                {b.title}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         <div className="ai-bar">
           <button

@@ -1,0 +1,331 @@
+'use client';
+
+import { useState, useMemo, useEffect } from 'react';
+import { useApp } from '@/lib/store';
+import { moveBeatInList } from '@/lib/outline';
+import type { Beat, BeatKind, BeatStatus } from '@/types';
+
+const KIND_LABELS: Record<BeatKind, string> = {
+  inciting: 'Incitante',
+  rising: 'Ascenso',
+  climax: 'Clímax',
+  falling: 'Caída',
+  resolution: 'Resolución',
+  custom: 'Personalizado',
+};
+
+const STATUS_LABELS: Record<BeatStatus, string> = {
+  draft: 'Borrador',
+  done: 'Hecho',
+  revising: 'Revisando',
+};
+
+function BeatCard({
+  beat,
+  onUpdate,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  canUp,
+  canDown,
+}: {
+  beat: Beat;
+  onUpdate: (id: string, patch: Partial<Beat>) => void;
+  onDelete: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  canUp: boolean;
+  canDown: boolean;
+}) {
+  const [draft, setDraft] = useState({
+    title: beat.title,
+    kind: beat.kind,
+    status: beat.status,
+    description: beat.description,
+    notes: beat.notes,
+  });
+
+  // Sync the local draft when the beat changes externally (reorder/reload).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived state from a prop
+    setDraft({
+      title: beat.title,
+      kind: beat.kind,
+      status: beat.status,
+      description: beat.description,
+      notes: beat.notes,
+    });
+  }, [beat.id, beat.title, beat.kind, beat.status, beat.description, beat.notes]);
+
+  const commit = () => onUpdate(beat.id, draft);
+
+  return (
+    <div className="outline-beat">
+      <div className="outline-beat-head">
+        <span className={`outline-kind outline-kind-${draft.kind}`}>{KIND_LABELS[draft.kind]}</span>
+        <input
+          className="form-control form-control-sm outline-beat-title"
+          value={draft.title}
+          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          onBlur={commit}
+        />
+        <select
+          className="form-select form-select-sm outline-beat-status"
+          value={draft.status}
+          onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as BeatStatus }))}
+          onBlur={commit}
+        >
+          {Object.entries(STATUS_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+        <div className="outline-beat-actions">
+          <button className="icon-btn" title="Subir" disabled={!canUp} onClick={() => onMoveUp(beat.id)}>
+            <i className="bi bi-arrow-up" />
+          </button>
+          <button className="icon-btn" title="Bajar" disabled={!canDown} onClick={() => onMoveDown(beat.id)}>
+            <i className="bi bi-arrow-down" />
+          </button>
+          <button className="icon-btn" title="Eliminar beat" onClick={() => onDelete(beat.id)}>
+            <i className="bi bi-trash" />
+          </button>
+        </div>
+      </div>
+      <div className="outline-beat-body">
+        <select
+          className="form-select form-select-sm"
+          value={draft.kind}
+          onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value as BeatKind }))}
+          onBlur={commit}
+        >
+          {Object.entries(KIND_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+        <textarea
+          className="form-control form-control-sm"
+          rows={2}
+          placeholder="Qué pasa en este beat"
+          value={draft.description}
+          onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+          onBlur={commit}
+        />
+        <textarea
+          className="form-control form-control-sm"
+          rows={2}
+          placeholder="Notas: intención, tono, elementos a cuidar"
+          value={draft.notes}
+          onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+          onBlur={commit}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function OutlineView() {
+  const {
+    currentProject,
+    chapters,
+    scenes,
+    beats,
+    currentOutlineChapterId,
+    setCurrentOutlineChapterId,
+    createBeat,
+    updateBeat,
+    deleteBeat,
+    suggestBeats,
+  } = useApp();
+
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggested, setSuggested] = useState<Beat[] | null>(null);
+
+  const chapter = chapters.find((c) => c.id === currentOutlineChapterId) ?? chapters[0] ?? null;
+
+  const chapterBeats = useMemo(() => {
+    if (!chapter) return [];
+    return beats
+      .filter((b) => b.chapterId === chapter.id && !b.sceneId)
+      .sort((a, b) => a.position - b.position);
+  }, [beats, chapter]);
+
+  const sceneBeats = useMemo(() => {
+    if (!chapter) return {};
+    const map: Record<string, Beat[]> = {};
+    for (const s of scenes.filter((s) => s.chapterId === chapter.id)) {
+      map[s.id] = beats.filter((b) => b.sceneId === s.id).sort((a, b) => a.position - b.position);
+    }
+    return map;
+  }, [beats, scenes, chapter]);
+
+  if (!currentProject) {
+    return (
+      <div className="empty-state">
+        <div>
+          <i className="bi bi-list-nested fs-1 d-block mb-2" />
+          <div className="small">Seleccioná un proyecto para armar el outline.</div>
+        </div>
+      </div>
+    );
+  }
+  if (!chapter) {
+    return (
+      <div className="empty-state">
+        <div>
+          <i className="bi bi-list-nested fs-1 d-block mb-2" />
+          <div className="small">Creá un capítulo para armar el outline.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const addBeat = async (chapterId: string, sceneId?: string) => {
+    const siblings = beats.filter((b) =>
+      sceneId ? b.sceneId === sceneId : b.chapterId === chapterId && !b.sceneId,
+    );
+    await createBeat({
+      projectId: currentProject.id,
+      chapterId,
+      sceneId,
+      kind: 'custom',
+      title: 'Nuevo beat',
+      description: '',
+      notes: '',
+      characters: [],
+      status: 'draft',
+      source: 'manual',
+      position: siblings.length,
+    });
+  };
+
+  const moveBeat = async (id: string, dir: -1 | 1) => {
+    const beat = beats.find((b) => b.id === id);
+    if (!beat) return;
+    const group = beats.filter((b) =>
+      beat.sceneId ? b.sceneId === beat.sceneId : b.chapterId === beat.chapterId && !b.sceneId,
+    );
+    const swaps = moveBeatInList(group, id, dir);
+    if (!swaps) return;
+    for (const s of swaps) {
+      await updateBeat(s.id, { position: s.position });
+    }
+  };
+
+  const suggest = async () => {
+    if (!chapter) return;
+    setSuggesting(true);
+    setSuggested(null);
+    try {
+      setSuggested(await suggestBeats(chapter.id));
+    } catch {
+      setSuggested([]);
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const acceptSuggested = async () => {
+    if (!suggested) return;
+    for (const b of suggested) {
+      await createBeat(b);
+    }
+    setSuggested(null);
+  };
+
+  const renderBeatList = (list: Beat[], chapterId: string, sceneId?: string) => (
+    <div className="outline-beat-list">
+      {list.map((b, i) => (
+        <BeatCard
+          key={b.id}
+          beat={b}
+          onUpdate={updateBeat}
+          onDelete={deleteBeat}
+          onMoveUp={(id) => moveBeat(id, -1)}
+          onMoveDown={(id) => moveBeat(id, 1)}
+          canUp={i > 0}
+          canDown={i < list.length - 1}
+        />
+      ))}
+      <button className="btn btn-sm btn-outline-primary" onClick={() => addBeat(chapterId, sceneId)}>
+        <i className="bi bi-plus-lg me-1" /> Beat
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="outline-view">
+      <div className="outline-toolbar">
+        <select
+          className="form-select form-select-sm"
+          value={chapter.id}
+          onChange={(e) => setCurrentOutlineChapterId(e.target.value)}
+        >
+          {chapters.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </select>
+        <button className="btn btn-sm btn-ai" onClick={suggest} disabled={suggesting}>
+          <i className="bi bi-magic me-1" />
+          {suggesting ? 'Sugiriendo…' : 'Sugerir outline'}
+        </button>
+      </div>
+
+      {suggested ? (
+        <div className="outline-suggested">
+          <div className="outline-suggested-title">
+            <i className="bi bi-magic me-1" /> Outline sugerido por el co-writer
+          </div>
+          {suggested.length === 0 ? (
+            <div className="small text-muted">No se pudieron generar beats. Probá de nuevo.</div>
+          ) : (
+            <ul className="outline-suggested-list">
+              {suggested.map((b, i) => (
+                <li key={i}>
+                  <span className={`outline-kind outline-kind-${b.kind}`}>{KIND_LABELS[b.kind]}</span>
+                  <strong>{b.title}</strong>
+                  {b.description ? <span className="text-muted"> — {b.description}</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="d-flex gap-2 mt-2">
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={acceptSuggested}
+              disabled={suggested.length === 0}
+            >
+              <i className="bi bi-check-lg me-1" /> Agregar
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={() => setSuggested(null)}>
+              Descartar
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="outline-chapter">
+        <div className="outline-chapter-title">
+          <i className="bi bi-bookmark me-1" /> {chapter.title}
+        </div>
+        {renderBeatList(chapterBeats, chapter.id)}
+      </div>
+
+      {scenes
+        .filter((s) => s.chapterId === chapter.id)
+        .map((s) => (
+          <div key={s.id} className="outline-scene">
+            <div className="outline-scene-title">
+              <i className="bi bi-file-text me-1" /> {s.title}
+            </div>
+            {renderBeatList(sceneBeats[s.id] ?? [], chapter.id, s.id)}
+          </div>
+        ))}
+    </div>
+  );
+}

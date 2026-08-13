@@ -1,4 +1,4 @@
-import type { ContentAction } from '@/types';
+import type { ContentAction, BeatKind, BeatStatus } from '@/types';
 
 /**
  * Structured agent response.
@@ -94,4 +94,62 @@ export function isValidAction(action: unknown): action is ContentAction {
 /** Filters an array of actions, keeping only the valid ones. */
 export function filterValidActions(actions: unknown[]): ContentAction[] {
   return actions.filter(isValidAction);
+}
+
+// --- Suggest outline (tool suggest_beats) ---
+
+const BEAT_KINDS: BeatKind[] = ['inciting', 'rising', 'climax', 'falling', 'resolution', 'custom'];
+const BEAT_STATUSES: BeatStatus[] = ['draft', 'done', 'revising'];
+
+/** A beat proposed by the model in the "suggest outline" flow (no ids yet). */
+export interface SuggestedBeat {
+  kind: BeatKind;
+  title: string;
+  description: string;
+  notes: string;
+  characters: string[];
+  status: BeatStatus;
+}
+
+function isValidSuggestedBeat(value: unknown): value is SuggestedBeat {
+  if (typeof value !== 'object' || value === null) return false;
+  const b = value as Record<string, unknown>;
+  if (typeof b.title !== 'string' || b.title.length === 0) return false;
+  if (typeof b.kind !== 'string' || !(BEAT_KINDS as string[]).includes(b.kind)) return false;
+  if (typeof b.status !== 'string' || !(BEAT_STATUSES as string[]).includes(b.status)) return false;
+  const characters = Array.isArray(b.characters) ? b.characters : [];
+  if (!characters.every((c) => typeof c === 'string')) return false;
+  return true;
+}
+
+/**
+ * Parses the model's "suggest outline" response: a JSON array of beats.
+ * Tolerates prose/fences around the array and validates each beat.
+ */
+export function parseBeatList(raw: string): SuggestedBeat[] {
+  const text = (raw ?? '').trim();
+  if (!text) return [];
+
+  const firstBracket = text.indexOf('[');
+  if (firstBracket === -1) return [];
+
+  let lastBracket = text.lastIndexOf(']');
+  while (lastBracket > firstBracket) {
+    const candidate = text.slice(firstBracket, lastBracket + 1);
+    try {
+      const parsed = JSON.parse(candidate);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(isValidSuggestedBeat).map((b) => ({
+        kind: b.kind,
+        title: b.title,
+        description: typeof b.description === 'string' ? b.description : '',
+        notes: typeof b.notes === 'string' ? b.notes : '',
+        characters: Array.isArray(b.characters) ? b.characters.filter((c) => typeof c === 'string') : [],
+        status: b.status,
+      }));
+    } catch {
+      lastBracket = text.lastIndexOf(']', lastBracket - 1);
+    }
+  }
+  return [];
 }

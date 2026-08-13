@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext, buildAgentPrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt } from '@/lib/agentPrompts';
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
 
 const project: Project = {
@@ -154,5 +154,22 @@ describe('buildAgentPrompt', () => {
     expect(prompt).toContain('"reply"');
     expect(prompt).toContain('"actions"');
     expect(prompt).toContain('rewrite_scene');
+  });
+});
+
+describe('buildSuggestBeatsPrompt', () => {
+  it('incluye el contexto y el título del capítulo', () => {
+    const prompt = buildSuggestBeatsPrompt('CONTEXTO', 'Capítulo 1');
+    expect(prompt).toContain('CONTEXTO');
+    expect(prompt).toContain('Capítulo 1');
+  });
+
+  it('pide un array JSON de beats con los campos esperados', () => {
+    const prompt = buildSuggestBeatsPrompt('ctx', 'Capítulo 1');
+    expect(prompt).toContain('"kind"');
+    expect(prompt).toContain('"title"');
+    expect(prompt).toContain('"description"');
+    expect(prompt).toContain('"status"');
+    expect(prompt).toContain('inciting');
   });
 });

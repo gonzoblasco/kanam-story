@@ -6,10 +6,11 @@ import NewProjectModal from '@/components/NewProjectModal';
 import SettingsModal from '@/components/SettingsModal';
 import ProjectTree from '@/components/ProjectTree';
 import Editor from '@/components/Editor';
+import OutlineView from '@/components/OutlineView';
 import RightPanel from '@/components/RightPanel';
 
 export default function HomePage() {
-  const { ready, currentProject, settings, setSettings } = useApp();
+  const { ready, currentProject, settings, setSettings, view, setView } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -54,6 +55,14 @@ export default function HomePage() {
             </span>
           ) : null}
           <button
+            className="btn btn-sm btn-outline-secondary"
+            title={view === 'outline' ? 'Volver al editor' : 'Ver el outline'}
+            onClick={() => setView(view === 'outline' ? 'editor' : 'outline')}
+          >
+            <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
+            {view === 'outline' ? 'Editor' : 'Outline'}
+          </button>
+          <button
             className="btn btn-sm btn-outline-primary"
             onClick={() => setShowNewProject(true)}
           >
@@ -83,9 +92,7 @@ export default function HomePage() {
         <ProjectTree />
       </aside>
 
-      <main className="main">
-        <Editor />
-      </main>
+      <main className="main">{view === 'outline' ? <OutlineView /> : <Editor />}</main>
 
       <aside className="right-panel">
         <RightPanel />

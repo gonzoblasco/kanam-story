@@ -37,6 +37,8 @@ import {
   buildBibleExtractPrompt,
   buildStoryBiblePrompt,
 } from '@/lib/prompts';
+import { buildAgentContext, buildSuggestBeatsPrompt } from '@/lib/agentPrompts';
+import { parseBeatList } from '@/lib/agentReply';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -57,8 +59,12 @@ interface AppState {
   currentConversationId: string | null;
   messages: Message[];
   beats: Beat[];
+  view: 'editor' | 'outline';
+  currentOutlineChapterId: string | null;
 
   setSettings: (patch: Partial<Settings>) => Promise<void>;
+  setView: (view: 'editor' | 'outline') => void;
+  setCurrentOutlineChapterId: (id: string | null) => void;
   refreshProjects: () => Promise<void>;
   selectProject: (id: string | null) => Promise<void>;
   createProject: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
@@ -111,6 +117,8 @@ interface AppState {
   deleteBeat: (id: string) => Promise<void>;
   loadBeatsByChapter: (chapterId: string) => Promise<void>;
   loadBeatsByScene: (sceneId: string) => Promise<void>;
+  /** Asks the agent to propose a beat map for a chapter (tool suggest_beats). */
+  suggestBeats: (chapterId: string) => Promise<Beat[]>;
 
   /** Applies agent actions to the real state (persists to IndexedDB) and returns an undo function. */
   applyContentActions: (actions: ContentAction[]) => Promise<() => Promise<void>>;
@@ -141,6 +149,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [beats, setBeats] = useState<Beat[]>([]);
+  const [view, setViewState] = useState<'editor' | 'outline'>('editor');
+  const [currentOutlineChapterId, setCurrentOutlineChapterIdState] = useState<string | null>(null);
+
+  const setView = useCallback((v: 'editor' | 'outline') => setViewState(v), []);
+  const setCurrentOutlineChapterId = useCallback(
+    (id: string | null) => setCurrentOutlineChapterIdState(id),
+    [],
+  );
 
   const refreshProjects = useCallback(async (): Promise<void> => {
     const list = await projectsDB.list();
@@ -668,6 +684,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBeats(bts);
   }, []);
 
+  const suggestBeats = useCallback(
+    async (chapterId: string): Promise<Beat[]> => {
+      if (!currentProject) return [];
+      const chapter = chapters.find((c) => c.id === chapterId);
+      if (!chapter) return [];
+      const context = buildAgentContext({
+        project: currentProject,
+        characters,
+        world,
+        chapters,
+        scenes,
+        beats,
+        storyBible,
+      });
+      const prompt = buildSuggestBeatsPrompt(context, chapter.title);
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+      });
+      const suggested = parseBeatList(text);
+      const existing = beats.filter((b) => b.chapterId === chapterId && !b.sceneId);
+      return suggested.map((s, i) => ({
+        id: '',
+        projectId: currentProject.id,
+        chapterId,
+        sceneId: undefined,
+        kind: s.kind,
+        title: s.title,
+        description: s.description,
+        notes: s.notes,
+        characters: s.characters,
+        status: s.status,
+        source: 'ai' as const,
+        position: existing.length + i,
+        createdAt: 0,
+        updatedAt: 0,
+      }));
+    },
+    [currentProject, chapters, characters, world, scenes, beats, storyBible, settings.ollamaUrl, settings.ollamaModel],
+  );
+
   const applyContentActions = useCallback(
     async (actions: ContentAction[]): Promise<() => Promise<void>> => {
       if (!currentProject) return async () => {};
@@ -775,7 +834,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentConversationId,
     messages,
     beats,
+    view,
+    currentOutlineChapterId,
     setSettings,
+    setView,
+    setCurrentOutlineChapterId,
     refreshProjects,
     selectProject,
     createProject,
@@ -815,6 +878,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteBeat,
     loadBeatsByChapter,
     loadBeatsByScene,
+    suggestBeats,
     applyContentActions,
   };
 

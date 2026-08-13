@@ -170,3 +170,25 @@ Reglas:
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.
 - Respondé SOLO con el JSON. Sin prosa fuera del JSON, sin fences markdown, sin comentarios.`;
 }
+
+/**
+ * Builds the prompt for the "suggest outline" flow: asks the model to propose
+ * a sequence of beats for a given chapter, coherent with the bible, characters,
+ * world and what is already written. Returns a JSON array of beats.
+ */
+export function buildSuggestBeatsPrompt(context: string, chapterTitle: string): string {
+  return `${context}
+
+Sos el co-writer de ficción de esta obra. El autor quiere armar el outline (mapa de beats) del capítulo "${chapterTitle}".
+
+Proponé una secuencia de beats para ese capítulo, coherente con la biblia, los personajes, el mundo y lo ya escrito. Cada beat debe tener:
+- "kind": uno de "inciting" | "rising" | "climax" | "falling" | "resolution" | "custom"
+- "title": nombre corto del beat
+- "description": qué pasa en este beat
+- "notes": intención, tono, elementos a cuidar (puede ser "")
+- "characters": array de nombres de personajes involucrados (puede ser [])
+- "status": "draft"
+
+Respondé SOLO con un array JSON de beats, sin prosa, sin fences markdown, sin comentarios. Ejemplo:
+[{"kind":"inciting","title":"La invitación","description":"recibe una carta","notes":"","characters":[],"status":"draft"}]`;
+}

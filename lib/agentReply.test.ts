@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAgentReply, isValidAction, filterValidActions } from '@/lib/agentReply';
+import { parseAgentReply, isValidAction, filterValidActions, parseBeatList } from '@/lib/agentReply';
 
 describe('parseAgentReply', () => {
   it('parsea un bloque JSON limpio', () => {
@@ -105,5 +105,53 @@ describe('filterValidActions', () => {
     expect(result).toHaveLength(2);
     expect(result[0].type).toBe('rewrite_scene');
     expect(result[1].type).toBe('update_beat');
+  });
+});
+
+describe('parseBeatList', () => {
+  it('parsea un array JSON limpio de beats', () => {
+    const raw = JSON.stringify([
+      { kind: 'inciting', title: 'La invitación', description: 'recibe una carta', notes: '', characters: [], status: 'draft' },
+      { kind: 'climax', title: 'El duelo', description: '', notes: 'subir tensión', characters: ['Renzo'], status: 'draft' },
+    ]);
+    const result = parseBeatList(raw);
+    expect(result).toHaveLength(2);
+    expect(result[0].title).toBe('La invitación');
+    expect(result[0].kind).toBe('inciting');
+    expect(result[1].characters).toEqual(['Renzo']);
+  });
+
+  it('tolera prosa y fences alrededor del array', () => {
+    const raw = `Acá va mi propuesta:
+\`\`\`json
+[{"kind":"rising","title":"Giro","description":"","notes":"","characters":[],"status":"draft"}]
+\`\`\`
+Saludos.`;
+    const result = parseBeatList(raw);
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe('Giro');
+  });
+
+  it('tolera una llave suelta en la prosa posterior', () => {
+    const raw = `[{"kind":"custom","title":"A","description":"","notes":"","characters":[],"status":"draft"}] Eso es todo.}`;
+    const result = parseBeatList(raw);
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe('A');
+  });
+
+  it('descarta beats inválidos (sin title o kind desconocido)', () => {
+    const raw = JSON.stringify([
+      { kind: 'inciting', title: 'Válido', description: '', notes: '', characters: [], status: 'draft' },
+      { kind: 'nope', title: 'Inválido', description: '', notes: '', characters: [], status: 'draft' },
+      { title: 'Sin kind', description: '', notes: '', characters: [], status: 'draft' },
+    ]);
+    const result = parseBeatList(raw);
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe('Válido');
+  });
+
+  it('devuelve array vacío si no hay array', () => {
+    expect(parseBeatList('solo texto')).toEqual([]);
+    expect(parseBeatList('')).toEqual([]);
   });
 });

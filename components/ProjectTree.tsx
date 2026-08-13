@@ -20,6 +20,8 @@ export default function ProjectTree() {
     currentSceneId,
     selectScene,
     settings,
+    setView,
+    setCurrentOutlineChapterId,
   } = useApp();
 
   const collapsed = settings.sidebarCollapsed;
@@ -165,6 +167,16 @@ export default function ProjectTree() {
                   {c.title}
                 </span>
                 <div className="actions">
+                  <button
+                    className="icon-btn"
+                    title="Ver outline del capítulo"
+                    onClick={() => {
+                      setCurrentOutlineChapterId(c.id);
+                      setView('outline');
+                    }}
+                  >
+                    <i className="bi bi-list-nested" />
+                  </button>
                   <button
                     className="icon-btn"
                     title="Agregar escena"
