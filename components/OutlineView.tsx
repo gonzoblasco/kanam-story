@@ -418,8 +418,10 @@ export default function OutlineView() {
             {renderBeatList(sceneBeats[s.id] ?? [], chapter.id, s.id)}
           </div>
         ))}
+    </>
+      )}
 
-      {/* Slice 10: orphan scenes (without beats) — suggest linking */}
+      {/* Slice 10: orphan scenes (without beats) — suggest linking (always visible) */}
       {orphanScenes.length > 0 ? (
         <div className="outline-orphans mt-3">
           <div className="small text-muted mb-1">
@@ -440,8 +442,6 @@ export default function OutlineView() {
           ))}
         </div>
       ) : null}
-    </>
-      )}
     </div>
   );
 }
