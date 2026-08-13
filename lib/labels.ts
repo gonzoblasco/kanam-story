@@ -93,6 +93,16 @@ export function styleText(style: ProjectStyle | undefined): string {
     return preset?.label ?? style.featured;
   }
   if (style.mode === 'custom' && style.custom) return style.custom;
-  if (style.mode === 'match' && style.profile) return `Estilo del autor: ${style.profile.tone}`;
+  if (style.mode === 'match' && style.profile) {
+    const p = style.profile;
+    const parts = [`Estilo del autor: ${p.tone}`];
+    if (p.rhythm) parts.push(`Ritmo: ${p.rhythm}`);
+    if (p.sentenceLength) parts.push(`Frases: ${p.sentenceLength}`);
+    if (p.vocabulary) parts.push(`Vocabulario: ${p.vocabulary}`);
+    if (p.dialogue) parts.push(`Diálogo: ${p.dialogue}`);
+    if (p.imagery) parts.push(`Imágenes: ${p.imagery}`);
+    if (p.subtext) parts.push(`Subtexto: ${p.subtext}`);
+    return parts.join(' · ');
+  }
   return '';
 }

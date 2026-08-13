@@ -14,6 +14,7 @@ import type {
   Message,
   Beat,
   ContentAction,
+  StyleProfile,
 } from '@/types';
 import {
   projectsDB,
@@ -38,8 +39,8 @@ import {
   buildStoryBiblePrompt,
   buildBibleSectionPrompt,
 } from '@/lib/prompts';
-import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt } from '@/lib/agentPrompts';
-import { parseBeatList, parseSuggestedCharacterList } from '@/lib/agentReply';
+import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
+import { parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
@@ -86,6 +87,8 @@ interface AppState {
   deleteCharacter: (id: string) => Promise<void>;
   /** Asks the agent to propose one or more characters (Slice 7). */
   generateCharacter: (type?: string, instructions?: string) => Promise<Partial<Character>[]>;
+  /** Extracts a style profile from a sample of the author's writing (Slice 9). */
+  analyzeStyle: (sample: string) => Promise<StyleProfile | null>;
 
   createWorld: (data: Omit<WorldEntity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<WorldEntity>;
   updateWorld: (id: string, data: Partial<WorldEntity>) => Promise<void>;
@@ -641,6 +644,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject, characters, world, chapters, scenes, beats, storyBible, settings.ollamaUrl, settings.ollamaModel],
   );
 
+  const analyzeStyle = useCallback(
+    async (sample: string): Promise<StyleProfile | null> => {
+      if (!sample.trim() || !settings.ollamaModel) return null;
+      const prompt = buildStyleProfilePrompt(sample);
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+      });
+      return parseStyleProfile(text);
+    },
+    [settings.ollamaUrl, settings.ollamaModel],
+  );
+
   const previewBibleWorld = useCallback(
     async (rawMarkdown: string): Promise<Partial<WorldEntity>[]> => {
       const parsed = parseWorldEntries(rawMarkdown);
@@ -971,6 +989,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateCharacter,
     deleteCharacter,
     generateCharacter,
+    analyzeStyle,
     createWorld,
     updateWorld,
     deleteWorld,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAgentReply, isValidAction, filterValidActions, parseBeatList, parseSuggestedCharacterList } from '@/lib/agentReply';
+import { parseAgentReply, isValidAction, filterValidActions, parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
 
 describe('parseAgentReply', () => {
   it('parsea un bloque JSON limpio', () => {
@@ -206,5 +206,39 @@ Saludos.`;
   it('devuelve array vacío si no hay array', () => {
     expect(parseSuggestedCharacterList('solo texto')).toEqual([]);
     expect(parseSuggestedCharacterList('')).toEqual([]);
+  });
+});
+
+describe('parseStyleProfile', () => {
+  it('parsea un JSON de perfil limpio', () => {
+    const raw = JSON.stringify({
+      tone: 'melancólico',
+      rhythm: 'pausado',
+      sentenceLength: 'frases cortas',
+      vocabulary: 'coloquial',
+      dialogue: 'poco diálogo',
+      imagery: 'metáforas marinas',
+      subtext: 'mucho subtexto',
+    });
+    const result = parseStyleProfile(raw);
+    expect(result).not.toBeNull();
+    expect(result!.tone).toBe('melancólico');
+    expect(result!.subtext).toBe('mucho subtexto');
+  });
+
+  it('tolera prosa y fences alrededor del JSON', () => {
+    const raw = `Acá va el perfil:
+\`\`\`json
+{"tone":"seco","rhythm":"rápido","sentenceLength":"cortas","vocabulary":"directo","dialogue":"abundante","imagery":"poca","subtext":"sutil"}
+\`\`\`
+Saludos.`;
+    const result = parseStyleProfile(raw);
+    expect(result).not.toBeNull();
+    expect(result!.tone).toBe('seco');
+  });
+
+  it('devuelve null si no hay JSON', () => {
+    expect(parseStyleProfile('solo texto')).toBeNull();
+    expect(parseStyleProfile('')).toBeNull();
   });
 });

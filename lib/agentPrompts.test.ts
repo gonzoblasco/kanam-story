@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
 
 const project: Project = {
@@ -264,6 +264,21 @@ describe('buildGenerateCharacterPrompt', () => {
     expect(prompt).toContain('"type"');
     expect(prompt).toContain('"traits"');
     expect(prompt).toContain('protagonist');
+  });
+});
+
+describe('buildStyleProfilePrompt', () => {
+  it('incluye el extracto del autor', () => {
+    const prompt = buildStyleProfilePrompt('El mar estaba quieto.');
+    expect(prompt).toContain('El mar estaba quieto.');
+  });
+
+  it('pide un JSON con los campos del perfil', () => {
+    const prompt = buildStyleProfilePrompt('muestra');
+    expect(prompt).toContain('"tone"');
+    expect(prompt).toContain('"rhythm"');
+    expect(prompt).toContain('"sentenceLength"');
+    expect(prompt).toContain('"subtext"');
   });
 });
 

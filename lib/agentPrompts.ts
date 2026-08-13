@@ -225,3 +225,30 @@ Cada personaje debe tener:
 Respondé SOLO con un array JSON de personajes, sin prosa, sin fences markdown, sin comentarios. Ejemplo:
 [{"name":"Renzo","type":"protagonist","pronouns":"él","age":"58","appearance":"...","personality":"orgulloso, terco","voice":"seco, cortante","backstory":"...","goals":"recuperar su honor","traits":["terco","orgulloso"]}]`;
 }
+
+/**
+ * Builds the prompt for the "Match My Style" flow: asks the model to extract a
+ * structured style profile from a sample of the author's writing. Returns a
+ * JSON object (StyleProfile).
+ */
+export function buildStyleProfilePrompt(sample: string): string {
+  return `Analizá el siguiente extracto de escritura del autor y extraé su perfil de estilo narrativo.
+
+Extracto:
+---
+${sample}
+---
+
+Respondé SOLO con un JSON con esta forma exacta:
+{"tone":"...","rhythm":"...","sentenceLength":"...","vocabulary":"...","dialogue":"...","imagery":"...","subtext":"..."}
+
+- "tone": tono emocional dominante
+- "rhythm": ritmo (pausado, rápido, entrecortado…)
+- "sentenceLength": longitud típica de las frases
+- "vocabulary": tipo de vocabulario (coloquial, culto, sensorial…)
+- "dialogue": cómo usa el diálogo
+- "imagery": uso de imágenes y metáforas
+- "subtext": uso de subtexto y lo no dicho
+
+Sin prosa, sin fences markdown, sin comentarios.`;
+}

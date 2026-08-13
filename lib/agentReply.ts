@@ -1,4 +1,4 @@
-import type { ContentAction, BeatKind, BeatStatus, CharacterType } from '@/types';
+import type { ContentAction, BeatKind, BeatStatus, CharacterType, StyleProfile } from '@/types';
 
 /**
  * Structured agent response.
@@ -234,4 +234,40 @@ export function parseSuggestedCharacterList(raw: string): SuggestedCharacter[] {
     }
   }
   return [];
+}
+
+// --- Match My Style (Slice 9) ---
+
+/**
+ * Parses the model's "Match My Style" response: a JSON object (StyleProfile).
+ * Tolerates prose/fences around the object via progressive brace scanning.
+ */
+export function parseStyleProfile(raw: string): StyleProfile | null {
+  const text = (raw ?? '').trim();
+  if (!text) return null;
+
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+
+  let lastBrace = text.lastIndexOf('}');
+  while (lastBrace > firstBrace) {
+    const candidate = text.slice(firstBrace, lastBrace + 1);
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed !== 'object' || parsed === null) return null;
+      const str = (k: string): string => (typeof parsed[k] === 'string' ? parsed[k] : '');
+      return {
+        tone: str('tone'),
+        rhythm: str('rhythm'),
+        sentenceLength: str('sentenceLength'),
+        vocabulary: str('vocabulary'),
+        dialogue: str('dialogue'),
+        imagery: str('imagery'),
+        subtext: str('subtext'),
+      };
+    } catch {
+      lastBrace = text.lastIndexOf('}', lastBrace - 1);
+    }
+  }
+  return null;
 }

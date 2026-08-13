@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { STYLE_PRESETS } from '@/lib/labels';
-import type { Project, ProjectStyle } from '@/types';
+import type { Project, ProjectStyle, StyleProfile } from '@/types';
 
 /**
  * Editable Story Bible settings (Slice 6): Braindump, Genre tags, Style and
@@ -11,7 +11,7 @@ import type { Project, ProjectStyle } from '@/types';
  * coherent with the author's intent.
  */
 export default function StoryBibleSettingsPanel() {
-  const { currentProject, updateProject } = useApp();
+  const { currentProject, updateProject, analyzeStyle } = useApp();
 
   const [braindump, setBraindump] = useState(currentProject?.braindump ?? '');
   const [synopsis, setSynopsis] = useState(currentProject?.synopsis ?? '');
@@ -19,6 +19,11 @@ export default function StoryBibleSettingsPanel() {
   const [styleMode, setStyleMode] = useState<ProjectStyle['mode']>('custom');
   const [styleFeatured, setStyleFeatured] = useState('');
   const [styleCustom, setStyleCustom] = useState('');
+  // Match My Style (Slice 9)
+  const [styleSample, setStyleSample] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [styleProfile, setStyleProfile] = useState<StyleProfile | null>(null);
+  const [styleError, setStyleError] = useState<string | null>(null);
 
   // Reset local draft when switching projects.
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- sync local draft to the selected project */
@@ -30,6 +35,9 @@ export default function StoryBibleSettingsPanel() {
     setStyleMode(currentProject.style?.mode ?? 'custom');
     setStyleFeatured(currentProject.style?.featured ?? '');
     setStyleCustom(currentProject.style?.custom ?? '');
+    setStyleSample('');
+    setStyleProfile(currentProject.style?.profile ?? null);
+    setStyleError(null);
   }, [currentProject?.id]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
@@ -60,6 +68,26 @@ export default function StoryBibleSettingsPanel() {
 
   function removeGenre(g: string) {
     commit({ genres: genres.filter((x) => x !== g) });
+  }
+
+  async function analyze() {
+    if (!styleSample.trim()) return;
+    setAnalyzing(true);
+    setStyleError(null);
+    try {
+      const profile = await analyzeStyle(styleSample);
+      setStyleProfile(profile);
+      if (!profile) setStyleError('No se pudo extraer el perfil. Probá con un extracto más largo.');
+    } catch (e) {
+      setStyleError(e instanceof Error ? e.message : 'Falló el análisis');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  function saveProfile() {
+    if (!styleProfile) return;
+    commitStyle({ mode: 'match', profile: styleProfile });
   }
 
   return (
@@ -138,9 +166,7 @@ export default function StoryBibleSettingsPanel() {
           >
             <option value="featured">Preset</option>
             <option value="custom">Personalizado</option>
-            <option value="match" disabled>
-              Match My Style (Slice 9)
-            </option>
+            <option value="match">Match My Style</option>
           </select>
           {styleMode === 'featured' ? (
             <select
@@ -170,8 +196,38 @@ export default function StoryBibleSettingsPanel() {
             />
           ) : null}
           {styleMode === 'match' ? (
-            <div className="small text-muted">
-              Match My Style llega en una próxima versión. Por ahora elegí Preset o Personalizado.
+            <div>
+              <div className="small text-muted mb-1">
+                Pegá un extracto de tu escritura para que el co-writer aprenda tu estilo.
+              </div>
+              <textarea
+                className="form-control form-control-sm mb-1"
+                rows={4}
+                placeholder="Pegá un pasaje tuyo (un párrafo o más)…"
+                value={styleSample}
+                onChange={(e) => setStyleSample(e.target.value)}
+              />
+              <button className="btn btn-sm btn-primary" onClick={analyze} disabled={analyzing || !styleSample.trim()}>
+                {analyzing ? 'Analizando…' : 'Analizar estilo'}
+              </button>
+              {styleError ? <div className="small text-danger mt-1">{styleError}</div> : null}
+              {styleProfile ? (
+                <div className="mt-2">
+                  <div className="small fw-semibold mb-1">Perfil detectado</div>
+                  <ul className="small mb-1 ps-3">
+                    <li><strong>Tono:</strong> {styleProfile.tone || '—'}</li>
+                    <li><strong>Ritmo:</strong> {styleProfile.rhythm || '—'}</li>
+                    <li><strong>Frases:</strong> {styleProfile.sentenceLength || '—'}</li>
+                    <li><strong>Vocabulario:</strong> {styleProfile.vocabulary || '—'}</li>
+                    <li><strong>Diálogo:</strong> {styleProfile.dialogue || '—'}</li>
+                    <li><strong>Imágenes:</strong> {styleProfile.imagery || '—'}</li>
+                    <li><strong>Subtexto:</strong> {styleProfile.subtext || '—'}</li>
+                  </ul>
+                  <button className="btn btn-sm btn-primary" onClick={saveProfile}>
+                    <i className="bi bi-check-lg me-1" /> Guardar perfil
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapRoleToType, characterTypeLabel, mapCategoryToKind, worldKindLabel } from '@/lib/labels';
+import { mapRoleToType, characterTypeLabel, mapCategoryToKind, worldKindLabel, styleText } from '@/lib/labels';
 
 describe('mapRoleToType', () => {
   it('mapea valores conocidos en español e inglés', () => {
@@ -54,5 +54,29 @@ describe('worldKindLabel', () => {
     expect(worldKindLabel('place')).toBe('Lugar');
     expect(worldKindLabel('magic_system')).toBe('Sistema de magia');
     expect(worldKindLabel('key_event')).toBe('Evento clave');
+  });
+});
+
+describe('styleText (Match My Style)', () => {
+  it('inyecta el perfil completo en modo match', () => {
+    const text = styleText({
+      mode: 'match',
+      profile: {
+        tone: 'melancólico',
+        rhythm: 'pausado',
+        sentenceLength: 'frases cortas',
+        vocabulary: 'coloquial',
+        dialogue: 'poco diálogo',
+        imagery: 'metáforas',
+        subtext: 'mucho subtexto',
+      },
+    });
+    expect(text).toContain('Estilo del autor: melancólico');
+    expect(text).toContain('Ritmo: pausado');
+    expect(text).toContain('Subtexto: mucho subtexto');
+  });
+
+  it('devuelve vacío si no hay perfil', () => {
+    expect(styleText({ mode: 'match' })).toBe('');
   });
 });
