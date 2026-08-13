@@ -80,15 +80,13 @@ export default function Editor() {
     immediatelyRender: false,
   });
 
+  // Sync the local title/summary drafts when the selected scene changes.
   useEffect(() => {
-    if (!scene || !editor) return;
-    editor.commands.setContent(scene.content || '', { emitUpdate: false });
-    // Sync the local title/summary drafts when the selected scene changes.
     /* eslint-disable react-hooks/set-state-in-effect -- derived state from the selected scene */
-    setTitleDraft(scene.title);
-    setSummaryDraft(scene.summary);
+    setTitleDraft(scene?.title ?? '');
+    setSummaryDraft(scene?.summary ?? '');
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scene?.id, editor]);
+  }, [scene?.id, scene?.title, scene?.summary]);
 
   const saveContent = useCallback(
     (html: string) => {
@@ -98,13 +96,13 @@ export default function Editor() {
     [scene, updateScene],
   );
 
-  function handleEditorUpdate() {
-    if (!scene || !editor) return;
+  const handleEditorUpdate = useCallback(() => {
+    if (!editor) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       saveContent(editor.getHTML());
     }, 600);
-  }
+  }, [editor, saveContent]);
 
   useEffect(() => {
     if (!editor) return;
@@ -112,7 +110,7 @@ export default function Editor() {
     return () => {
       editor.off('update', handleEditorUpdate);
     };
-  }, [editor, scene?.id]);
+  }, [editor, handleEditorUpdate]);
 
   function buildContextNow() {
     if (!currentProject) return '';
