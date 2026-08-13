@@ -1,8 +1,8 @@
 # Kanam Story
 
-> **Status:** `0.1.0` — bootstrap on top of `sudolab`. Works end-to-end with local Ollama, but is transitioning toward **chat-first**: the product's heart will be an agent you converse with that **applies** changes to the manuscript (Slice 1). The current editor is the starting point, not the destination.
+> **Status:** `0.1.0` — first usable release. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
 
-Local-first fiction co-writer (BYOK → Ollama) in Spanish, where **the conversation is the product**. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
+Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 
 ## Stack
 

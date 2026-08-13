@@ -2,7 +2,9 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
-## [Unreleased]
+## [0.1.0] - 2026-08-13
+
+First usable release. Local-first fiction co-writer where the conversation is the product.
 
 ### Added
 - **Agent chat with hands (Slice 1).** A chat panel where you converse with a co-writer agent that knows the manuscript, characters, world, outline and bible, and that **applies** changes to the content when you accept them.
@@ -13,14 +15,29 @@ All notable changes to Kanam Story are documented here. The format follows [Keep
   - `lib/store.tsx` — `applyContentActions` persists accepted actions to IndexedDB.
 - **Ollama streaming (SSE).** `ollamaChatStream` + `lib/ollamaStream.ts` parser (tested) + `/api/ollama` route with `stream: true` via `ReadableStream`.
 - **Silenced lockfile warning.** `turbopack.root` in `next.config.ts`.
+- **Outline & Beats (Slice 2).** Outline view in the main area (toggle Editor/Outline), inline beat editing (title/kind/status/desc/notes), reorder, add/delete, and an AI "suggest outline" flow with preview.
+- **Living Bible (Slice 3).** Per-section regeneration, stale tracking (`staleAt`), and auto-stale marking when the agent changes characters/world.
+- **Narrative Compass (Slice 4).** `premise`/`promise`/`theme`/`protagonist` fields on the project, a Compass tab, a promise strip in the editor, and the compass included in the agent context.
+- **Manuscript export (Slice 5).** Export the manuscript to Markdown (`.md`) or plain text (`.txt`) from the top bar.
+- **Clean lint.** Fixed all pre-existing lint errors (unused imports, `any` types, unescaped entities, set-state-in-effect).
+
+### Changed
+- Default model prefers `deepseek-v4-flash` when available.
+- Centralized POV labels in `lib/labels.ts` (shared across the UI and prompts).
+- Renamed `BrújulaPanel` to `CompassPanel` (ASCII-safe filename).
+
+### Fixed
+- `add_beat` from the chat now propagates `chapterId` so beats appear in the outline.
+- Deleting a character clears a dangling `project.protagonist` reference.
+- Deleting a chapter/scene cascades to its beats (no orphaned beats).
+- Suggested beats are deduplicated by title; the preview resets on chapter change.
 
 ### TODO
-- Export to PDF / Markdown / DOCX.
+- Export to PDF / DOCX.
 - Light theme (dark + light toggle).
 - React component tests (jsdom + Testing Library).
 - `lib/db.ts` tests (fake-indexeddb).
 - Search across scenes.
-- Clean the pre-existing lint errors in `ProjectTree.tsx`, `SettingsModal.tsx`, `WorldPanel.tsx`.
 
 ## [0.2.0-beta] - 2026-06-29
 
