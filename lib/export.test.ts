@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildManuscriptMarkdown } from '@/lib/export';
+import { buildManuscriptMarkdown, markdownToPlainText } from '@/lib/export';
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
 
 const project: Project = {
@@ -92,5 +92,27 @@ describe('buildManuscriptMarkdown', () => {
   it('includes chapter-level beats in the outline', () => {
     const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [], characters: [], world: [], beats: [beat] });
     expect(md).toContain('- **La invitación**: recibe una carta');
+  });
+
+  it('preserves paragraph breaks in scene content', () => {
+    const multiScene: Scene = {
+      ...scene,
+      content: '<p>Santiago abrió el bolso.</p><p>Adentro había una carta.</p>',
+    };
+    const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [multiScene], characters: [], world: [], beats: [] });
+    expect(md).toContain('Santiago abrió el bolso.\n\nAdentro había una carta.');
+  });
+});
+
+describe('markdownToPlainText', () => {
+  it('quita encabezados, listas y negritas', () => {
+    const plain = markdownToPlainText('# Título\n\n## Capítulo\n\n- **Item**\n- Otro');
+    expect(plain).toContain('Título');
+    expect(plain).toContain('Capítulo');
+    expect(plain).toContain('Item');
+    expect(plain).toContain('Otro');
+    expect(plain).not.toContain('#');
+    expect(plain).not.toContain('**');
+    expect(plain).not.toContain('-');
   });
 });

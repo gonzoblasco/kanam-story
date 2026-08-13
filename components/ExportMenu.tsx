@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
-import { buildManuscriptMarkdown, downloadTextFile } from '@/lib/export';
+import { buildManuscriptMarkdown, markdownToPlainText, downloadTextFile } from '@/lib/export';
 
 export default function ExportMenu() {
   const { currentProject, chapters, scenes, characters, world, beats } = useApp();
@@ -11,7 +11,13 @@ export default function ExportMenu() {
   if (!currentProject) return null;
 
   const project = currentProject;
-  const slug = project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'manuscrito';
+  const slug =
+    project.name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'manuscrito';
 
   function exportMarkdown() {
     const md = buildManuscriptMarkdown({ project, chapters, scenes, characters, world, beats });
@@ -21,7 +27,7 @@ export default function ExportMenu() {
 
   function exportTxt() {
     const md = buildManuscriptMarkdown({ project, chapters, scenes, characters, world, beats });
-    downloadTextFile(`${slug}.txt`, md, 'text/plain');
+    downloadTextFile(`${slug}.txt`, markdownToPlainText(md), 'text/plain');
     setOpen(false);
   }
 

@@ -1,7 +1,31 @@
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
 
+/**
+ * Converts editor HTML to plain text, preserving paragraph and list
+ * boundaries (so a manuscript export doesn't become a wall of text).
+ */
 function stripHtml(html: string): string {
-  return (html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return (html ?? '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|blockquote|li|pre)>/gi, '\n\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** Removes Markdown markers so the content reads as plain text. */
+export function markdownToPlainText(md: string): string {
+  return (md ?? '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(?!\s)(.+?)(?<!\s)\*/g, '$1')
+    .replace(/^>\s?/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 export interface ExportSources {
