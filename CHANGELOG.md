@@ -1,44 +1,53 @@
 # Changelog
 
-Todos los cambios notables de Sudolab se documentan acá. El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y el proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/) (relajado durante la beta).
+All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
 ## [Unreleased]
 
-### Por hacer
-- Streaming de respuestas del modelo (cambia `/api/ollama` y `ollamaChat`).
-- Export a PDF / Markdown / DOCX.
-- Temas (claro + oscuro toggle).
-- Tests de componentes React (jsdom + Testing Library).
-- Tests de `lib/db.ts` (fake-indexeddb).
-- Búsqueda entre escenas.
-- Limpiar los 10 errores de lint pre-existentes en `ProjectTree.tsx`, `SettingsModal.tsx`, `WorldPanel.tsx`.
+### Added
+- **Agent chat with hands (Slice 1).** A chat panel where you converse with a co-writer agent that knows the manuscript, characters, world, outline and bible, and that **applies** changes to the content when you accept them.
+  - `lib/agentReply.ts` — parses the agent's structured JSON response (`reply` + `actions`) and validates actions.
+  - `lib/agentPrompts.ts` — builds the full agent context (project, characters, world, manuscript, beats, bible) and the structured-response prompt.
+  - `lib/actions.ts` — pure, reversible application of `ContentAction`s to a `StoryState` snapshot.
+  - `components/ChatPanel.tsx` — conversation list, streaming responses, and accept/discard for proposed changes.
+  - `lib/store.tsx` — `applyContentActions` persists accepted actions to IndexedDB.
+- **Ollama streaming (SSE).** `ollamaChatStream` + `lib/ollamaStream.ts` parser (tested) + `/api/ollama` route with `stream: true` via `ReadableStream`.
+- **Silenced lockfile warning.** `turbopack.root` in `next.config.ts`.
+
+### TODO
+- Export to PDF / Markdown / DOCX.
+- Light theme (dark + light toggle).
+- React component tests (jsdom + Testing Library).
+- `lib/db.ts` tests (fake-indexeddb).
+- Search across scenes.
+- Clean the pre-existing lint errors in `ProjectTree.tsx`, `SettingsModal.tsx`, `WorldPanel.tsx`.
 
 ## [0.2.0-beta] - 2026-06-29
 
-Cierra el gap entre la Biblia auto-generada y los tabs editables: ahora se puede promover el contenido detectado a entidades estructuradas con marca de origen. Cero cambio de modelo; el bridge corre local.
+Closes the gap between the auto-generated Bible and the editable tabs: detected content can now be promoted to structured entities with a source marker. Zero model change; the bridge runs locally.
 
 ### Added
-- **Bridge Biblia → tab Personajes**:
-  - En la sección "Personajes" del panel Biblia: botón **Detectar** (parsea el markdown de la sección y/o llama a la IA para extraer JSON estructurado), **Importar todos (n)** para promover todos de una, y un botón verde `→` por entry para promover uno a uno.
-  - Al importarlos, los personajes quedan con `source: 'biblia'` y muestran un badge celeste **"de biblia"** en el tab Personajes.
-- **Bridge Biblia → tab Mundo**: el mismo flujo para la sección "Mundo" del panel Biblia, con detección de `category` por tag explícito `[lugar]`/`[lore]`/`[regla]`/`[objeto]` o por heurística.
-- **Auto-fill al abrir los tabs Personajes/Mundo**: si el tab está vacío y la sección correspondiente de la Biblia también, la Biblia se regenera automáticamente la primera vez que abrís ese tab. Opt-out por `localStorage.setItem('sudolab.autoFillBible:characters:<projectId>', '0')` (o `:world:`).
-- **`buildBibleExtractPrompt`** en `lib/prompts.ts`: nuevo prompt builder que pide JSON estricto cuando el parser markdown no encuentra nada estructurado.
-- **`regenerateStoryBible`** movido al store: cualquier componente puede disparar la regeneración sin duplicar la lógica de prompt/parseo.
-- **`storyBibleDB.get`** helper en `lib/db.ts`.
+- **Bible → Characters tab bridge**:
+  - In the "Characters" section of the Bible panel: **Detect** button (parses the section markdown and/or calls the AI to extract structured JSON), **Import all (n)** to promote all at once, and a green `→` button per entry to promote one by one.
+  - Imported characters get `source: 'biblia'` and show a light-blue **"from bible"** badge in the Characters tab.
+- **Bible → World tab bridge**: the same flow for the "World" section of the Bible panel, with `category` detection by explicit tag `[place]`/`[lore]`/`[rule]`/`[object]` or by heuristic.
+- **Auto-fill when opening the Characters/World tabs**: if the tab is empty and the corresponding Bible section is also empty, the Bible regenerates automatically the first time you open that tab. Opt-out via `localStorage.setItem('sudolab.autoFillBible:characters:<projectId>', '0')` (or `:world:`).
+- **`buildBibleExtractPrompt`** in `lib/prompts.ts`: new prompt builder that asks for strict JSON when the markdown parser finds nothing structured.
+- **`regenerateStoryBible`** moved to the store: any component can trigger regeneration without duplicating prompt/parse logic.
+- **`storyBibleDB.get`** helper in `lib/db.ts`.
 
 ### Changed
-- `Character` y `WorldEntity` ganan `source?: 'manual' | 'biblia'`. Registros existentes quedan como `undefined` → tratados como `'manual'`.
-- `StoryBiblePanel` ya no hace la llamada a IA inline — usa `regenerateStoryBible` del store y le agrega el bridge de detección/importación encima.
+- `Character` and `WorldEntity` gain `source?: 'manual' | 'biblia'`. Existing records stay `undefined` → treated as `'manual'`.
+- `StoryBiblePanel` no longer makes the AI call inline — it uses `regenerateStoryBible` from the store and adds the detect/import bridge on top.
 
 ### Fixed
-- El lint de React 19 (`react-hooks/set-state-in-effect`) ya no se queja del auto-fill: el spinner efímero se removió (el badge "de biblia" sigue apareciendo como señal visual).
+- The React 19 lint (`react-hooks/set-state-in-effect`) no longer complains about auto-fill: the ephemeral spinner was removed (the "from bible" badge still appears as a visual signal).
 
 ### Notes
-- 21 tests nuevos (`lib/bibleExtract.test.ts`: 18; `lib/prompts.test.ts`: +3 para `buildBibleExtractPrompt`). Total: 59/59 verde.
+- 21 new tests (`lib/bibleExtract.test.ts`: 18; `lib/prompts.test.ts`: +3 for `buildBibleExtractPrompt`). Total: 59/59 green.
 - `tsc --noEmit` clean.
-- Lint limpio en los 10 archivos tocados por este release (los 10 errores pre-existentes en `ProjectTree.tsx`/`SettingsModal.tsx`/`WorldPanel.tsx` siguen, fuera de scope).
+- Clean lint in the 10 files touched by this release (the 10 pre-existing errors in `ProjectTree.tsx`/`SettingsModal.tsx`/`WorldPanel.tsx` remain, out of scope).
 
-[Unreleased]: https://example.com/sudolab/compare/v0.2.0-beta...HEAD
-[0.2.0-beta]: https://example.com/sudolab/compare/v0.1.0-beta...v0.2.0-beta
-[0.1.0-beta]: https://example.com/sudolab/releases/tag/v0.1.0-beta
+[Unreleased]: https://github.com/gonzoblasco/kanam-story/compare/v0.2.0-beta...HEAD
+[0.2.0-beta]: https://github.com/gonzoblasco/kanam-story/compare/v0.1.0-beta...v0.2.0-beta
+[0.1.0-beta]: https://github.com/gonzoblasco/kanam-story/releases/tag/v0.1.0-beta

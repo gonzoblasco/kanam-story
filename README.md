@@ -1,131 +1,135 @@
 # Kanam Story
 
-> **Estado:** `0.1.0` — bootstrap sobre `sudolab`. Funciona end-to-end con Ollama local, pero está en transición hacia **chat-first**: el corazón del producto será un agente con quien conversar que **aplica** cambios al manuscrito (Slice 1). El editor actual es el punto de partida, no el destino.
+> **Status:** `0.1.0` — bootstrap on top of `sudolab`. Works end-to-end with local Ollama, but is transitioning toward **chat-first**: the product's heart will be an agent you converse with that **applies** changes to the manuscript (Slice 1). The current editor is the starting point, not the destination.
 
-Co-writer de ficción local-first (BYOK → Ollama) en español, donde **la conversación es el producto**. Toda la IA corre en tu máquina vía Ollama; todo el manuscrito vive en IndexedDB. UI y prompts en español.
+Local-first fiction co-writer (BYOK → Ollama) in Spanish, where **the conversation is the product**. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack)
-- **TipTap 3** para el editor
-- **Bootstrap 5** + tokens CSS propios (sin Tailwind)
-- **IndexedDB** vía `idb` — un store por entidad
-- **Ollama** como motor de IA, proxy a través de rutas API de Next.js (`/api/ollama`, `/api/ollama/models`) para evitar CORS
+- **TipTap 3** for the editor
+- **Bootstrap 5** + custom CSS tokens (no Tailwind)
+- **IndexedDB** via `idb` — one store per entity
+- **Ollama** as the AI engine, proxied through Next.js API routes (`/api/ollama`, `/api/ollama/models`) to avoid CORS
 
-## Requisitos
+## Requirements
 
 - Node.js ≥ 20
-- Ollama corriendo en `http://localhost:11434` con al menos un modelo de chat instalado. Probados en esta máquina: `qwen3:14b`, `qwen3.6:latest`, `gemma4:latest`. Para calidad de ficción se recomienda `qwen3:14b`; para velocidad, `gemma4:latest`.
+- Ollama running at `http://localhost:11434` with at least one chat model installed. Tested on this machine: `qwen3:14b`, `qwen3.6:latest`, `gemma4:latest`. For fiction quality `qwen3:14b` is recommended; for speed, `gemma4:latest`.
 
 ## Scripts
 
 ```bash
 npm install
 npm run dev        # dev server (Turbopack), default :3000
-npm run build      # build de producción
-npm run start      # serve el build
+npm run build      # production build
+npm run start      # serve the build
 npm run lint       # eslint
-npm test           # vitest, una corrida
-npm run test:watch # vitest en watch mode
+npm test           # vitest, single run
+npm run test:watch # vitest in watch mode
 ```
 
-## Cómo arrancar
+## Getting started
 
-1. Levantá Ollama: `ollama serve` (o el daemon del sistema).
-2. Asegurate de tener al menos un modelo: `ollama pull qwen3:14b`.
-3. `npm install && npm run dev` y abrí `http://localhost:3000`.
-4. Al primer arranque la app autocompleta el modelo (toma el primero de `/api/ollama/models`) y crea un proyecto vacío.
-5. Ajustá URL de Ollama y modelo en **Ajustes** si querés cambiarlo.
+1. Start Ollama: `ollama serve` (or the system daemon).
+2. Make sure you have at least one model: `ollama pull qwen3:14b`.
+3. `npm install && npm run dev` and open `http://localhost:3000`.
+4. On first boot the app auto-fills the model (takes the first from `/api/ollama/models`) and creates an empty project.
+5. Adjust the Ollama URL and model in **Settings** if you want to change them.
 
-## Qué funciona hoy (MVP)
+## What works today (MVP)
 
-### Editor con barra de IA
+### Editor with AI bar
 
-- **Escribir** — continúa desde el cursor, respetando el contexto.
-- **Describir** — expande la selección con detalle sensorial.
-- **Reescribir** — reescribe la selección con un estilo elegible.
-- **Expandir** — reemplaza la escena con una versión expandida a partir del beat/resumen (corto/medio/largo).
-- **Dialogar** — genera N variantes de la línea de diálogo seleccionada.
-- **Tensar** — reescribe el cierre de la escena subiendo el conflicto.
-- **Detener** — aborta cualquier comando en curso vía `AbortController`.
-- Autoguardado debounced 600ms; título y resumen se guardan en `blur`.
-- Contador de palabras y caracteres en el pie.
+- **Write** — continues from the cursor, respecting context.
+- **Describe** — expands the selection with sensory detail.
+- **Rewrite** — rewrites the selection with a selectable style.
+- **Expand** — replaces the scene with an expanded version from the beat/summary (short/medium/long).
+- **Dialogue** — generates N variants of the selected dialogue line.
+- **Tension** — rewrites the scene's ending raising the conflict.
+- **Stop** — aborts any running command via `AbortController`.
+- Debounced autosave (600ms); title and summary save on `blur`.
+- Word and character counter in the footer.
 
-### Panel derecho (tabs)
+### Right panel (tabs)
 
-- **Brainstorm** — pide ideas sobre un tema, guarda notas, soporta "append" para extender una nota existente.
-- **Personajes** — cards editables inline (rol, edad, apariencia, personalidad, voz, backstory, objetivos).
-- **Mundo** — entries editables inline (lugar / lore / regla / objeto / otro).
-- **Biblia** — 5 secciones auto-generadas desde el manuscrito (Resumen / Temas / Personajes / Mundo / Reglas), con override manual por sección y botón para volver al contenido auto.
-- Pestañas colapsables a la derecha; `selectTab()` se ocupa de expandir + cambiar.
+- **Brainstorm** — asks for ideas on a topic, saves notes, supports "append" to extend an existing note.
+- **Characters** — inline editable cards (role, age, appearance, personality, voice, backstory, goals).
+- **World** — inline editable entries (place / lore / rule / object / other).
+- **Bible** — 5 auto-generated sections from the manuscript (Summary / Themes / Characters / World / Rules), with per-section manual override and a button to revert to auto content.
+- Collapsible tabs on the right; `selectTab()` handles expand + switch.
 
-### Proyecto
+### Project
 
-- Sidebar con árbol de capítulos y escenas, switcher de proyectos, modal para crear proyecto.
-- Settings modal con URL de Ollama, selector de modelo (auto-detecta los instalados) y tema.
-- Tema oscuro por defecto vía `data-bs-theme="dark"`.
+- Sidebar with chapter/scene tree, project switcher, create-project modal.
+- Settings modal with Ollama URL, model selector (auto-detects installed) and theme.
+- Dark theme by default via `data-bs-theme="dark"`.
 
-### Modelo
+### Model
 
-- Detección automática del primer modelo instalado al boot (no hardcodea nombres para evitar 502 con modelos faltantes).
-- Re-selección en cualquier momento desde el modal de Ajustes.
+- Auto-detects the first installed model at boot (does not hardcode names to avoid 502s with missing models).
+- Re-selectable at any time from the Settings modal.
 
-## Cómo está organizado
+## How it's organized
 
 ```
 kanam-story/
 ├── app/                 # App Router: layout, page, /api/ollama, /api/ollama/models
 ├── components/          # UI (Editor, RightPanel, BrainstormPanel, CharactersPanel, WorldPanel, StoryBiblePanel, ...)
 ├── lib/
-│   ├── db.ts            # IndexedDB schema + helpers por entidad
+│   ├── db.ts            # IndexedDB schema + per-entity helpers
 │   ├── store.tsx        # AppProvider + CRUD wrappers
-│   ├── ollama.ts        # ollamaChat + checkOllama (siempre via /api/ollama)
-│   ├── prompts.ts       # buildContext + builders por comando
-│   ├── bibleParse.ts    # parser de las 5 secciones de la Biblia
-│   └── *.test.ts        # tests vitest
+│   ├── ollama.ts        # ollamaChat + checkOllama (always via /api/ollama)
+│   ├── prompts.ts       # buildContext + per-command builders
+│   ├── bibleParse.ts    # parser for the 5 Bible sections
+│   └── *.test.ts        # vitest tests
 ├── types/               # Project, Chapter, Scene, Character, WorldEntity, BrainstormNote, StoryBible, Settings, AICommand
 └── vitest.config.ts
 ```
 
-Conventions clave (resumen):
+Key conventions (summary):
 
-- Toda la persistencia pasa por `lib/db.ts` y `lib/store.tsx`. Los componentes no tocan `idb` directo.
-- Toda llamada a IA pasa por `lib/ollama.ts`. Los componentes arman el prompt y manejan `AbortController` + busy state.
-- `stream: false` hoy — para streaming hay que cambiar la ruta y `ollamaChat` juntos.
-- Español en toda la UI y en todos los prompts a Ollama. Campos de dominio (`Project.pov`, `Character.voice`) se quedan en inglés porque están serializados en IndexedDB.
-- Etiquetas de las secciones de la Biblia están sincronizadas en `BIBLE_SECTION_DEFAULTS`, `buildStoryBiblePrompt` y `StoryBiblePanel` (parseo). Cambiar una sin las demás rompe el regenerado.
+- All persistence goes through `lib/db.ts` and `lib/store.tsx`. Components never touch `idb` directly.
+- All AI calls go through `lib/ollama.ts`. Components build the prompt and handle `AbortController` + busy state.
+- `stream: false` today — for streaming you must change the route and `ollamaChat` together.
+- Spanish in all UI and all Ollama prompts. Domain fields (`Project.pov`, `Character.voice`) stay in English because they are serialized in IndexedDB.
+- Bible section labels are kept in sync across `BIBLE_SECTION_DEFAULTS`, `buildStoryBiblePrompt` and `StoryBiblePanel` (parsing). Changing one without the others breaks regeneration.
 
 ## Testing
 
 - Runner: **Vitest 4** (`vitest@^4.1.9`).
-- Cobertura actual: **38 tests** sobre funciones puras.
-  - `lib/prompts.test.ts` — 30 tests sobre `buildContext`, `buildExpandPrompt`, `buildStoryBiblePrompt`, `buildDialoguePrompt`, `buildTensionPrompt`.
-  - `lib/bibleParse.test.ts` — 8 tests sobre `parseBibleSections`.
-- Solo se testea código puro; los componentes React, `lib/db.ts` (IndexedDB) y las rutas API no tienen tests todavía.
-- Correr: `npm test`. Ver cobertura crecerá con la beta.
+- Current coverage: **92 tests** on pure functions.
+  - `lib/prompts.test.ts` — tests on `buildContext`, `buildExpandPrompt`, `buildStoryBiblePrompt`, `buildDialoguePrompt`, `buildTensionPrompt`.
+  - `lib/bibleParse.test.ts` — tests on `parseBibleSections`.
+  - `lib/agentReply.test.ts` — tests on `parseAgentReply`, `isValidAction`, `filterValidActions`.
+  - `lib/agentPrompts.test.ts` — tests on `buildAgentContext`, `buildAgentPrompt`.
+  - `lib/actions.test.ts` — tests on `applyAction`, `applyActions`.
+  - `lib/ollamaStream.test.ts` — tests on `createOllamaStreamParser`.
+- Only pure code is tested; React components, `lib/db.ts` (IndexedDB) and API routes have no tests yet.
+- Run: `npm test`.
 
-## Conocidas / por hacer (no en `0.1.0-beta`)
+## Known / TODO (not in `0.1.0`)
 
-- **Streaming de respuestas.** Hoy `ollamaChat` espera la respuesta entera. Implementar va a requerir cambiar la ruta `/api/ollama` y `ollamaChat` para exponer un `AsyncIterable<string>` o SSE.
-- **Export.** Sin export a PDF / Markdown / DOCX todavía. El manuscrito está atrapado en IndexedDB.
-- **Multi-usuario / sync.** No hay login, ni sync entre dispositivos. Es estrictamente local y single-user.
-- **Mobile / responsive.** La layout está optimizada para desktop con la sidebar de capítulos + panel derecho. En mobile la grilla no se adapta bien.
-- **Temas.** Solo oscuro. Claro vendría después.
-- **Tests de componentes.** Sin jsdom todavía. Para los componentes más complejos (Editor, StoryBiblePanel) haría falta `@testing-library/react` + `jsdom`.
-- **Tests de IndexedDB.** Sin `fake-indexeddb`. Cuando se agregue cobertura de store/db, va a hacer falta.
-- **Lint limpio.** Hay 10 errores pre-existentes en `components/ProjectTree.tsx`, `components/SettingsModal.tsx`, `components/WorldPanel.tsx` que no son blockers pero deberían irse antes de 1.0.
-- **Búsqueda en el manuscrito.** No hay find/replace entre escenas.
-- **Versionado / snapshots.** No hay forma de ver versiones anteriores de una escena.
+- **Streaming.** `ollamaChatStream` (SSE) is implemented and tested; the editor still uses the non-streaming `ollamaChat`. The chat panel uses streaming.
+- **Export.** No PDF / Markdown / DOCX export yet. The manuscript is trapped in IndexedDB.
+- **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user.
+- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + right panel. On mobile the grid does not adapt well.
+- **Themes.** Only dark. Light would come later.
+- **Component tests.** No jsdom yet. For the more complex components (Editor, StoryBiblePanel) `@testing-library/react` + `jsdom` would be needed.
+- **IndexedDB tests.** No `fake-indexeddb`. Needed when store/db coverage is added.
+- **Clean lint.** There are pre-existing errors in `components/ProjectTree.tsx`, `components/SettingsModal.tsx`, `components/WorldPanel.tsx` that are not blockers but should go before 1.0.
+- **Manuscript search.** No find/replace across scenes.
+- **Versioning / snapshots.** No way to see previous versions of a scene.
 
-## Decisiones que ya están tomadas y no se revierten fácil
+## Decisions already made (not easily reverted)
 
-- **Next.js 16 con Turbopack.** No es "el Next.js que conocés". Antes de asumir una API, leer `node_modules/next/dist/docs/01-app/`.
-- **Bootstrap, no Tailwind.** Los componentes usan clases Bootstrap + tokens CSS propios (`--sl-*`).
-- **UI/prompts en español.** El usuario escribe ficción en español. Romper esto es romper el producto.
-- **`ollamaModel` default `''` con auto-fill.** Hardcodear `llama3.1` (o cualquier modelo) como default rompe setups donde ese modelo no está instalado. El primer modelo de `/api/tags` es el default.
-- **Type fields en inglés.** Estructuras serializadas en IndexedDB (`pov`, `voice`, `key`). Traducirlas rompe datos del usuario.
+- **Next.js 16 with Turbopack.** Not "the Next.js you know". Before assuming an API, read `node_modules/next/dist/docs/01-app/`.
+- **Bootstrap, not Tailwind.** Components use Bootstrap classes + custom CSS tokens (`--sl-*`).
+- **UI/prompts in Spanish.** The user writes fiction in Spanish. Breaking this breaks the product.
+- **`ollamaModel` default `''` with auto-fill.** Hardcoding `llama3.1` (or any model) as default breaks setups where that model is not installed. The first model from `/api/tags` is the default.
+- **Type fields in English.** Structures serialized in IndexedDB (`pov`, `voice`, `key`). Translating them breaks user data.
 
-## Notas operativas
+## Operational notes
 
-- `curl localhost:3000 → 200` no prueba que tu código esté sirviéndose: un `next dev` viejo puede estar squat en el puerto. Antes de smoke-test, `lsof -i :3000` y matá zombies. Lanzá con `PORT=3100 npm run dev` para evitar ambigüedad.
-- Ollama caído → 502 en `/api/ollama/models`. Es esperable, no un bug.
+- `curl localhost:3000 → 200` does not prove your code is being served: an old `next dev` may be squatting on the port. Before smoke-testing, `lsof -i :3000` and kill zombies. Launch with `PORT=3100 npm run dev` to avoid ambiguity.
+- Ollama down → 502 on `/api/ollama/models`. Expected, not a bug.
