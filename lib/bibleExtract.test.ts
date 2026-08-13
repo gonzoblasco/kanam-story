@@ -103,13 +103,13 @@ describe('parseWorldEntries', () => {
     expect(out[1].name).toBe('La Orden');
   });
 
-  it('respeta la categoría explícita [lugar] [regla] etc', () => {
+  it('respeta la categoría explícita [regla] [objeto] etc', () => {
     const md = `- **El Gremio** [regla]: los magos no pueden usar fuego.
 - **Varita de Saúco** [objeto]: arma legendaria.`;
     const out = parseWorldEntries(md);
     expect(out).toHaveLength(2);
-    expect(out[0].category).toBe('rule');
-    expect(out[1].category).toBe('item');
+    expect(out[0].kind).toBe('rule');
+    expect(out[1].kind).toBe('item');
   });
 
   it('infiere categoría por palabras clave cuando no hay tag', () => {
@@ -117,8 +117,8 @@ describe('parseWorldEntries', () => {
 - **Espada del Héroe**: arma legendaria forjada en el alba.
 - **Religión del Sol**: dogma central de la cultura sureña.`;
     const out = parseWorldEntries(md);
-    const byName = Object.fromEntries(out.map((e) => [e.name, e.category]));
-    expect(byName['Bosque Encantado']).toBe('location');
+    const byName = Object.fromEntries(out.map((e) => [e.name, e.kind]));
+    expect(byName['Bosque Encantado']).toBe('place');
     expect(byName['Espada del Héroe']).toBe('item');
     expect(byName['Religión del Sol']).toBe('lore');
   });

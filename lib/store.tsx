@@ -40,7 +40,7 @@ import {
 } from '@/lib/prompts';
 import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt } from '@/lib/agentPrompts';
 import { parseBeatList, parseSuggestedCharacterList } from '@/lib/agentReply';
-import { mapRoleToType } from '@/lib/labels';
+import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -646,7 +646,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const parsed = parseWorldEntries(rawMarkdown);
       const fromMarkdown: Partial<WorldEntity>[] = parsed.map((w) => ({
         name: w.name,
-        category: w.category,
+        kind: w.kind,
         description: w.description,
       }));
       if (fromMarkdown.length > 0) return fromMarkdown;
@@ -658,16 +658,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
       });
-      type LooseWorld = Partial<WorldEntity> & { name?: string; category?: string };
+      type LooseWorld = Partial<WorldEntity> & { name?: string; kind?: string; category?: string };
       const loose = safeParseJsonArray<LooseWorld>(text);
-      const allowed: WorldEntity['category'][] = ['location', 'lore', 'rule', 'item', 'other'];
+      const allowed: WorldEntity['kind'][] = [
+        'place', 'organization', 'lore', 'key_event', 'clue', 'magic_system', 'item', 'rule', 'other',
+      ];
       return loose
         .filter((w): w is LooseWorld => typeof w?.name === 'string' && w.name.length > 0)
         .map((w) => ({
           name: w.name!,
-          category: allowed.includes(w.category as WorldEntity['category'])
-            ? (w.category as WorldEntity['category'])
-            : 'other',
+          kind: allowed.includes(w.kind as WorldEntity['kind'])
+            ? (w.kind as WorldEntity['kind'])
+            : mapCategoryToKind(w.category),
           description: typeof w.description === 'string' ? w.description : '',
         }));
     },
@@ -683,7 +685,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const w = await createWorld({
           projectId: currentProject.id,
           name: e.name,
-          category: e.category ?? 'other',
+          kind: e.kind ?? 'other',
           description: e.description ?? '',
           source: 'biblia',
         });

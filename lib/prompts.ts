@@ -1,6 +1,6 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, StoryBible } from '@/types';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
-import { povLabel, styleText, characterTypeLabel } from '@/lib/labels';
+import { povLabel, styleText, characterTypeLabel, worldKindLabel } from '@/lib/labels';
 
 export function buildContext(project: Project, characters: Character[], world: WorldEntity[]): string {
   const parts: string[] = [];
@@ -28,26 +28,12 @@ export function buildContext(project: Project, characters: Character[], world: W
   if (world.length > 0) {
     parts.push('\nMundo:');
     for (const w of world) {
-      parts.push(`- ${w.name} [${categoryLabel(w.category)}]: ${w.description}`);
+      if (w.inContext === false) continue;
+      parts.push(`- ${w.name} [${worldKindLabel(w.kind)}]: ${w.description}`);
     }
   }
 
   return parts.join('\n');
-}
-
-function categoryLabel(c: WorldEntity['category']): string {
-  switch (c) {
-    case 'location':
-      return 'lugar';
-    case 'lore':
-      return 'lore';
-    case 'rule':
-      return 'regla';
-    case 'item':
-      return 'objeto';
-    case 'other':
-      return 'otro';
-  }
 }
 
 export function buildWritePrompt(context: string, before: string, after: string): string {
@@ -290,13 +276,13 @@ export function buildBibleExtractPrompt(
   const targetLabel = isCharacters ? 'personajes' : 'entradas de mundo';
   const schema = isCharacters
     ? `[{"name": string, "type": string, "personality": string, "voice": string, "goals": string}]`
-    : `[{"name": string, "category": "location"|"lore"|"rule"|"item"|"other", "description": string}]`;
+    : `[{"name": string, "kind": "place"|"organization"|"lore"|"key_event"|"clue"|"magic_system"|"item"|"rule"|"other", "description": string}]`;
   return `Extraé los ${targetLabel} implícitos en la siguiente sección de un Story Bible y devolvelos como JSON ESTRICTO.
 
 Reglas:
 - Respondé ÚNICAMENTE con un JSON válido que sea un array. Sin texto antes ni después. Sin fences markdown.
 - Si una entidad aparece mencionada, creá una entrada. No repitas entidades.
-- Para category en entradas de mundo usá uno de: "location", "lore", "rule", "item", "other".
+- Para kind en entradas de mundo usá uno de: "place", "organization", "lore", "key_event", "clue", "magic_system", "item", "rule", "other".
 - Mantené los nombres propios tal como aparecen.
 - Respondé en español para los campos descriptivos.
 

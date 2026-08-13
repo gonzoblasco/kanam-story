@@ -2,17 +2,25 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/store';
-import type { WorldEntity } from '@/types';
+import { WORLD_KIND_LABELS } from '@/lib/labels';
+import type { WorldEntity, WorldKind } from '@/types';
 
-const CATEGORY_LABELS: Record<WorldEntity['category'], string> = {
-  location: 'lugar',
-  lore: 'lore',
-  rule: 'regla',
-  item: 'objeto',
-  other: 'otro',
-};
+const KINDS: WorldKind[] = [
+  'place',
+  'organization',
+  'lore',
+  'key_event',
+  'clue',
+  'magic_system',
+  'item',
+  'rule',
+  'other',
+];
 
-const CATEGORIES: WorldEntity['category'][] = ['location', 'lore', 'rule', 'item', 'other'];
+const TAG_FIELDS: { key: 'otherNames' | 'traits'; label: string }[] = [
+  { key: 'otherNames', label: 'Otros nombres' },
+  { key: 'traits', label: 'Rasgos' },
+];
 
 const AUTOFILL_KEY = (projectId: string): string => `kanam-story.autoFillBible:world:${projectId}`;
 
@@ -20,6 +28,63 @@ function readAutoFill(projectId: string): boolean {
   if (typeof window === 'undefined') return true;
   const v = window.localStorage.getItem(AUTOFILL_KEY(projectId));
   return v === null ? true : v === '1';
+}
+
+function TagEditor({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  placeholder: string;
+}) {
+  const [input, setInput] = useState('');
+  const add = () => {
+    const t = input.trim();
+    if (!t) return;
+    if (!value.includes(t)) onChange([...value, t]);
+    setInput('');
+  };
+  return (
+    <div>
+      <div className="d-flex flex-wrap gap-1 mb-1">
+        {value.length === 0 ? (
+          <span className="text-muted small">—</span>
+        ) : (
+          value.map((t) => (
+            <span key={t} className="badge bg-secondary d-inline-flex align-items-center gap-1">
+              {t}
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                style={{ fontSize: '0.5rem' }}
+                aria-label={`Quitar ${t}`}
+                onClick={() => onChange(value.filter((x) => x !== t))}
+              />
+            </span>
+          ))
+        )}
+      </div>
+      <div className="input-group input-group-sm">
+        <input
+          className="form-control"
+          placeholder={placeholder}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <button className="btn btn-outline-secondary" type="button" onClick={add}>
+          <i className="bi bi-plus" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function WorldPanel() {
@@ -61,8 +126,11 @@ export default function WorldPanel() {
     createWorld({
       projectId: currentProject!.id,
       name: 'Nueva entrada',
-      category: 'location',
+      kind: 'place',
       description: '',
+      otherNames: [],
+      traits: [],
+      inContext: true,
     });
   }
 
@@ -92,12 +160,12 @@ export default function WorldPanel() {
               />
               <select
                 className="form-select mb-2"
-                value={w.category}
-                onChange={(e) => updateWorld(w.id, { category: e.target.value as WorldEntity['category'] })}
+                value={w.kind}
+                onChange={(e) => updateWorld(w.id, { kind: e.target.value as WorldKind })}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABELS[c]}
+                {KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {WORLD_KIND_LABELS[k]}
                   </option>
                 ))}
               </select>
@@ -107,6 +175,28 @@ export default function WorldPanel() {
                 value={w.description}
                 onChange={(e) => updateWorld(w.id, { description: e.target.value })}
               />
+              {TAG_FIELDS.map((f) => (
+                <div key={f.key} className="mb-2 mt-2">
+                  <label className="form-label small text-muted mb-1">{f.label}</label>
+                  <TagEditor
+                    value={w[f.key] ?? []}
+                    onChange={(v) => updateWorld(w.id, { [f.key]: v } as Partial<WorldEntity>)}
+                    placeholder={`Agregar ${f.label.toLowerCase()}…`}
+                  />
+                </div>
+              ))}
+              <div className="form-check mb-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id={`inContext-${w.id}`}
+                  checked={w.inContext !== false}
+                  onChange={(e) => updateWorld(w.id, { inContext: e.target.checked })}
+                />
+                <label className="form-check-label small" htmlFor={`inContext-${w.id}`}>
+                  Incluir en el contexto del co-writer
+                </label>
+              </div>
               <div className="d-flex gap-2 mt-2">
                 <button className="btn btn-sm btn-primary" onClick={() => setEditing(null)}>
                   Listo
@@ -120,7 +210,12 @@ export default function WorldPanel() {
             <div onClick={() => setEditing(w.id)}>
               <div className="d-flex align-items-center gap-2">
                 <span className="name flex-grow-1">{w.name || 'Sin nombre'}</span>
-                <span className="pill">{CATEGORY_LABELS[w.category]}</span>
+                <span className="pill">{WORLD_KIND_LABELS[w.kind]}</span>
+                {w.inContext === false ? (
+                  <span className="badge bg-secondary" title="Excluido del contexto del co-writer">
+                    <i className="bi bi-eye-slash" />
+                  </span>
+                ) : null}
                 {w.source === 'biblia' ? (
                   <span
                     className="badge bg-info-subtle text-info-emphasis"

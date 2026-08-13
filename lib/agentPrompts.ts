@@ -1,5 +1,5 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
-import { povLabel, styleText, characterTypeLabel } from '@/lib/labels';
+import { povLabel, styleText, characterTypeLabel, worldKindLabel } from '@/lib/labels';
 
 export interface AgentSources {
   project: Project;
@@ -13,21 +13,6 @@ export interface AgentSources {
 
 function stripHtml(html: string): string {
   return (html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function categoryLabel(c: WorldEntity['category']): string {
-  switch (c) {
-    case 'location':
-      return 'lugar';
-    case 'lore':
-      return 'lore';
-    case 'rule':
-      return 'regla';
-    case 'item':
-      return 'objeto';
-    case 'other':
-      return 'otro';
-  }
 }
 
 function beatKindLabel(k: Beat['kind']): string {
@@ -100,7 +85,11 @@ export function buildAgentContext(sources: AgentSources): string {
   if (world.length > 0) {
     parts.push('\nMUNDO:');
     for (const w of world) {
-      parts.push(`- ${w.name} [${categoryLabel(w.category)}]: ${w.description}`);
+      // Entities excluded from context (inContext === false) are skipped.
+      if (w.inContext === false) continue;
+      parts.push(`- ${w.name} [${worldKindLabel(w.kind)}]: ${w.description}`);
+      if (w.otherNames && w.otherNames.length > 0) parts.push(`  Otros nombres: ${w.otherNames.join(', ')}`);
+      if (w.traits && w.traits.length > 0) parts.push(`  Rasgos: ${w.traits.join(', ')}`);
     }
   }
 

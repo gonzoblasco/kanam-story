@@ -90,13 +90,28 @@ export interface Character {
   updatedAt: number;
 }
 
+export type WorldKind =
+  | 'place'
+  | 'organization'
+  | 'lore'
+  | 'key_event'
+  | 'clue'
+  | 'magic_system'
+  | 'item'
+  | 'rule'
+  | 'other';
+
 export interface WorldEntity {
   id: string;
   projectId: string;
   name: string;
-  category: 'location' | 'lore' | 'rule' | 'item' | 'other';
+  kind: WorldKind;
   description: string;
-  source?: 'manual' | 'biblia';
+  // Slice 8: worldbuilding tipado fino
+  otherNames?: string[];
+  traits?: string[];
+  inContext?: boolean; // si false, se excluye del contexto del agente
+  source?: 'manual' | 'biblia' | 'ai';
   createdAt: number;
   updatedAt: number;
 }

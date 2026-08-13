@@ -12,10 +12,10 @@ import type {
   Message,
   Beat,
 } from '@/types';
-import { mapRoleToType } from '@/lib/labels';
+import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -99,6 +99,21 @@ function getDB() {
               otherNames: c.otherNames ?? [],
               traits: c.traits ?? [],
               inContext: c.inContext ?? true,
+            });
+          }
+        }
+
+        // v5 → v6: migrate WorldEntity `category` (string) → `kind` (enum) + new fields.
+        if (oldVersion < 6 && db.objectStoreNames.contains('world')) {
+          const store = transaction.objectStore('world');
+          const entities = await store.getAll();
+          for (const w of entities) {
+            await store.put({
+              ...w,
+              kind: mapCategoryToKind(w.category),
+              otherNames: w.otherNames ?? [],
+              traits: w.traits ?? [],
+              inContext: w.inContext ?? true,
             });
           }
         }

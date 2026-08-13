@@ -116,15 +116,25 @@ describe('buildContext', () => {
     expect(ctx).not.toContain('  Personalidad: \n');
   });
 
-  it('formats world entries with their category label', () => {
+  it('formats world entries with their kind label', () => {
     const world: WorldEntity[] = [
-      { id: 'w1', projectId: 'p1', name: 'El faro', category: 'location', description: 'Torre abandonada', createdAt: 0, updatedAt: 0 },
-      { id: 'w2', projectId: 'p1', name: 'La marea negra', category: 'lore', description: '', createdAt: 0, updatedAt: 0 },
+      { id: 'w1', projectId: 'p1', name: 'El faro', kind: 'place', description: 'Torre abandonada', createdAt: 0, updatedAt: 0 },
+      { id: 'w2', projectId: 'p1', name: 'La marea negra', kind: 'lore', description: '', createdAt: 0, updatedAt: 0 },
     ];
     const ctx = buildContext(baseProject, [], world);
     expect(ctx).toContain('Mundo:');
-    expect(ctx).toContain('- El faro [lugar]: Torre abandonada');
-    expect(ctx).toContain('- La marea negra [lore]:');
+    expect(ctx).toContain('- El faro [Lugar]: Torre abandonada');
+    expect(ctx).toContain('- La marea negra [Lore]:');
+  });
+
+  it('excluye entidades de mundo con inContext false', () => {
+    const world: WorldEntity[] = [
+      { id: 'w1', projectId: 'p1', name: 'Visible', kind: 'place', description: 'x', createdAt: 0, updatedAt: 0 },
+      { id: 'w2', projectId: 'p1', name: 'Oculto', kind: 'lore', description: 'y', inContext: false, createdAt: 0, updatedAt: 0 },
+    ];
+    const ctx = buildContext(baseProject, [], world);
+    expect(ctx).toContain('Visible');
+    expect(ctx).not.toContain('Oculto');
   });
 });
 
@@ -408,12 +418,13 @@ describe('buildBibleExtractPrompt', () => {
     expect(p).not.toContain('"category"');
   });
 
-  it('mundo: pide JSON con schema de WorldEntity e incluye categorías permitidas', () => {
+  it('mundo: pide JSON con schema de WorldEntity e incluye kinds permitidos', () => {
     const p = buildBibleExtractPrompt('world', '- **Bosque**: lugar oscuro.');
     expect(p).toContain('entradas de mundo');
-    expect(p).toContain('"category"');
-    expect(p).toContain('"location"');
+    expect(p).toContain('"kind"');
+    expect(p).toContain('"place"');
     expect(p).toContain('"rule"');
+    expect(p).toContain('"magic_system"');
   });
 
   it('incluye el markdown crudo dentro del prompt', () => {

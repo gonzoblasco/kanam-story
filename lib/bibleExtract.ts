@@ -1,4 +1,5 @@
 import type { WorldEntity } from '@/types';
+import { mapCategoryToKind } from '@/lib/labels';
 
 export interface ExtractedCharacter {
   name: string;
@@ -13,7 +14,7 @@ export interface ExtractedCharacter {
 
 export interface ExtractedWorld {
   name: string;
-  category: WorldEntity['category'];
+  kind: WorldEntity['kind'];
   description: string;
 }
 
@@ -161,17 +162,21 @@ export function parseCharacterEntries(text: string): ExtractedCharacter[] {
   return out;
 }
 
-const CATEGORY_KEYWORDS: Array<{ category: WorldEntity['category']; words: string[] }> = [
-  { category: 'rule', words: ['regla', 'ley', 'prohibido', 'magic system', 'sistema de magia'] },
-  { category: 'location', words: ['lugar', 'ciudad', 'reino', 'mapa', 'continente', 'isla', 'castillo', 'bosque'] },
-  { category: 'lore', words: ['historia', 'lore', 'leyenda', 'mito', 'tradición', 'religión', 'religiosa'] },
-  { category: 'item', words: ['objeto', 'arma', 'libro', 'piedra', 'artefacto', 'espada', 'anillo'] },
+const CATEGORY_KEYWORDS: Array<{ kind: WorldEntity['kind']; words: string[] }> = [
+  { kind: 'rule', words: ['regla', 'ley', 'prohibido', 'magic system', 'sistema de magia'] },
+  { kind: 'place', words: ['lugar', 'ciudad', 'reino', 'mapa', 'continente', 'isla', 'castillo', 'bosque'] },
+  { kind: 'lore', words: ['historia', 'lore', 'leyenda', 'mito', 'tradición', 'religión', 'religiosa'] },
+  { kind: 'item', words: ['objeto', 'arma', 'libro', 'piedra', 'artefacto', 'espada', 'anillo'] },
+  { kind: 'organization', words: ['organización', 'faccion', 'facción', 'gremio', 'orden', 'sociedad', 'clan'] },
+  { kind: 'key_event', words: ['evento', 'batalla', 'guerra', 'catástrofe', 'catastrofe', 'invasión', 'invasión'] },
+  { kind: 'clue', words: ['pista', 'clue', 'secreto', 'indicio', 'misterio'] },
+  { kind: 'magic_system', words: ['magia', 'hechizo', 'conjuro', 'poderes', 'poder', 'mana'] },
 ];
 
-function inferCategory(name: string, description: string): WorldEntity['category'] {
+function inferCategory(name: string, description: string): WorldEntity['kind'] {
   const haystack = `${name}\n${description}`.toLowerCase();
-  for (const { category, words } of CATEGORY_KEYWORDS) {
-    if (words.some((w) => haystack.includes(w))) return category;
+  for (const { kind, words } of CATEGORY_KEYWORDS) {
+    if (words.some((w) => haystack.includes(w))) return kind;
   }
   return 'other';
 }
@@ -186,8 +191,8 @@ export function parseWorldEntries(text: string): ExtractedWorld[] {
     if (!current) return;
     const description = current.description.trim() || buf.join('\n').trim();
     if (current.name && description) {
-      const category = current.category === 'other' ? inferCategory(current.name, description) : current.category;
-      out.push({ name: current.name, category, description });
+      const kind = current.kind === 'other' ? inferCategory(current.name, description) : current.kind;
+      out.push({ name: current.name, kind, description });
     }
     current = null;
     buf = [];
@@ -200,21 +205,10 @@ export function parseWorldEntries(text: string): ExtractedWorld[] {
 
     if (name) {
       flush();
-      current = { name, category: 'other', description: bulletNamed?.tail ?? '' };
-      const catMatch = line.match(/\[\s*(lugar|lore|regla|objeto|otro|location|rule|item)\s*\]/i);
+      current = { name, kind: 'other', description: bulletNamed?.tail ?? '' };
+      const catMatch = line.match(/\[\s*(lugar|lore|regla|objeto|otro|location|rule|item|organización|organizacion|evento|pista|magia)\s*\]/i);
       if (catMatch) {
-        const m = catMatch[1].toLowerCase();
-        const map: Record<string, WorldEntity['category']> = {
-          lugar: 'location',
-          lore: 'lore',
-          regla: 'rule',
-          objeto: 'item',
-          otro: 'other',
-          location: 'location',
-          rule: 'rule',
-          item: 'item',
-        };
-        current.category = map[m] ?? 'other';
+        current.kind = mapCategoryToKind(catMatch[1]);
       }
       continue;
     }

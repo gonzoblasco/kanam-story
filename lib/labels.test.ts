@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapRoleToType, characterTypeLabel } from '@/lib/labels';
+import { mapRoleToType, characterTypeLabel, mapCategoryToKind, worldKindLabel } from '@/lib/labels';
 
 describe('mapRoleToType', () => {
   it('mapea valores conocidos en español e inglés', () => {
@@ -23,5 +23,36 @@ describe('characterTypeLabel', () => {
   it('devuelve la etiqueta legible', () => {
     expect(characterTypeLabel('protagonist')).toBe('Protagonista');
     expect(characterTypeLabel('love_interest')).toBe('Interés romántico');
+  });
+});
+
+describe('mapCategoryToKind', () => {
+  it('mapea categorías legacy a kinds finos', () => {
+    expect(mapCategoryToKind('location')).toBe('place');
+    expect(mapCategoryToKind('lugar')).toBe('place');
+    expect(mapCategoryToKind('lore')).toBe('lore');
+    expect(mapCategoryToKind('rule')).toBe('rule');
+    expect(mapCategoryToKind('regla')).toBe('rule');
+    expect(mapCategoryToKind('item')).toBe('item');
+    expect(mapCategoryToKind('object')).toBe('item');
+    expect(mapCategoryToKind('objeto')).toBe('item');
+    expect(mapCategoryToKind('organización')).toBe('organization');
+    expect(mapCategoryToKind('evento')).toBe('key_event');
+    expect(mapCategoryToKind('pista')).toBe('clue');
+    expect(mapCategoryToKind('magia')).toBe('magic_system');
+  });
+
+  it('default a other para valores desconocidos o vacíos', () => {
+    expect(mapCategoryToKind('')).toBe('other');
+    expect(mapCategoryToKind(undefined)).toBe('other');
+    expect(mapCategoryToKind('cosa rara')).toBe('other');
+  });
+});
+
+describe('worldKindLabel', () => {
+  it('devuelve la etiqueta legible', () => {
+    expect(worldKindLabel('place')).toBe('Lugar');
+    expect(worldKindLabel('magic_system')).toBe('Sistema de magia');
+    expect(worldKindLabel('key_event')).toBe('Evento clave');
   });
 });

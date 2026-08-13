@@ -384,8 +384,8 @@ function BibleBridge(props: BibleBridgeProps) {
             >
               <span className="flex-grow-1 text-truncate" title={nameOf(entry)}>
                 <strong>{nameOf(entry)}</strong>
-                {kind === 'world' && (entry as Partial<WorldEntity>).category ? (
-                  <span className="pill ms-2">{(entry as Partial<WorldEntity>).category}</span>
+                {kind === 'world' && (entry as Partial<WorldEntity>).kind ? (
+                  <span className="pill ms-2">{(entry as Partial<WorldEntity>).kind}</span>
                 ) : null}
               </span>
               <button

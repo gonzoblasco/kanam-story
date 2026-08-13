@@ -44,7 +44,7 @@ const world: WorldEntity = {
   id: 'w1',
   projectId: 'p1',
   name: 'Club',
-  category: 'location',
+  kind: 'place',
   description: 'salón con olor a naftalina',
   createdAt: 0,
   updatedAt: 0,

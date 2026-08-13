@@ -33,7 +33,7 @@ const world: WorldEntity = {
   id: 'w1',
   projectId: 'p1',
   name: 'Club Argentino de Ajedrez',
-  category: 'location',
+  kind: 'place',
   description: 'un salón con olor a naftalina',
   createdAt: 0,
   updatedAt: 0,
@@ -230,6 +230,23 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('Renzo');
     expect(ctx).toContain('(Protagonista)');
     expect(ctx).not.toContain('Fantasma');
+  });
+
+  it('excluye entidades de mundo con inContext false y muestra el kind', () => {
+    const visible: WorldEntity = { ...world, kind: 'place', inContext: true };
+    const hidden: WorldEntity = { ...world, id: 'w2', name: 'Sociedad Secreta', kind: 'organization', inContext: false };
+    const ctx = buildAgentContext({
+      project,
+      characters: [],
+      world: [visible, hidden],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('Club Argentino de Ajedrez');
+    expect(ctx).toContain('[Lugar]');
+    expect(ctx).not.toContain('Sociedad Secreta');
   });
 });
 

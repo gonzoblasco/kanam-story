@@ -1,4 +1,4 @@
-import type { Project, ProjectStyle, CharacterType } from '@/types';
+import type { Project, ProjectStyle, CharacterType, WorldKind } from '@/types';
 
 /** Human-readable labels for the point-of-view field, shared across the UI. */
 export const POV_LABELS: Record<Project['pov'], string> = {
@@ -39,6 +39,41 @@ export function mapRoleToType(role: string | undefined | null): CharacterType {
   if (r.includes('menor')) return 'minor';
   if (r.includes('love') || r.includes('interés') || r.includes('interes')) return 'love_interest';
   return 'supporting';
+}
+
+/** Human-readable labels for the world entity kind (Slice 8). */
+export const WORLD_KIND_LABELS: Record<WorldKind, string> = {
+  place: 'Lugar',
+  organization: 'Organización',
+  lore: 'Lore',
+  key_event: 'Evento clave',
+  clue: 'Pista',
+  magic_system: 'Sistema de magia',
+  item: 'Objeto',
+  rule: 'Regla',
+  other: 'Otro',
+};
+
+export function worldKindLabel(kind: WorldKind): string {
+  return WORLD_KIND_LABELS[kind] ?? kind;
+}
+
+/**
+ * Maps a legacy `category` value to the typed `WorldKind` enum (used by the
+ * v5→v6 DB migration and the bible-extract import). Unknown values default to
+ * `other` per the Slice 8 spec.
+ */
+export function mapCategoryToKind(category: string | undefined | null): WorldKind {
+  const c = (category ?? '').trim().toLowerCase();
+  if (c === 'location' || c.includes('lugar') || c.includes('loca')) return 'place';
+  if (c === 'lore' || c.includes('lore')) return 'lore';
+  if (c === 'rule' || c.includes('regla') || c.includes('ley')) return 'rule';
+  if (c === 'item' || c === 'object' || c.includes('objeto')) return 'item';
+  if (c.includes('organiz') || c.includes('faccion') || c.includes('facción')) return 'organization';
+  if (c.includes('evento') || c.includes('key event')) return 'key_event';
+  if (c.includes('pista') || c.includes('clue')) return 'clue';
+  if (c.includes('magia') || c.includes('magic')) return 'magic_system';
+  return 'other';
 }
 
 /** Featured style presets offered in the Style selector. */
