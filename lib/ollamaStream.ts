@@ -1,26 +1,26 @@
 /**
- * Parser de streaming de Ollama.
+ * Ollama streaming parser.
  *
- * Ollama con `stream: true` devuelve NDJSON línea a línea:
+ * Ollama with `stream: true` returns NDJSON line by line:
  *   {"message":{"content":"..."},"done":false}
  *   ...
  *   {"message":{"content":"","role":"assistant"},"done":true}
  *
- * La respuesta llega en chunks arbitrarios que pueden cortar una línea a la
- * mitad. Este parser mantiene un buffer interno y devuelve solo los fragmentos
- * de texto (`message.content`) de las líneas completas que va recibiendo.
+ * The response arrives in arbitrary chunks that may split a line in half.
+ * This parser keeps an internal buffer and returns only the text fragments
+ * (`message.content`) of the complete lines it receives.
  *
- * Se expone como función pura y estado interno vía closure para poder testear
- * el comportamiento cross-chunk (un chunk puede contener varias líneas, una
- * línea puede repartirse entre dos chunks, etc.).
+ * It is exposed as a pure function with internal state via closure so the
+ * cross-chunk behavior can be tested (a chunk may contain several lines, a
+ * line may be split across two chunks, etc.).
  */
 export function createOllamaStreamParser() {
   let buffer = '';
 
   return {
     /**
-     * Alimenta el parser con un chunk de texto y devuelve los fragmentos de
-     * contenido de las líneas NDJSON completas que se pudieron parsear.
+     * Feeds the parser with a text chunk and returns the content fragments
+     * of the complete NDJSON lines that could be parsed.
      */
     push(chunk: string): string[] {
       buffer += chunk;

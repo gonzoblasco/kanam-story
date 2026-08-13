@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import ChatPanel from '@/components/ChatPanel';
 import BrainstormPanel from '@/components/BrainstormPanel';
 import CharactersPanel from '@/components/CharactersPanel';
 import WorldPanel from '@/components/WorldPanel';
 import StoryBiblePanel from '@/components/StoryBiblePanel';
 
-type Tab = 'brainstorm' | 'characters' | 'world' | 'bible';
+type Tab = 'chat' | 'brainstorm' | 'characters' | 'world' | 'bible';
 
 export default function RightPanel() {
   const { settings, setSettings } = useApp();
-  const [tab, setTab] = useState<Tab>('brainstorm');
+  const [tab, setTab] = useState<Tab>('chat');
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -27,6 +28,13 @@ export default function RightPanel() {
           onClick={() => setSettings({ rightPanelCollapsed: false })}
         >
           <i className="bi bi-chevron-double-left" />
+        </button>
+        <button
+          className="icon-btn mb-2"
+          title="Co-writer"
+          onClick={() => selectTab('chat')}
+        >
+          <i className="bi bi-stars" />
         </button>
         <button
           className="icon-btn mb-2"
@@ -64,6 +72,12 @@ export default function RightPanel() {
     <>
       <div className="right-panel-tabs">
         <button
+          className={`right-panel-tab ${tab === 'chat' ? 'active' : ''}`}
+          onClick={() => setTab('chat')}
+        >
+          <i className="bi bi-stars me-1" /> Co-writer
+        </button>
+        <button
           className={`right-panel-tab ${tab === 'brainstorm' ? 'active' : ''}`}
           onClick={() => setTab('brainstorm')}
         >
@@ -96,6 +110,7 @@ export default function RightPanel() {
         </button>
       </div>
       <div className="right-panel-content">
+        {tab === 'chat' ? <ChatPanel /> : null}
         {tab === 'brainstorm' ? <BrainstormPanel /> : null}
         {tab === 'characters' ? <CharactersPanel /> : null}
         {tab === 'world' ? <WorldPanel /> : null}

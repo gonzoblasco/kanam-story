@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ content });
     }
 
-    // Streaming: reenviar como SSE (event stream) los fragmentos de texto.
+    // Streaming: forward text fragments as SSE (event stream).
     const upstreamBody = upstream.body;
     if (!upstreamBody) {
       return NextResponse.json({ error: 'Ollama returned no body for streaming' }, { status: 502 });

@@ -565,3 +565,146 @@ a {
 .md-view strong {
   color: var(--sl-text);
 }
+
+/* --- Chat (el corazón) --- */
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--sl-border);
+  color: var(--sl-accent);
+}
+
+.chat-conv-list {
+  border-bottom: 1px solid var(--sl-border);
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.chat-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--sl-text);
+}
+
+.chat-conv-item:hover {
+  background: var(--sl-surface-2);
+}
+
+.chat-conv-item.active {
+  background: var(--sl-surface-2);
+  color: var(--sl-accent);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-msg-user {
+  align-items: flex-end;
+}
+
+.chat-msg-assistant {
+  align-items: flex-start;
+}
+
+.chat-msg-bubble {
+  max-width: 92%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-msg-user .chat-msg-bubble {
+  background: var(--sl-accent-2);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg-assistant .chat-msg-bubble {
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-bottom-left-radius: 4px;
+  color: var(--sl-text);
+}
+
+.chat-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background: var(--sl-accent);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: sl-blink 1s step-end infinite;
+}
+
+@keyframes sl-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.chat-actions-applied {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--sl-accent);
+}
+
+.chat-pending {
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-accent);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.chat-pending-title {
+  font-weight: 700;
+  color: var(--sl-accent);
+  font-size: 0.85rem;
+}
+
+.chat-pending-summary {
+  font-size: 0.8rem;
+  color: var(--sl-text-muted);
+  margin-top: 0.25rem;
+}
+
+.chat-input {
+  border-top: 1px solid var(--sl-border);
+  padding: 0.75rem;
+}
+
+.chat-input textarea {
+  resize: none;
+  font-size: 0.9rem;
+}

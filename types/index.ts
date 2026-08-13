@@ -94,7 +94,7 @@ export interface Settings {
 
 export type AICommand = 'write' | 'describe' | 'rewrite' | 'brainstorm';
 
-// --- Chat (el corazón) ---
+// --- Chat (the heart) ---
 
 export interface Conversation {
   id: string;
@@ -107,8 +107,8 @@ export interface Conversation {
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 
 /**
- * Acción que el agente ejecutó sobre el contenido (el agente "tiene manos").
- * Debe ser aplicable y reversible (para aceptar/deshacer una propuesta antes de que quede firme).
+ * Action the agent executed on the content (the agent "has hands").
+ * Must be applicable and reversible (to accept/undo a proposal before it becomes final).
  */
 export type ContentAction =
   | { type: 'rewrite_scene'; sceneId: string; before: string; after: string; summary: string }
@@ -135,7 +135,7 @@ export type BeatKind = 'inciting' | 'rising' | 'climax' | 'falling' | 'resolutio
 export type BeatStatus = 'draft' | 'done' | 'revising';
 export type BeatSource = 'manual' | 'ai';
 
-/** Mapa de estructura de un capítulo/escena. Se persiste en un store `beats` separado (con chapterId/sceneId). */
+/** Structure map of a chapter/scene. Persisted in a separate `beats` store (with chapterId/sceneId). */
 export interface Beat {
   id: string;
   projectId?: string;
@@ -143,12 +143,12 @@ export interface Beat {
   sceneId?: string;
   kind: BeatKind;
   title: string;
-  description: string;   // qué pasa en este beat
-  notes: string;         // intención, tono, elementos a cuidar
-  characters: string[];  // ids de Character involucrados
-  location?: string;     // id de WorldEntity (lugar)
+  description: string;   // what happens in this beat
+  notes: string;         // intent, tone, elements to watch
+  characters: string[];  // ids of involved Characters
+  location?: string;     // id of WorldEntity (place)
   status: BeatStatus;
-  source: BeatSource;    // definido a mano o sugerido por IA
+  source: BeatSource;    // defined by hand or suggested by AI
   position: number;
   createdAt: number;
   updatedAt: number;

@@ -1,0 +1,171 @@
+import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
+
+export interface AgentSources {
+  project: Project;
+  characters: Character[];
+  world: WorldEntity[];
+  chapters: Chapter[];
+  scenes: Scene[];
+  beats: Beat[];
+  storyBible: StoryBible | null;
+}
+
+function stripHtml(html: string): string {
+  return (html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function povLabel(pov: Project['pov']): string {
+  switch (pov) {
+    case 'first':
+      return 'Primera persona';
+    case 'third-limited':
+      return 'Tercera persona (limitado)';
+    case 'third-omniscient':
+      return 'Tercera persona (omnisciente)';
+    case 'second':
+      return 'Segunda persona';
+  }
+}
+
+function categoryLabel(c: WorldEntity['category']): string {
+  switch (c) {
+    case 'location':
+      return 'lugar';
+    case 'lore':
+      return 'lore';
+    case 'rule':
+      return 'regla';
+    case 'item':
+      return 'objeto';
+    case 'other':
+      return 'otro';
+  }
+}
+
+function beatKindLabel(k: Beat['kind']): string {
+  switch (k) {
+    case 'inciting':
+      return 'incitante';
+    case 'rising':
+      return 'ascenso';
+    case 'climax':
+      return 'clímax';
+    case 'falling':
+      return 'caída';
+    case 'resolution':
+      return 'resolución';
+    case 'custom':
+      return 'personalizado';
+  }
+}
+
+/**
+ * Builds the full context the agent knows: project, characters, world,
+ * manuscript (by chapter/scene), outline (beats) and bible.
+ */
+export function buildAgentContext(sources: AgentSources): string {
+  const { project, characters, world, chapters, scenes, beats, storyBible } = sources;
+  const parts: string[] = [];
+
+  parts.push(`Título: ${project.name}`);
+  if (project.genre) parts.push(`Género: ${project.genre}`);
+  if (project.tone) parts.push(`Tono: ${project.tone}`);
+  if (project.pov) parts.push(`Punto de vista: ${povLabel(project.pov)}`);
+  if (project.style) parts.push(`Estilo: ${project.style}`);
+  if (project.description) parts.push(`Sinopsis: ${project.description}`);
+
+  if (characters.length > 0) {
+    parts.push('\nPERSONAJES:');
+    for (const c of characters) {
+      parts.push(`- ${c.name}${c.role ? ` (${c.role})` : ''}`);
+      if (c.personality) parts.push(`  Personalidad: ${c.personality}`);
+      if (c.voice) parts.push(`  Voz: ${c.voice}`);
+      if (c.goals) parts.push(`  Objetivos: ${c.goals}`);
+      if (c.backstory) parts.push(`  Backstory: ${c.backstory}`);
+    }
+  }
+
+  if (world.length > 0) {
+    parts.push('\nMUNDO:');
+    for (const w of world) {
+      parts.push(`- ${w.name} [${categoryLabel(w.category)}]: ${w.description}`);
+    }
+  }
+
+  if (beats.length > 0) {
+    parts.push('\nOUTLINE (beats):');
+    const sorted = [...beats].sort((a, b) => a.position - b.position);
+    for (const b of sorted) {
+      const scope = b.chapterId ? `capítulo ${b.chapterId}` : b.sceneId ? `escena ${b.sceneId}` : 'proyecto';
+      parts.push(
+        `- [${beatKindLabel(b.kind)}] ${b.title} (${scope}): ${b.description}${b.notes ? ` — ${b.notes}` : ''}`,
+      );
+    }
+  }
+
+  if (chapters.length > 0) {
+    parts.push('\nMANUSCRITO:');
+    const byChapter = new Map<string, Scene[]>();
+    for (const s of scenes) {
+      const arr = byChapter.get(s.chapterId) ?? [];
+      arr.push(s);
+      byChapter.set(s.chapterId, arr);
+    }
+    for (const ch of [...chapters].sort((a, b) => a.order - b.order)) {
+      parts.push(`## ${ch.title}`);
+      const scs = (byChapter.get(ch.id) ?? []).sort((a, b) => a.order - b.order);
+      for (const s of scs) {
+        const text = stripHtml(s.content);
+        const hasText = text.length > 0;
+        if (s.summary || hasText) {
+          parts.push(`- **${s.title}**${s.summary ? `: ${s.summary}` : ''}`);
+        }
+        if (hasText) {
+          const snippet = text.length > 500 ? text.slice(0, 500) + '…' : text;
+          parts.push(`  Texto: ${snippet}`);
+        }
+      }
+    }
+  }
+
+  if (storyBible) {
+    parts.push('\nBIBLIA:');
+    for (const section of storyBible.sections) {
+      const content = section.manual || section.auto;
+      if (content) {
+        parts.push(`## ${section.label}\n${content}`);
+      }
+    }
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Builds the agent prompt. Instructs the model to respond with structured
+ * JSON: `{"reply": "...", "actions": [...]}`.
+ */
+export function buildAgentPrompt(context: string, userMessage: string): string {
+  return `${context}
+
+Sos el co-writer de ficción de esta obra. Conocés el manuscrito, los personajes, el mundo, el outline y la biblia. Tu rol es conversar con el autor: debatir ideas, estudiar casos, explorar finales alternativos, y cuando haya un acuerdo, proponer cambios concretos al contenido.
+
+El autor te escribe: "${userMessage}"
+
+Respondé SIEMPRE con un JSON válido con esta forma exacta:
+{"reply": "tu respuesta conversacional al autor, en español", "actions": [ ... ]}
+
+Reglas:
+- "reply" es lo que le decís al autor. Puede incluir preguntas, análisis, opciones, markdown.
+- "actions" es un array de cambios que proponés aplicar. Cada acción debe tener "type" y los campos que correspondan:
+  - {"type":"rewrite_scene","sceneId":"<id>","before":"<texto actual>","after":"<texto nuevo>","summary":"<qué cambió>"}
+  - {"type":"add_beat","chapterId":"<id>","beat":{"kind":"inciting|rising|climax|falling|resolution|custom","title":"...","description":"...","notes":"...","characters":[],"status":"draft","source":"ai","position":<n>},"summary":"..."}
+  - {"type":"update_beat","beatId":"<id>","changes":{...},"summary":"..."}
+  - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
+  - {"type":"add_character","character":{"name":"...","role":"...","personality":"...","voice":"...","goals":"...","backstory":"..."},"summary":"..."}
+  - {"type":"update_world","entityId":"<id>","changes":{...},"summary":"..."}
+  - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}
+- Si no proponés cambios, usá "actions": [].
+- Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.
+- Respondé SOLO con el JSON. Sin prosa fuera del JSON, sin fences markdown, sin comentarios.`;
+}

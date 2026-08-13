@@ -13,6 +13,7 @@ import type {
   Conversation,
   Message,
   Beat,
+  ContentAction,
 } from '@/types';
 import {
   projectsDB,
@@ -110,6 +111,9 @@ interface AppState {
   deleteBeat: (id: string) => Promise<void>;
   loadBeatsByChapter: (chapterId: string) => Promise<void>;
   loadBeatsByScene: (sceneId: string) => Promise<void>;
+
+  /** Applies agent actions to the real state (persists to IndexedDB). */
+  applyContentActions: (actions: ContentAction[]) => Promise<void>;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -658,6 +662,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBeats(bts);
   }, []);
 
+  const applyContentActions = useCallback(
+    async (actions: ContentAction[]) => {
+      if (!currentProject) return;
+      for (const action of actions) {
+        switch (action.type) {
+          case 'rewrite_scene': {
+            const scene = scenes.find((s) => s.id === action.sceneId);
+            if (scene) await updateScene(action.sceneId, { content: action.after });
+            break;
+          }
+          case 'update_beat':
+            await updateBeat(action.beatId, action.changes);
+            break;
+          case 'add_beat':
+            await createBeat(action.beat);
+            break;
+          case 'update_character':
+            await updateCharacter(action.characterId, action.changes);
+            break;
+          case 'add_character':
+            await createCharacter(action.character);
+            break;
+          case 'update_world':
+            await updateWorld(action.entityId, action.changes);
+            break;
+          case 'update_bible': {
+            if (storyBible) {
+              await updateBibleSection(storyBible.id, action.section, { manual: action.value });
+            }
+            break;
+          }
+          case 'append_scene':
+            await createScene({
+              projectId: currentProject.id,
+              chapterId: action.chapterId,
+              title: 'Escena nueva',
+              content: action.content,
+              summary: action.summary,
+              order: scenes.filter((s) => s.chapterId === action.chapterId).length,
+            });
+            break;
+        }
+      }
+    },
+    [currentProject, scenes, storyBible, updateScene, updateBeat, createBeat, updateCharacter, createCharacter, updateWorld, updateBibleSection, createScene],
+  );
+
   const value: AppState = {
     ready,
     settings,
@@ -714,6 +765,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteBeat,
     loadBeatsByChapter,
     loadBeatsByScene,
+    applyContentActions,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

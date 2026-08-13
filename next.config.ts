@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // El workspace tiene un package-lock.json raíz además del del proyecto.
-  // Apuntamos Turbopack al lockfile de este proyecto para silenciar el warning
-  // "detected multiple lockfiles" y evitar ambigüedad de root.
+  // The workspace has a root package-lock.json in addition to the project's.
+  // Point Turbopack at this project's lockfile to silence the "detected
+  // multiple lockfiles" warning and avoid root ambiguity.
   turbopack: {
     root: __dirname,
   },

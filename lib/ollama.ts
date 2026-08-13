@@ -13,7 +13,7 @@ export interface OllamaChatOptions {
   temperature?: number;
 }
 
-/** Llamada no-streaming: devuelve la respuesta completa como string. */
+/** Non-streaming call: returns the full response as a string. */
 export async function ollamaChat({
   ollamaUrl,
   model,
@@ -36,9 +36,9 @@ export async function ollamaChat({
 }
 
 /**
- * Llamada streaming (SSE). Devuelve un iterable de fragmentos de texto que se
- * van acumulando en `onChunk`. Soportado por todos los `ReadableStream` (Node 18+
- * y navegadores modernos).
+ * Streaming call (SSE). Returns an iterable of text fragments that are
+ * accumulated in `onChunk`. Supported by all `ReadableStream` (Node 18+ and
+ * modern browsers).
  */
 export async function ollamaChatStream(
   {
@@ -74,7 +74,7 @@ export async function ollamaChatStream(
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      // El SSE separa eventos con "\n\n". Cada evento es "data: {...}".
+      // SSE separates events with "\n\n". Each event is "data: {...}".
       let sepIndex: number;
       while ((sepIndex = buffer.indexOf('\n\n')) !== -1) {
         const eventBlock = buffer.slice(0, sepIndex);
@@ -89,7 +89,7 @@ export async function ollamaChatStream(
               onChunk(parsed.content);
             }
           } catch {
-            // evento inválido: se ignora
+            // invalid event: ignored
           }
         }
       }
