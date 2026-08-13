@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import React from 'react';
 
 function escapeHtml(s: string): string {

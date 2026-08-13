@@ -1,4 +1,5 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
+import { povLabel } from '@/lib/labels';
 
 export interface AgentSources {
   project: Project;
@@ -12,19 +13,6 @@ export interface AgentSources {
 
 function stripHtml(html: string): string {
   return (html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function povLabel(pov: Project['pov']): string {
-  switch (pov) {
-    case 'first':
-      return 'Primera persona';
-    case 'third-limited':
-      return 'Tercera persona (limitado)';
-    case 'third-omniscient':
-      return 'Tercera persona (omnisciente)';
-    case 'second':
-      return 'Segunda persona';
-  }
 }
 
 function categoryLabel(c: WorldEntity['category']): string {

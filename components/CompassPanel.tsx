@@ -2,16 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { POV_LABELS } from '@/lib/labels';
 import type { Project } from '@/types';
 
-const POV_LABELS: Record<Project['pov'], string> = {
-  first: 'Primera persona',
-  'third-limited': 'Tercera (limitado)',
-  'third-omniscient': 'Tercera (omnisciente)',
-  second: 'Segunda persona',
-};
-
-export default function BrújulaPanel() {
+export default function CompassPanel() {
   const { currentProject, characters, updateProject } = useApp();
   const [draft, setDraft] = useState({
     premise: currentProject?.premise ?? '',
@@ -86,8 +80,11 @@ export default function BrújulaPanel() {
           <select
             className="form-select form-select-sm"
             value={draft.protagonist}
-            onChange={(e) => setDraft((d) => ({ ...d, protagonist: e.target.value }))}
-            onBlur={() => commit({ protagonist: draft.protagonist })}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((d) => ({ ...d, protagonist: v }));
+              commit({ protagonist: v });
+            }}
           >
             <option value="">—</option>
             {characters.map((c) => (
@@ -102,8 +99,11 @@ export default function BrújulaPanel() {
           <select
             className="form-select form-select-sm"
             value={draft.pov}
-            onChange={(e) => setDraft((d) => ({ ...d, pov: e.target.value as Project['pov'] }))}
-            onBlur={() => commit({ pov: draft.pov })}
+            onChange={(e) => {
+              const v = e.target.value as Project['pov'];
+              setDraft((d) => ({ ...d, pov: v }));
+              commit({ pov: v });
+            }}
           >
             {Object.entries(POV_LABELS).map(([k, v]) => (
               <option key={k} value={k}>

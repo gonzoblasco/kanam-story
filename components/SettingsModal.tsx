@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useApp } from '@/lib/store';
 import { checkOllama } from '@/lib/ollama';
 
@@ -16,20 +16,22 @@ export default function SettingsModal({
   const [status, setStatus] = useState<{ ok: boolean; error?: string; models?: string[] } | null>(null);
   const [checking, setChecking] = useState(false);
 
-  async function refreshModels() {
+  const refreshModels = useCallback(async () => {
     setChecking(true);
     setStatus(null);
     const res = await checkOllama(settings);
     setStatus(res);
     if (res.ok && res.models) setModels(res.models);
     setChecking(false);
-  }
+  }, [settings]);
 
   useEffect(() => {
     if (show) {
-      void refreshModels();
+      // Defer so the setState calls don't run synchronously inside the effect.
+      const t = setTimeout(() => void refreshModels(), 0);
+      return () => clearTimeout(t);
     }
-  }, [show, settings.ollamaUrl]);
+  }, [show, refreshModels]);
 
   function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

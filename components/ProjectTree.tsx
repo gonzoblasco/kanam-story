@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import type { Chapter } from '@/types';
 
@@ -32,7 +31,7 @@ export default function ProjectTree() {
         <div>
           <i className="bi bi-journal-plus fs-1 d-block mb-2" />
           <div className="small">Todavía no hay proyectos.</div>
-          <div className="small text-muted">Hacé click en "Nuevo proyecto" arriba.</div>
+          <div className="small text-muted">Hacé click en &quot;Nuevo proyecto&quot; arriba.</div>
         </div>
       </div>
     );

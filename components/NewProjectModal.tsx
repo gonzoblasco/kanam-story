@@ -1,6 +1,8 @@
 'use client';
 
 import { useApp } from '@/lib/store';
+import { POV_LABELS } from '@/lib/labels';
+import type { Project } from '@/types';
 
 export default function NewProjectModal({
   show,
@@ -9,19 +11,20 @@ export default function NewProjectModal({
   show: boolean;
   onClose: () => void;
 }) {
-  const { createProject, selectProject, projects } = useApp();
+  const { createProject, projects } = useApp();
 
   function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') || '').trim();
     if (!name) return;
+    const pov = String(fd.get('pov') || 'third-limited') as Project['pov'];
     createProject({
       name,
       description: String(fd.get('description') || ''),
       genre: String(fd.get('genre') || ''),
       tone: String(fd.get('tone') || ''),
-      pov: (fd.get('pov') as any) || 'third-limited',
+      pov,
       style: String(fd.get('style') || ''),
     });
     onClose();
@@ -80,10 +83,11 @@ export default function NewProjectModal({
                   <div className="col-md-4">
                     <label className="form-label">Punto de vista</label>
                     <select name="pov" className="form-select" defaultValue="third-limited">
-                      <option value="first">Primera persona</option>
-                      <option value="third-limited">Tercera (limitado)</option>
-                      <option value="third-omniscient">Tercera (omnisciente)</option>
-                      <option value="second">Segunda persona</option>
+                      {Object.entries(POV_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {v}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-md-4">

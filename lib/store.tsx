@@ -366,9 +366,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteCharacter = useCallback(
     async (id: string) => {
       await charactersDB.delete(id);
+      // If the deleted character was the project's protagonist, clear the
+      // reference so the agent never sees a dangling UUID in its context.
+      if (currentProject?.protagonist === id) {
+        await updateProject(currentProject.id, { protagonist: undefined });
+      }
       if (currentProject) await loadProjectData(currentProject.id);
     },
-    [currentProject, loadProjectData],
+    [currentProject, loadProjectData, updateProject],
   );
 
   const createWorld = useCallback(

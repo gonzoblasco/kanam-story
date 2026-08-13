@@ -895,3 +895,41 @@ a {
   letter-spacing: 0.03em;
   font-size: 0.7rem;
 }
+
+/* --- Export menu (Slice 5) --- */
+.export-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+}
+.export-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1050;
+  background: var(--sl-surface);
+  border: 1px solid var(--sl-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 0.25rem;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.export-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--sl-text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+}
+.export-menu-item:hover {
+  background: var(--sl-surface-2);
+}
+

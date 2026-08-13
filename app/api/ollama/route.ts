@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOllamaStreamParser } from '@/lib/ollamaStream';
 
+interface OllamaChatBody {
+  ollamaUrl?: string;
+  model?: string;
+  messages?: unknown[];
+  temperature?: number;
+  stream?: boolean;
+}
+
 export async function POST(req: NextRequest) {
-  let body: any;
+  let body: OllamaChatBody;
   try {
-    body = await req.json();
+    body = (await req.json()) as OllamaChatBody;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

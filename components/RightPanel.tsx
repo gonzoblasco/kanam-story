@@ -7,9 +7,9 @@ import BrainstormPanel from '@/components/BrainstormPanel';
 import CharactersPanel from '@/components/CharactersPanel';
 import WorldPanel from '@/components/WorldPanel';
 import StoryBiblePanel from '@/components/StoryBiblePanel';
-import BrújulaPanel from '@/components/BrújulaPanel';
+import CompassPanel from '@/components/CompassPanel';
 
-type Tab = 'chat' | 'brainstorm' | 'characters' | 'world' | 'bible' | 'brújula';
+type Tab = 'chat' | 'brainstorm' | 'characters' | 'world' | 'bible' | 'compass';
 
 export default function RightPanel() {
   const { settings, setSettings } = useApp();
@@ -68,7 +68,7 @@ export default function RightPanel() {
         <button
           className="icon-btn mb-2"
           title="Brújula"
-          onClick={() => selectTab('brújula')}
+          onClick={() => selectTab('compass')}
         >
           <i className="bi bi-compass" />
         </button>
@@ -110,8 +110,8 @@ export default function RightPanel() {
           <i className="bi bi-book me-1" /> Biblia
         </button>
         <button
-          className={`right-panel-tab ${tab === 'brújula' ? 'active' : ''}`}
-          onClick={() => setTab('brújula')}
+          className={`right-panel-tab ${tab === 'compass' ? 'active' : ''}`}
+          onClick={() => setTab('compass')}
         >
           <i className="bi bi-compass me-1" /> Brújula
         </button>
@@ -129,7 +129,7 @@ export default function RightPanel() {
         {tab === 'characters' ? <CharactersPanel /> : null}
         {tab === 'world' ? <WorldPanel /> : null}
         {tab === 'bible' ? <StoryBiblePanel /> : null}
-        {tab === 'brújula' ? <BrújulaPanel /> : null}
+        {tab === 'compass' ? <CompassPanel /> : null}
       </div>
     </>
   );

@@ -8,6 +8,7 @@ import ProjectTree from '@/components/ProjectTree';
 import Editor from '@/components/Editor';
 import OutlineView from '@/components/OutlineView';
 import RightPanel from '@/components/RightPanel';
+import ExportMenu from '@/components/ExportMenu';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView } = useApp();
@@ -69,6 +70,7 @@ export default function HomePage() {
             <i className="bi bi-plus-lg me-1" />
             Nuevo proyecto
           </button>
+          <ExportMenu />
           <button
             className="icon-btn"
             title="Configuración"

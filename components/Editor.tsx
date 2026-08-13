@@ -10,7 +10,6 @@ import {
   buildWritePrompt,
   buildDescribePrompt,
   buildRewritePrompt,
-  buildBrainstormPrompt,
   buildExpandPrompt,
   buildDialoguePrompt,
   buildTensionPrompt,
@@ -84,8 +83,11 @@ export default function Editor() {
   useEffect(() => {
     if (!scene || !editor) return;
     editor.commands.setContent(scene.content || '', { emitUpdate: false });
+    // Sync the local title/summary drafts when the selected scene changes.
+    /* eslint-disable react-hooks/set-state-in-effect -- derived state from the selected scene */
     setTitleDraft(scene.title);
     setSummaryDraft(scene.summary);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [scene?.id, editor]);
 
   const saveContent = useCallback(
