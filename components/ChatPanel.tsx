@@ -61,15 +61,24 @@ export default function ChatPanel() {
     setPendingActions([]);
     setPendingSummary('');
 
-    // Persist the user message
-    if (currentConversationId) {
-      await createMessage({
-        conversationId: currentConversationId,
-        role: 'user',
-        content: text,
-        actions: [],
+    // Ensure there is an active conversation to persist messages into.
+    let convId = currentConversationId;
+    if (!convId) {
+      const conv = await createConversation({
+        projectId: currentProject.id,
+        title: `Conversación ${conversations.length + 1}`,
       });
+      await selectConversation(conv.id);
+      convId = conv.id;
     }
+
+    // Persist the user message
+    await createMessage({
+      conversationId: convId,
+      role: 'user',
+      content: text,
+      actions: [],
+    });
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -111,14 +120,12 @@ export default function ChatPanel() {
       const reply = parsed?.reply ?? full.trim();
       const actions = parsed ? filterValidActions(parsed.actions) : [];
 
-      if (currentConversationId) {
-        await createMessage({
-          conversationId: currentConversationId,
-          role: 'assistant',
-          content: reply,
-          actions,
-        });
-      }
+      await createMessage({
+        conversationId: convId,
+        role: 'assistant',
+        content: reply,
+        actions,
+      });
 
       if (actions.length > 0) {
         setPendingActions(actions);
@@ -128,14 +135,12 @@ export default function ChatPanel() {
       }
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
-      if (currentConversationId) {
-        await createMessage({
-          conversationId: currentConversationId,
-          role: 'assistant',
-          content: `⚠️ Error: ${e instanceof Error ? e.message : 'La petición a la IA falló'}`,
-          actions: [],
-        });
-      }
+      await createMessage({
+        conversationId: convId,
+        role: 'assistant',
+        content: `⚠️ Error: ${e instanceof Error ? e.message : 'La petición a la IA falló'}`,
+        actions: [],
+      });
     } finally {
       setBusy(false);
       setStreamingText('');

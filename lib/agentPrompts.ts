@@ -118,7 +118,7 @@ export function buildAgentContext(sources: AgentSources): string {
         const text = stripHtml(s.content);
         const hasText = text.length > 0;
         if (s.summary || hasText) {
-          parts.push(`- **${s.title}**${s.summary ? `: ${s.summary}` : ''}`);
+          parts.push(`- **${s.title}** (id: ${s.id})${s.summary ? `: ${s.summary}` : ''}`);
         }
         if (hasText) {
           const snippet = text.length > 500 ? text.slice(0, 500) + '…' : text;

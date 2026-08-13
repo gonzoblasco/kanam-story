@@ -108,6 +108,7 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('La invitación');
     expect(ctx).toContain('MANUSCRITO');
     expect(ctx).toContain('La vuelta');
+    expect(ctx).toContain('(id: s1)');
     expect(ctx).toContain('BIBLIA');
     expect(ctx).toContain('Honor, vejez, redención.');
   });
