@@ -24,7 +24,7 @@ function getDB() {
   }
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade: async (db, oldVersion) => {
+      upgrade: async (db, oldVersion, _newVersion, transaction) => {
         if (!db.objectStoreNames.contains('projects')) {
           db.createObjectStore('projects', { keyPath: 'id' });
         }
@@ -74,12 +74,14 @@ function getDB() {
         }
 
         // v3 → v4: migrate `style` from string to ProjectStyle object.
+        // Use the versionchange `transaction` (not db.transaction(), which
+        // can throw InvalidStateError inside onupgradeneeded).
         if (oldVersion < 4 && db.objectStoreNames.contains('projects')) {
-          const store = db.transaction('projects').objectStore('projects');
+          const store = transaction.objectStore('projects');
           const projects = await store.getAll();
           for (const p of projects) {
             const style = typeof p.style === 'string' ? { mode: 'custom', custom: p.style } : p.style;
-            await db.put('projects', { ...p, style });
+            await store.put({ ...p, style });
           }
         }
       },

@@ -138,7 +138,9 @@ export default function StoryBibleSettingsPanel() {
           >
             <option value="featured">Preset</option>
             <option value="custom">Personalizado</option>
-            <option value="match">Match My Style</option>
+            <option value="match" disabled>
+              Match My Style (Slice 9)
+            </option>
           </select>
           {styleMode === 'featured' ? (
             <select
