@@ -4,6 +4,8 @@
 
 Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 
+> **Roadmap:** slices 0-8 done (chat with hands, outline & beats, living bible, compass, export, editable story bible, rich character sheets, typed worldbuilding). Next: **Slice 9 — Match My Style** and **Slice 10 — outline filters + linking**. See `.knowledge/ROADMAP.md` for the full plan.
+
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack)
@@ -37,7 +39,14 @@ npm run test:watch # vitest in watch mode
 4. On first boot the app auto-fills the model (takes the first from `/api/ollama/models`) and creates an empty project.
 5. Adjust the Ollama URL and model in **Settings** if you want to change them.
 
-## What works today (MVP)
+## What works today
+
+### Co-writer chat (the heart)
+
+- **Chat panel** per project, persisted in IndexedDB. Converse with an agent that knows the manuscript, bible, outline and compass.
+- **The agent has hands** — it proposes `ContentAction`s (rewrite scene, add/update beat, add/update character, update world, update bible, append scene).
+- **Acceptance model** — the agent proposes a change, you see a diff/summary, then **accept or undo**. Nothing is applied without your OK.
+- **Streaming** responses from Ollama (SSE).
 
 ### Editor with AI bar
 
@@ -51,12 +60,21 @@ npm run test:watch # vitest in watch mode
 - Debounced autosave (600ms); title and summary save on `blur`.
 - Word and character counter in the footer.
 
+### Outline & Beats
+
+- **Outline view** in the main area (toggle Editor/Outline) — a map of beats per chapter/scene.
+- **Manual editing** — title, kind, status, description, notes; reorder, add, delete.
+- **"Suggest outline"** — the agent proposes beats from the bible/compass/what's written, with a preview (Add/Discard).
+
 ### Right panel (tabs)
 
+- **Co-writer** — the chat with hands (see above).
 - **Brainstorm** — asks for ideas on a topic, saves notes, supports "append" to extend an existing note.
-- **Characters** — inline editable cards (role, age, appearance, personality, voice, backstory, goals).
-- **World** — inline editable entries (place / lore / rule / object / other).
-- **Bible** — 5 auto-generated sections from the manuscript (Summary / Themes / Characters / World / Rules), with per-section manual override and a button to revert to auto content.
+- **Characters** — rich sheets: typed role (`type`), pronouns, groups, other names, traits, and a context toggle (`inContext`). AI-assisted generation (Generate / Surprise Me / preview).
+- **World** — typed entries (`kind`: place / organization / lore / key event / clue / magic system / item / rule / other), other names, traits, and a context toggle.
+- **Bible** — 5 auto-generated sections from the manuscript (Summary / Themes / Characters / World / Rules), with per-section manual override, stale tracking and a button to revert to auto content.
+- **Story Bible** — editable settings: braindump, genre tags, style (featured presets / custom), and an editable synopsis.
+- **Compass** — narrative orientation: premise, promise, theme, protagonist, POV.
 - Collapsible tabs on the right; `selectTab()` handles expand + switch.
 
 ### Project
@@ -64,6 +82,7 @@ npm run test:watch # vitest in watch mode
 - Sidebar with chapter/scene tree, project switcher, create-project modal.
 - Settings modal with Ollama URL, model selector (auto-detects installed) and theme.
 - Dark theme by default via `data-bs-theme="dark"`.
+- **Export** the manuscript to Markdown (`.md`) or plain text (`.txt`) from the top bar.
 
 ### Model
 
@@ -75,15 +94,22 @@ npm run test:watch # vitest in watch mode
 ```
 kanam-story/
 ├── app/                 # App Router: layout, page, /api/ollama, /api/ollama/models
-├── components/          # UI (Editor, RightPanel, BrainstormPanel, CharactersPanel, WorldPanel, StoryBiblePanel, ...)
+├── components/          # UI (Editor, ChatPanel, OutlineView, CharactersPanel, WorldPanel, StoryBiblePanel, StoryBibleSettingsPanel, CompassPanel, ExportMenu, ...)
 ├── lib/
-│   ├── db.ts            # IndexedDB schema + per-entity helpers
+│   ├── db.ts            # IndexedDB schema + per-entity helpers + migrations
 │   ├── store.tsx        # AppProvider + CRUD wrappers
 │   ├── ollama.ts        # ollamaChat + checkOllama (always via /api/ollama)
-│   ├── prompts.ts       # buildContext + per-command builders
+│   ├── ollamaStream.ts  # SSE streaming parser
+│   ├── agentPrompts.ts  # buildAgentContext + agent prompt + suggest beats + generate character
+│   ├── agentReply.ts    # parse/validate agent JSON actions
+│   ├── actions.ts       # pure, reversible ContentAction application
+│   ├── prompts.ts       # buildContext + per-command builders + bible prompts
+│   ├── bibleExtract.ts  # extract characters/world from bible markdown
 │   ├── bibleParse.ts    # parser for the 5 Bible sections
+│   ├── labels.ts        # shared labels (POV, character type, world kind, style)
+│   ├── export.ts        # manuscript export (md/txt)
 │   └── *.test.ts        # vitest tests
-├── types/               # Project, Chapter, Scene, Character, WorldEntity, BrainstormNote, StoryBible, Settings, AICommand
+├── types/               # Project, Chapter, Scene, Character, WorldEntity, Beat, StoryBible, Conversation, Message, ContentAction, ...
 └── vitest.config.ts
 ```
 
@@ -91,35 +117,39 @@ Key conventions (summary):
 
 - All persistence goes through `lib/db.ts` and `lib/store.tsx`. Components never touch `idb` directly.
 - All AI calls go through `lib/ollama.ts`. Components build the prompt and handle `AbortController` + busy state.
-- `stream: false` today — for streaming you must change the route and `ollamaChat` together.
-- Spanish in all UI and all Ollama prompts. Domain fields (`Project.pov`, `Character.voice`) stay in English because they are serialized in IndexedDB.
+- The chat uses streaming (`ollamaChatStream`); the editor's AI bar uses non-streaming `ollamaChat`.
+- Spanish in all UI and all Ollama prompts. Domain fields (`Project.pov`, `Character.type`, `WorldEntity.kind`) stay in English because they are serialized in IndexedDB.
 - Bible section labels are kept in sync across `BIBLE_SECTION_DEFAULTS`, `buildStoryBiblePrompt` and `StoryBiblePanel` (parsing). Changing one without the others breaks regeneration.
+- DB migrations bump `DB_VERSION` and map existing data (v2→v3 beats, v3→v4 style, v4→v5 character type, v5→v6 world kind).
 
 ## Testing
 
 - Runner: **Vitest 4** (`vitest@^4.1.9`).
-- Current coverage: **92 tests** on pure functions.
-  - `lib/prompts.test.ts` — tests on `buildContext`, `buildExpandPrompt`, `buildStoryBiblePrompt`, `buildDialoguePrompt`, `buildTensionPrompt`.
-  - `lib/bibleParse.test.ts` — tests on `parseBibleSections`.
-  - `lib/agentReply.test.ts` — tests on `parseAgentReply`, `isValidAction`, `filterValidActions`.
-  - `lib/agentPrompts.test.ts` — tests on `buildAgentContext`, `buildAgentPrompt`.
-  - `lib/actions.test.ts` — tests on `applyAction`, `applyActions`.
-  - `lib/ollamaStream.test.ts` — tests on `createOllamaStreamParser`.
+- Current coverage: **145 tests** on pure functions.
+  - `lib/prompts.test.ts` — `buildContext`, `buildExpandPrompt`, `buildStoryBiblePrompt`, `buildDialoguePrompt`, `buildTensionPrompt`, `buildBibleExtractPrompt`.
+  - `lib/bibleParse.test.ts` — `parseBibleSections`.
+  - `lib/bibleExtract.test.ts` — `parseCharacterEntries`, `parseWorldEntries`.
+  - `lib/agentReply.test.ts` — `parseAgentReply`, `isValidAction`, `filterValidActions`, `parseBeatList`, `parseSuggestedCharacterList`.
+  - `lib/agentPrompts.test.ts` — `buildAgentContext`, `buildAgentPrompt`, `buildSuggestBeatsPrompt`, `buildGenerateCharacterPrompt`.
+  - `lib/actions.test.ts` — `applyAction`, `applyActions`.
+  - `lib/ollamaStream.test.ts` — `createOllamaStreamParser`.
+  - `lib/export.test.ts` — `buildManuscriptMarkdown`, `markdownToPlainText`.
+  - `lib/labels.test.ts` — `mapRoleToType`, `characterTypeLabel`, `mapCategoryToKind`, `worldKindLabel`.
+  - `lib/outline.test.ts` — `moveBeatInList`.
 - Only pure code is tested; React components, `lib/db.ts` (IndexedDB) and API routes have no tests yet.
 - Run: `npm test`.
 
-## Known / TODO (not in `0.1.0`)
+## Known / TODO (not in the current release)
 
-- **Streaming.** `ollamaChatStream` (SSE) is implemented and tested; the editor still uses the non-streaming `ollamaChat`. The chat panel uses streaming.
-- **Export.** No PDF / Markdown / DOCX export yet. The manuscript is trapped in IndexedDB.
-- **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user.
-- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + right panel. On mobile the grid does not adapt well.
-- **Themes.** Only dark. Light would come later.
+- **Export PDF / DOCX.** Today only Markdown (`.md`) and plain text (`.txt`).
+- **Light theme.** Only dark today.
 - **Component tests.** No jsdom yet. For the more complex components (Editor, StoryBiblePanel) `@testing-library/react` + `jsdom` would be needed.
 - **IndexedDB tests.** No `fake-indexeddb`. Needed when store/db coverage is added.
-- **Clean lint.** There are pre-existing errors in `components/ProjectTree.tsx`, `components/SettingsModal.tsx`, `components/WorldPanel.tsx` that are not blockers but should go before 1.0.
 - **Manuscript search.** No find/replace across scenes.
 - **Versioning / snapshots.** No way to see previous versions of a scene.
+- **Streaming in the editor.** The chat uses SSE; the editor's AI bar still uses non-streaming `ollamaChat`.
+- **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user.
+- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + right panel. On mobile the grid does not adapt well.
 
 ## Decisions already made (not easily reverted)
 
@@ -127,7 +157,7 @@ Key conventions (summary):
 - **Bootstrap, not Tailwind.** Components use Bootstrap classes + custom CSS tokens (`--sl-*`).
 - **UI/prompts in Spanish.** The user writes fiction in Spanish. Breaking this breaks the product.
 - **`ollamaModel` default `''` with auto-fill.** Hardcoding `llama3.1` (or any model) as default breaks setups where that model is not installed. The first model from `/api/tags` is the default.
-- **Type fields in English.** Structures serialized in IndexedDB (`pov`, `voice`, `key`). Translating them breaks user data.
+- **Type fields in English.** Structures serialized in IndexedDB (`pov`, `type`, `kind`, `key`). Translating them breaks user data.
 
 ## Operational notes
 
