@@ -2,6 +2,25 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.2.0] - 2026-08-13
+
+Editable Story Bible (Slice 6). The bible stops being only auto-generated: it becomes the editable, typed base of coherence that feeds the co-writer.
+
+### Added
+- **Braindump.** A free-form field on the project for dumping loose ideas, scenes and alternative endings. Injected into the agent context as low-weight context (not a rule).
+- **Genre tags.** `genres: string[]` multi-select with removable tags on the project.
+- **Style selector.** `style` is now a typed object with three modes: Featured presets, Custom free-form, and Match My Style (placeholder until Slice 9). The active style is injected into both the chat context and the generation prompts.
+- **Editable Synopsis.** `synopsis` override on the project; when empty, the project description is used. Injected into the agent context.
+- **Story Bible settings tab.** New `StoryBibleSettingsPanel` in the right panel (Braindump, Genres, Style, Synopsis), following the CompassPanel draft-and-commit pattern.
+
+### Changed
+- `Project.style` migrated from `string` to `ProjectStyle` object (DB v3 → v4). Existing string values are migrated to `{ mode: 'custom', custom: <string> }`.
+- `buildAgentContext` and `buildContext` now inject genres, style, braindump and synopsis.
+- Centralized style resolution in `lib/labels.ts` (`styleText` + `STYLE_PRESETS`).
+
+### Fixed
+- `buildContext` now uses the shared POV labels from `lib/labels.ts` (removed the duplicated local `povLabel`).
+
 ## [0.1.0] - 2026-08-13
 
 First usable release. Local-first fiction co-writer where the conversation is the product.
