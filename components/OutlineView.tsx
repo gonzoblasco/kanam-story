@@ -143,8 +143,16 @@ export default function OutlineView() {
 
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Beat[] | null>(null);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
 
   const chapter = chapters.find((c) => c.id === currentOutlineChapterId) ?? chapters[0] ?? null;
+
+  // Reset the suggestion preview when the chapter changes, so a stale
+  // preview from another chapter never lingers.
+  useEffect(() => {
+    setSuggested(null);
+    setSuggestError(null);
+  }, [currentOutlineChapterId]);
 
   const chapterBeats = useMemo(() => {
     if (!chapter) return [];
@@ -219,9 +227,11 @@ export default function OutlineView() {
     if (!chapter) return;
     setSuggesting(true);
     setSuggested(null);
+    setSuggestError(null);
     try {
       setSuggested(await suggestBeats(chapter.id));
-    } catch {
+    } catch (e) {
+      setSuggestError(e instanceof Error ? e.message : 'No se pudieron generar beats');
       setSuggested([]);
     } finally {
       setSuggesting(false);
@@ -229,9 +239,17 @@ export default function OutlineView() {
   };
 
   const acceptSuggested = async () => {
-    if (!suggested) return;
+    if (!suggested || !chapter) return;
+    const existingTitles = new Set(
+      beats
+        .filter((b) => b.chapterId === chapter.id && !b.sceneId)
+        .map((b) => b.title.trim().toLowerCase()),
+    );
     for (const b of suggested) {
+      const key = b.title.trim().toLowerCase();
+      if (!key || existingTitles.has(key)) continue; // avoid duplicates
       await createBeat(b);
+      existingTitles.add(key);
     }
     setSuggested(null);
   };
@@ -281,7 +299,12 @@ export default function OutlineView() {
           <div className="outline-suggested-title">
             <i className="bi bi-magic me-1" /> Outline sugerido por el co-writer
           </div>
-          {suggested.length === 0 ? (
+          {suggestError ? (
+            <div className="alert alert-danger py-1 small mb-2">
+              <i className="bi bi-exclamation-triangle me-1" />
+              {suggestError}
+            </div>
+          ) : suggested.length === 0 ? (
             <div className="small text-muted">No se pudieron generar beats. Probá de nuevo.</div>
           ) : (
             <ul className="outline-suggested-list">

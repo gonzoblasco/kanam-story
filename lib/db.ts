@@ -175,10 +175,20 @@ export const chaptersDB = {
   },
   async delete(id: string): Promise<void> {
     const db = await getDB();
-    const tx = db.transaction(['chapters', 'scenes'], 'readwrite');
+    const tx = db.transaction(['chapters', 'scenes', 'beats'], 'readwrite');
     await tx.objectStore('chapters').delete(id);
     const sceneIdx = tx.objectStore('scenes').index('by-chapter');
+    // Delete chapter beats and the beats of each scene in the chapter.
+    const beatChapterIdx = tx.objectStore('beats').index('by-chapter');
+    for await (const cursor of beatChapterIdx.iterate(id)) {
+      await cursor.delete();
+    }
     for await (const cursor of sceneIdx.iterate(id)) {
+      const sceneId = cursor.value.id as string;
+      const beatSceneIdx = tx.objectStore('beats').index('by-scene');
+      for await (const beatCursor of beatSceneIdx.iterate(sceneId)) {
+        await beatCursor.delete();
+      }
       await cursor.delete();
     }
     await tx.done;
@@ -216,7 +226,13 @@ export const scenesDB = {
   },
   async delete(id: string): Promise<void> {
     const db = await getDB();
-    await db.delete('scenes', id);
+    const tx = db.transaction(['scenes', 'beats'], 'readwrite');
+    await tx.objectStore('scenes').delete(id);
+    const beatIdx = tx.objectStore('beats').index('by-scene');
+    for await (const cursor of beatIdx.iterate(id)) {
+      await cursor.delete();
+    }
+    await tx.done;
   },
 };
 

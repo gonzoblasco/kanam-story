@@ -6,6 +6,7 @@ import {
   buildDialoguePrompt,
   buildTensionPrompt,
   buildBibleExtractPrompt,
+  buildBibleSectionPrompt,
 } from '@/lib/prompts';
 import type { Project, Character, WorldEntity, Scene, Chapter } from '@/types';
 
@@ -400,5 +401,37 @@ describe('buildBibleExtractPrompt', () => {
     const md = '### Marta\nRol: antagonista';
     const p = buildBibleExtractPrompt('characters', md);
     expect(p).toContain(md);
+  });
+});
+
+describe('buildBibleSectionPrompt', () => {
+  it('targets a single section and includes its instructions', () => {
+    const p = buildBibleSectionPrompt(
+      { project: fullProject, characters: [], world: [], chapters: [], scenes: [] },
+      'characters',
+      'contenido actual',
+    );
+    expect(p).toContain('Regenerá SOLO la sección "Personajes (resumen)"');
+    expect(p).toContain('Lista de personajes con rol en la historia');
+    expect(p).toContain('contenido actual');
+  });
+
+  it('includes the current content as reference', () => {
+    const p = buildBibleSectionPrompt(
+      { project: fullProject, characters: [], world: [], chapters: [], scenes: [] },
+      'themes',
+      'Tema: el olvido',
+    );
+    expect(p).toContain('Tema: el olvido');
+  });
+
+  it('asks for the section content only, without a header', () => {
+    const p = buildBibleSectionPrompt(
+      { project: fullProject, characters: [], world: [], chapters: [], scenes: [] },
+      'rules',
+      '',
+    );
+    expect(p).toContain('Respondé SOLO con el contenido de la sección');
+    expect(p).toContain('sin encabezado');
   });
 });

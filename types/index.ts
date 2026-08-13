@@ -73,6 +73,8 @@ export interface StoryBibleSection {
   manual: string;
   auto: string;
   updatedAt: number;
+  /** Timestamp when the source material changed after this section was generated (stale). */
+  staleAt?: number;
 }
 
 export interface StoryBible {

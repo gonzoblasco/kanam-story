@@ -36,6 +36,7 @@ import {
 import {
   buildBibleExtractPrompt,
   buildStoryBiblePrompt,
+  buildBibleSectionPrompt,
 } from '@/lib/prompts';
 import { buildAgentContext, buildSuggestBeatsPrompt } from '@/lib/agentPrompts';
 import { parseBeatList } from '@/lib/agentReply';
@@ -100,6 +101,10 @@ interface AppState {
   setStoryBible: (b: StoryBible | null) => void;
   ensureStoryBible: (projectId: string) => Promise<StoryBible | null>;
   regenerateStoryBible: () => Promise<void>;
+  /** Regenerates a single Bible section from the current manuscript (Biblia Viva). */
+  regenerateBibleSection: (key: StoryBible['sections'][number]['key']) => Promise<void>;
+  /** Marks Bible sections as stale when their source material changed. */
+  markBibleStale: (keys: StoryBible['sections'][number]['key'][]) => Promise<void>;
 
   previewBibleCharacters: (rawMarkdown: string) => Promise<Partial<Character>[]>;
   importCharactersFromBible: (entries: Partial<Character>[]) => Promise<Character[]>;
@@ -115,8 +120,6 @@ interface AppState {
   createBeat: (data: Omit<Beat, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Beat>;
   updateBeat: (id: string, data: Partial<Beat>) => Promise<void>;
   deleteBeat: (id: string) => Promise<void>;
-  loadBeatsByChapter: (chapterId: string) => Promise<void>;
-  loadBeatsByScene: (sceneId: string) => Promise<void>;
   /** Asks the agent to propose a beat map for a chapter (tool suggest_beats). */
   suggestBeats: (chapterId: string) => Promise<Beat[]>;
 
@@ -472,6 +475,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (refreshed) setStoryBible(refreshed);
   }, [currentProject, storyBible, characters, world, chapters, scenes, settings.ollamaUrl, settings.ollamaModel]);
 
+  const regenerateBibleSection = useCallback(
+    async (key: StoryBible['sections'][number]['key']): Promise<void> => {
+      if (!currentProject || !storyBible) return;
+      const section = storyBible.sections.find((s) => s.key === key);
+      const currentContent = section?.manual || section?.auto || '';
+      const prompt = buildBibleSectionPrompt(
+        { project: currentProject, characters, world, chapters, scenes },
+        key,
+        currentContent,
+      );
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.5,
+      });
+      const clean = text.trim();
+      if (!clean) return;
+      // Regenerate the auto content; keep the manual override if present.
+      await storyBibleDB.updateSection(storyBible.id, key, { auto: clean, staleAt: undefined });
+      const refreshed = await storyBibleDB.get(storyBible.id);
+      if (refreshed) setStoryBible(refreshed);
+    },
+    [currentProject, storyBible, characters, world, chapters, scenes, settings.ollamaUrl, settings.ollamaModel],
+  );
+
+  const markBibleStale = useCallback(
+    async (keys: StoryBible['sections'][number]['key'][]): Promise<void> => {
+      if (!storyBible) return;
+      const nowTs = Date.now();
+      for (const key of keys) {
+        await storyBibleDB.updateSection(storyBible.id, key, { staleAt: nowTs });
+      }
+      const refreshed = await storyBibleDB.get(storyBible.id);
+      if (refreshed) setStoryBible(refreshed);
+    },
+    [storyBible],
+  );
+
   const previewBibleCharacters = useCallback(
     async (rawMarkdown: string): Promise<Partial<Character>[]> => {
       const parsed = parseCharacterEntries(rawMarkdown);
@@ -674,16 +716,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject],
   );
 
-  const loadBeatsByChapter = useCallback(async (chapterId: string) => {
-    const bts = await beatsDB.listByChapter(chapterId);
-    setBeats(bts);
-  }, []);
-
-  const loadBeatsByScene = useCallback(async (sceneId: string) => {
-    const bts = await beatsDB.listByScene(sceneId);
-    setBeats(bts);
-  }, []);
-
   const suggestBeats = useCallback(
     async (chapterId: string): Promise<Beat[]> => {
       if (!currentProject) return [];
@@ -757,7 +789,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             break;
           }
           case 'add_beat': {
-            const created = await createBeat(action.beat);
+            // Propagate chapterId (and projectId) from the action onto the beat,
+            // since the model puts chapterId at the action level, not on the beat.
+            const created = await createBeat({
+              ...action.beat,
+              projectId: currentProject.id,
+              chapterId: action.chapterId ?? action.beat.chapterId,
+            });
             undos.push(() => deleteBeat(created.id));
             break;
           }
@@ -767,12 +805,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const prev = { ...character };
               await updateCharacter(action.characterId, action.changes);
               undos.push(() => updateCharacter(action.characterId, prev));
+              // Characters changed → the "characters" bible section is stale.
+              await markBibleStale(['characters']);
             }
             break;
           }
           case 'add_character': {
             const created = await createCharacter(action.character);
             undos.push(() => deleteCharacter(created.id));
+            await markBibleStale(['characters']);
             break;
           }
           case 'update_world': {
@@ -781,6 +822,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const prev = { ...entity };
               await updateWorld(action.entityId, action.changes);
               undos.push(() => updateWorld(action.entityId, prev));
+              // World changed → the "world" bible section is stale.
+              await markBibleStale(['world']);
             }
             break;
           }
@@ -815,7 +858,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
     },
-    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene],
+    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale],
   );
 
   const value: AppState = {
@@ -864,6 +907,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStoryBible,
     ensureStoryBible,
     regenerateStoryBible,
+    regenerateBibleSection,
+    markBibleStale,
     previewBibleCharacters,
     importCharactersFromBible,
     previewBibleWorld,
@@ -876,8 +921,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createBeat,
     updateBeat,
     deleteBeat,
-    loadBeatsByChapter,
-    loadBeatsByScene,
     suggestBeats,
     applyContentActions,
   };

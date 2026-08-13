@@ -13,6 +13,7 @@ export default function StoryBiblePanel() {
     storyBible,
     settings,
     regenerateStoryBible,
+    regenerateBibleSection,
     ensureStoryBible,
     updateBibleSection,
     previewBibleCharacters,
@@ -55,6 +56,20 @@ export default function StoryBiblePanel() {
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Falló la regeneración');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function regenerateSection(key: StoryBible['sections'][number]['key']) {
+    if (!storyBible || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await regenerateBibleSection(key);
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
+      setError(e instanceof Error ? e.message : `Falló la regeneración de "${key}"`);
     } finally {
       setBusy(false);
     }
@@ -215,15 +230,29 @@ export default function StoryBiblePanel() {
         const content = (s.manual.trim() ? s.manual : s.auto).trim();
         const isCharactersSection = s.key === 'characters';
         const isWorldSection = s.key === 'world';
+        const isStale = Boolean(s.staleAt);
         return (
           <div key={s.key} className="bible-section">
             <div className="d-flex align-items-center mb-1 gap-1">
               <strong className="flex-grow-1">{s.label}</strong>
+              {isStale ? (
+                <span className="badge bg-warning text-dark small" title="El manuscrito cambió desde que se generó esta sección">
+                  <i className="bi bi-exclamation-triangle me-1" /> desactualizada
+                </span>
+              ) : null}
               {s.manual.trim() ? (
                 <span className="badge bg-secondary small" title="Editado manualmente">
                   <i className="bi bi-pencil" />
                 </span>
               ) : null}
+              <button
+                className="icon-btn"
+                title="Regenerar solo esta sección"
+                onClick={() => regenerateSection(s.key)}
+                disabled={busy}
+              >
+                <i className="bi bi-arrow-repeat" />
+              </button>
               <button
                 className="icon-btn"
                 title={isEditing ? 'Ver vista previa' : 'Editar manualmente'}

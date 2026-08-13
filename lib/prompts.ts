@@ -1,4 +1,5 @@
-import type { Project, Character, WorldEntity, Scene, Chapter } from '@/types';
+import type { Project, Character, WorldEntity, Scene, Chapter, StoryBible } from '@/types';
+import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 
 export function buildContext(project: Project, characters: Character[], world: WorldEntity[]): string {
   const parts: string[] = [];
@@ -243,6 +244,49 @@ Reglas:
 - Sé específico, no genérico. Citá nombres propios cuando los haya.
 - Si una sección no tiene material, igual completala con inferencias razonables.
 - No agregues secciones extra. No escribas nada fuera de las cinco secciones.`;
+}
+
+/**
+ * Builds a prompt to regenerate a single Bible section from the current
+ * manuscript, characters and world. Used by the "Biblia Viva" flow to refresh
+ * only the sections that went stale, preserving manual overrides elsewhere.
+ */
+export function buildBibleSectionPrompt(
+  sources: BibleSources,
+  key: StoryBible['sections'][number]['key'],
+  currentContent: string,
+): string {
+  const ctx = buildContext(sources.project, sources.characters, sources.world);
+  const scenesDigest = buildScenesDigest(sources.scenes, sources.chapters);
+  const def = BIBLE_SECTION_DEFAULTS.find((d) => d.key === key);
+  const label = def?.label ?? key;
+  const instructions: Record<StoryBible['sections'][number]['key'], string> = {
+    summary: 'Síntesis de 1-3 párrafos de qué va la historia: protagonista, conflicto, arco, estado actual.',
+    themes: 'Temas centrales, emociones dominantes, tono narrativo, estilo.',
+    characters: 'Lista de personajes con rol en la historia, motivación principal y arco. Si no hay personajes definidos aún, inferí de las escenas.',
+    world: 'Resumen del mundo ficticio: lugares claves, reglas, ambientación, lore.',
+    rules: 'Convenciones narrativas, POV, reglas del mundo que deben respetarse, posibles inconsistencias detectadas.',
+  };
+  return `${ctx}
+
+Escenas del manuscrito (resumen y extractos):
+${scenesDigest}
+
+Regenerá SOLO la sección "${label}" del Story Bible en español.
+
+Instrucciones para esta sección:
+${instructions[key]}
+
+Sección actual (referencia, podés reescribirla entera):
+---
+${currentContent || '(vacía)'}
+---
+
+Reglas:
+- Respondé en español.
+- Sé específico, no genérico. Citá nombres propios cuando los haya.
+- Si la sección no tiene material, completala con inferencias razonables.
+- Respondé SOLO con el contenido de la sección, sin encabezado, sin título, sin notas.`;
 }
 
 export function buildBibleExtractPrompt(
