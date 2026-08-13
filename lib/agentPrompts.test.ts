@@ -140,6 +140,43 @@ describe('buildAgentContext', () => {
     expect(ctx).not.toContain('<p>');
     expect(ctx).toContain('Renzo entró al club');
   });
+
+  it('incluye la brújula narrativa cuando el proyecto la tiene', () => {
+    const withCompass: Project = {
+      ...project,
+      premise: 'Un campeón retirado vuelve por una última partida.',
+      promise: 'Una historia sobre el honor y la redención.',
+      theme: 'Redención',
+      protagonist: 'c1',
+    };
+    const ctx = buildAgentContext({
+      project: withCompass,
+      characters: [character],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('BRÚJULA NARRATIVA');
+    expect(ctx).toContain('Premisa: Un campeón retirado');
+    expect(ctx).toContain('Promesa al lector: Una historia');
+    expect(ctx).toContain('Tema: Redención');
+    expect(ctx).toContain('Protagonista: Renzo');
+  });
+
+  it('omite la brújula si el proyecto no la tiene', () => {
+    const ctx = buildAgentContext({
+      project,
+      characters: [],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).not.toContain('BRÚJULA NARRATIVA');
+  });
 });
 
 describe('buildAgentPrompt', () => {

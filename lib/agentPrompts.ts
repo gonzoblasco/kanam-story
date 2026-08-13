@@ -74,6 +74,18 @@ export function buildAgentContext(sources: AgentSources): string {
   if (project.style) parts.push(`Estilo: ${project.style}`);
   if (project.description) parts.push(`Sinopsis: ${project.description}`);
 
+  // Brújula Narrativa: orientación que el agente debe respetar.
+  if (project.premise || project.promise || project.theme || project.protagonist) {
+    parts.push('\nBRÚJULA NARRATIVA:');
+    if (project.premise) parts.push(`Premisa: ${project.premise}`);
+    if (project.promise) parts.push(`Promesa al lector: ${project.promise}`);
+    if (project.theme) parts.push(`Tema: ${project.theme}`);
+    if (project.protagonist) {
+      const proto = characters.find((c) => c.id === project.protagonist);
+      parts.push(`Protagonista: ${proto?.name ?? project.protagonist}`);
+    }
+  }
+
   if (characters.length > 0) {
     parts.push('\nPERSONAJES:');
     for (const c of characters) {

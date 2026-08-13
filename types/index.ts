@@ -6,6 +6,11 @@ export interface Project {
   tone: string;
   pov: 'first' | 'third-limited' | 'third-omniscient' | 'second';
   style: string;
+  // Brújula Narrativa (Slice 4)
+  premise?: string;      // la idea en 1-2 frases
+  promise?: string;      // qué le prometemos al lector
+  theme?: string;        // tema central
+  protagonist?: string;  // id de Character protagonista
   createdAt: number;
   updatedAt: number;
 }

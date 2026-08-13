@@ -270,6 +270,13 @@ export default function Editor() {
           </div>
         ) : null}
 
+        {currentProject?.promise ? (
+          <div className="editor-compass">
+            <i className="bi bi-compass me-1" />
+            <span className="editor-compass-label">Promesa:</span> {currentProject.promise}
+          </div>
+        ) : null}
+
         <div className="ai-bar">
           <button
             className="btn btn-sm btn-ai"

@@ -875,3 +875,23 @@ a {
   color: #e8590c;
   border-color: #e8590c33;
 }
+
+/* --- Brújula Narrativa (Slice 4) --- */
+.editor-compass {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--sl-accent);
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  margin: 0.25rem 0 0.5rem;
+}
+.editor-compass-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+}
