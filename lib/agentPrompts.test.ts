@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt } from '@/lib/agentPrompts';
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
 
 const project: Project = {
@@ -18,7 +18,7 @@ const character: Character = {
   id: 'c1',
   projectId: 'p1',
   name: 'Renzo',
-  role: 'protagonista',
+  type: 'protagonist',
   age: '58',
   appearance: '',
   personality: 'orgulloso, terco',
@@ -213,6 +213,40 @@ describe('buildAgentContext', () => {
       storyBible: null,
     });
     expect(ctx).toContain('Sinopsis: Un ajedrecista retirado vuelve al tablero.');
+  });
+
+  it('excluye personajes con inContext false y muestra el tipo', () => {
+    const inContext: Character = { ...character, type: 'protagonist', inContext: true };
+    const excluded: Character = { ...character, id: 'c2', name: 'Fantasma', type: 'minor', inContext: false };
+    const ctx = buildAgentContext({
+      project,
+      characters: [inContext, excluded],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('Renzo');
+    expect(ctx).toContain('(Protagonista)');
+    expect(ctx).not.toContain('Fantasma');
+  });
+});
+
+describe('buildGenerateCharacterPrompt', () => {
+  it('incluye el contexto y el tipo pedido', () => {
+    const prompt = buildGenerateCharacterPrompt('CONTEXTO', 'antagonist', 'un rival frío');
+    expect(prompt).toContain('CONTEXTO');
+    expect(prompt).toContain('"antagonist"');
+    expect(prompt).toContain('un rival frío');
+  });
+
+  it('pide un array JSON de personajes con los campos esperados', () => {
+    const prompt = buildGenerateCharacterPrompt('ctx');
+    expect(prompt).toContain('"name"');
+    expect(prompt).toContain('"type"');
+    expect(prompt).toContain('"traits"');
+    expect(prompt).toContain('protagonist');
   });
 });
 

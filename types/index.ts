@@ -60,18 +60,32 @@ export interface Scene {
   updatedAt: number;
 }
 
+export type CharacterType =
+  | 'protagonist'
+  | 'antagonist'
+  | 'supporting'
+  | 'minor'
+  | 'love_interest'
+  | 'custom';
+
 export interface Character {
   id: string;
   projectId: string;
   name: string;
-  role: string;
+  type: CharacterType;
   age: string;
   appearance: string;
   personality: string;
   voice: string;
   backstory: string;
   goals: string;
-  source?: 'manual' | 'biblia';
+  // Slice 7: fichas ricas
+  pronouns?: string;
+  groups?: string[];
+  otherNames?: string[];
+  traits?: string[];
+  inContext?: boolean; // si false, se excluye del contexto del agente
+  source?: 'manual' | 'biblia' | 'ai';
   createdAt: number;
   updatedAt: number;
 }

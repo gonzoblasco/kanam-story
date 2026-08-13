@@ -82,7 +82,7 @@ describe('buildContext', () => {
         id: 'c1',
         projectId: 'p1',
         name: 'Mara',
-        role: 'protagonista',
+        type: 'protagonist',
         age: '',
         appearance: '',
         personality: 'fría, observadora',
@@ -96,7 +96,7 @@ describe('buildContext', () => {
         id: 'c2',
         projectId: 'p1',
         name: 'Iván',
-        role: '',
+        type: 'supporting',
         age: '',
         appearance: '',
         personality: '',
@@ -109,7 +109,7 @@ describe('buildContext', () => {
     ];
     const ctx = buildContext(baseProject, characters, []);
     expect(ctx).toContain('Personajes:');
-    expect(ctx).toContain('- Mara (protagonista)');
+    expect(ctx).toContain('- Mara (Protagonista)');
     expect(ctx).toContain('Personalidad: fría, observadora');
     expect(ctx).toContain('Objetivos: encontrar a su hermana');
     expect(ctx).toContain('- Iván');

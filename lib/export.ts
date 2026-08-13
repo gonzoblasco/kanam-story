@@ -1,4 +1,5 @@
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
+import { characterTypeLabel } from '@/lib/labels';
 
 /**
  * Converts editor HTML to plain text, preserving paragraph and list
@@ -55,7 +56,7 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
   if (characters.length > 0) {
     parts.push('\n## Personajes');
     for (const c of characters) {
-      parts.push(`- **${c.name}**${c.role ? ` (${c.role})` : ''}${c.personality ? ` — ${c.personality}` : ''}`);
+      parts.push(`- **${c.name}**${c.type ? ` (${characterTypeLabel(c.type)})` : ''}${c.personality ? ` — ${c.personality}` : ''}`);
     }
   }
 

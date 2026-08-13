@@ -38,8 +38,9 @@ import {
   buildStoryBiblePrompt,
   buildBibleSectionPrompt,
 } from '@/lib/prompts';
-import { buildAgentContext, buildSuggestBeatsPrompt } from '@/lib/agentPrompts';
-import { parseBeatList } from '@/lib/agentReply';
+import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt } from '@/lib/agentPrompts';
+import { parseBeatList, parseSuggestedCharacterList } from '@/lib/agentReply';
+import { mapRoleToType } from '@/lib/labels';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -83,6 +84,8 @@ interface AppState {
   createCharacter: (data: Omit<Character, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Character>;
   updateCharacter: (id: string, data: Partial<Character>) => Promise<void>;
   deleteCharacter: (id: string) => Promise<void>;
+  /** Asks the agent to propose one or more characters (Slice 7). */
+  generateCharacter: (type?: string, instructions?: string) => Promise<Partial<Character>[]>;
 
   createWorld: (data: Omit<WorldEntity, 'id' | 'createdAt' | 'updatedAt'>) => Promise<WorldEntity>;
   updateWorld: (id: string, data: Partial<WorldEntity>) => Promise<void>;
@@ -544,7 +547,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .filter((c) => c.name)
         .map((c) => ({
           name: c.name,
-          role: c.role,
+          type: mapRoleToType(c.role),
           age: c.age,
           appearance: c.appearance,
           personality: c.personality,
@@ -561,13 +564,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
       });
-      type LooseCharacter = Partial<Character> & { name?: string };
+      type LooseCharacter = Partial<Character> & { name?: string; role?: string };
       const loose = safeParseJsonArray<LooseCharacter>(text);
       return loose
         .filter((c): c is LooseCharacter => typeof c?.name === 'string' && c.name.length > 0)
         .map((c) => ({
           name: c.name!,
-          role: typeof c.role === 'string' ? c.role : '',
+          type: mapRoleToType(c.role),
           personality: typeof c.personality === 'string' ? c.personality : '',
           voice: typeof c.voice === 'string' ? c.voice : '',
           goals: typeof c.goals === 'string' ? c.goals : '',
@@ -585,7 +588,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const c = await createCharacter({
           projectId: currentProject.id,
           name: e.name,
-          role: e.role ?? '',
+          type: e.type ?? 'supporting',
           age: e.age ?? '',
           appearance: e.appearance ?? '',
           personality: e.personality ?? '',
@@ -599,6 +602,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return created;
     },
     [currentProject, createCharacter],
+  );
+
+  const generateCharacter = useCallback(
+    async (type?: string, instructions?: string): Promise<Partial<Character>[]> => {
+      if (!currentProject) return [];
+      const context = buildAgentContext({
+        project: currentProject,
+        characters,
+        world,
+        chapters,
+        scenes,
+        beats,
+        storyBible,
+      });
+      const prompt = buildGenerateCharacterPrompt(context, type, instructions);
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+      });
+      const suggested = parseSuggestedCharacterList(text);
+      return suggested.map((s) => ({
+        name: s.name,
+        type: s.type,
+        pronouns: s.pronouns,
+        age: s.age,
+        appearance: s.appearance,
+        personality: s.personality,
+        voice: s.voice,
+        backstory: s.backstory,
+        goals: s.goals,
+        traits: s.traits,
+        source: 'ai' as const,
+      }));
+    },
+    [currentProject, characters, world, chapters, scenes, beats, storyBible, settings.ollamaUrl, settings.ollamaModel],
   );
 
   const previewBibleWorld = useCallback(
@@ -928,6 +968,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createCharacter,
     updateCharacter,
     deleteCharacter,
+    generateCharacter,
     createWorld,
     updateWorld,
     deleteWorld,

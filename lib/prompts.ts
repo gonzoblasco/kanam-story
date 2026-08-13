@@ -1,6 +1,6 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, StoryBible } from '@/types';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
-import { povLabel, styleText } from '@/lib/labels';
+import { povLabel, styleText, characterTypeLabel } from '@/lib/labels';
 
 export function buildContext(project: Project, characters: Character[], world: WorldEntity[]): string {
   const parts: string[] = [];
@@ -18,7 +18,7 @@ export function buildContext(project: Project, characters: Character[], world: W
   if (characters.length > 0) {
     parts.push('\nPersonajes:');
     for (const c of characters) {
-      parts.push(`- ${c.name}${c.role ? ` (${c.role})` : ''}`);
+      parts.push(`- ${c.name}${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
       if (c.personality) parts.push(`  Personalidad: ${c.personality}`);
       if (c.voice) parts.push(`  Voz / forma de hablar: ${c.voice}`);
       if (c.goals) parts.push(`  Objetivos: ${c.goals}`);
@@ -289,7 +289,7 @@ export function buildBibleExtractPrompt(
   const isCharacters = section === 'characters';
   const targetLabel = isCharacters ? 'personajes' : 'entradas de mundo';
   const schema = isCharacters
-    ? `[{"name": string, "role": string, "personality": string, "voice": string, "goals": string}]`
+    ? `[{"name": string, "type": string, "personality": string, "voice": string, "goals": string}]`
     : `[{"name": string, "category": "location"|"lore"|"rule"|"item"|"other", "description": string}]`;
   return `Extraé los ${targetLabel} implícitos en la siguiente sección de un Story Bible y devolvelos como JSON ESTRICTO.
 

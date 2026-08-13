@@ -1,4 +1,4 @@
-import type { ContentAction, BeatKind, BeatStatus } from '@/types';
+import type { ContentAction, BeatKind, BeatStatus, CharacterType } from '@/types';
 
 /**
  * Structured agent response.
@@ -49,6 +49,15 @@ export function parseAgentReply(raw: string): AgentReply | null {
 /** Valid StoryBible section keys (used to validate `update_bible` actions). */
 const BIBLE_SECTION_KEYS = ['summary', 'themes', 'characters', 'world', 'rules'] as const;
 
+const CHARACTER_TYPES: CharacterType[] = [
+  'protagonist',
+  'antagonist',
+  'supporting',
+  'minor',
+  'love_interest',
+  'custom',
+];
+
 /**
  * Validates that an action has the expected shape (known type + minimal
  * fields). Returns true if valid, false otherwise.
@@ -74,7 +83,9 @@ export function isValidAction(action: unknown): action is ContentAction {
     case 'add_character': {
       if (typeof a.character !== 'object' || a.character === null) return false;
       const c = a.character as Record<string, unknown>;
-      return typeof c.name === 'string';
+      if (typeof c.name !== 'string' || c.name.length === 0) return false;
+      if (typeof c.type !== 'string' || !(CHARACTER_TYPES as string[]).includes(c.type)) return false;
+      return true;
     }
     case 'update_world':
       return typeof a.entityId === 'string' && typeof a.changes === 'object' && a.changes !== null;
@@ -146,6 +157,68 @@ export function parseBeatList(raw: string): SuggestedBeat[] {
         notes: typeof b.notes === 'string' ? b.notes : '',
         characters: Array.isArray(b.characters) ? b.characters.filter((c) => typeof c === 'string') : [],
         status: b.status,
+      }));
+    } catch {
+      lastBracket = text.lastIndexOf(']', lastBracket - 1);
+    }
+  }
+  return [];
+}
+
+// --- Generate character (Slice 7) ---
+
+/** A character proposed by the model in the "generate character" flow (no ids yet). */
+export interface SuggestedCharacter {
+  name: string;
+  type: CharacterType;
+  pronouns: string;
+  age: string;
+  appearance: string;
+  personality: string;
+  voice: string;
+  backstory: string;
+  goals: string;
+  traits: string[];
+}
+
+function isValidSuggestedCharacter(value: unknown): value is SuggestedCharacter {
+  if (typeof value !== 'object' || value === null) return false;
+  const c = value as Record<string, unknown>;
+  if (typeof c.name !== 'string' || c.name.length === 0) return false;
+  if (typeof c.type !== 'string' || !(CHARACTER_TYPES as string[]).includes(c.type)) return false;
+  const traits = Array.isArray(c.traits) ? c.traits : [];
+  if (!traits.every((t) => typeof t === 'string')) return false;
+  return true;
+}
+
+/**
+ * Parses the model's "generate character" response: a JSON array of characters.
+ * Tolerates prose/fences around the array and validates each character.
+ */
+export function parseSuggestedCharacterList(raw: string): SuggestedCharacter[] {
+  const text = (raw ?? '').trim();
+  if (!text) return [];
+
+  const firstBracket = text.indexOf('[');
+  if (firstBracket === -1) return [];
+
+  let lastBracket = text.lastIndexOf(']');
+  while (lastBracket > firstBracket) {
+    const candidate = text.slice(firstBracket, lastBracket + 1);
+    try {
+      const parsed = JSON.parse(candidate);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(isValidSuggestedCharacter).map((c) => ({
+        name: c.name,
+        type: c.type,
+        pronouns: typeof c.pronouns === 'string' ? c.pronouns : '',
+        age: typeof c.age === 'string' ? c.age : '',
+        appearance: typeof c.appearance === 'string' ? c.appearance : '',
+        personality: typeof c.personality === 'string' ? c.personality : '',
+        voice: typeof c.voice === 'string' ? c.voice : '',
+        backstory: typeof c.backstory === 'string' ? c.backstory : '',
+        goals: typeof c.goals === 'string' ? c.goals : '',
+        traits: Array.isArray(c.traits) ? c.traits.filter((t) => typeof t === 'string') : [],
       }));
     } catch {
       lastBracket = text.lastIndexOf(']', lastBracket - 1);

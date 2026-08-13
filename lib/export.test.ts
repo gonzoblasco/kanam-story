@@ -30,7 +30,7 @@ const character: Character = {
   id: 'c1',
   projectId: 'p1',
   name: 'Santiago',
-  role: 'protagonista',
+  type: 'protagonist',
   age: '',
   appearance: '',
   personality: 'terco',
@@ -75,7 +75,7 @@ describe('buildManuscriptMarkdown', () => {
   it('lists characters and world', () => {
     const md = buildManuscriptMarkdown({ project, chapters: [], scenes: [], characters: [character], world: [world], beats: [] });
     expect(md).toContain('## Personajes');
-    expect(md).toContain('**Santiago** (protagonista) — terco');
+    expect(md).toContain('**Santiago** (Protagonista) — terco');
     expect(md).toContain('## Mundo');
     expect(md).toContain('**Club**: salón con olor a naftalina');
   });

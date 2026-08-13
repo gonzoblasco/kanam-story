@@ -1,5 +1,5 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
-import { povLabel, styleText } from '@/lib/labels';
+import { povLabel, styleText, characterTypeLabel } from '@/lib/labels';
 
 export interface AgentSources {
   project: Project;
@@ -83,11 +83,17 @@ export function buildAgentContext(sources: AgentSources): string {
   if (characters.length > 0) {
     parts.push('\nPERSONAJES:');
     for (const c of characters) {
-      parts.push(`- ${c.name}${c.role ? ` (${c.role})` : ''}`);
+      // Characters excluded from context (inContext === false) are skipped.
+      if (c.inContext === false) continue;
+      parts.push(`- ${c.name}${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
+      if (c.pronouns) parts.push(`  Pronombres: ${c.pronouns}`);
+      if (c.otherNames && c.otherNames.length > 0) parts.push(`  Otros nombres: ${c.otherNames.join(', ')}`);
+      if (c.groups && c.groups.length > 0) parts.push(`  Grupos: ${c.groups.join(', ')}`);
       if (c.personality) parts.push(`  Personalidad: ${c.personality}`);
       if (c.voice) parts.push(`  Voz: ${c.voice}`);
       if (c.goals) parts.push(`  Objetivos: ${c.goals}`);
       if (c.backstory) parts.push(`  Backstory: ${c.backstory}`);
+      if (c.traits && c.traits.length > 0) parts.push(`  Rasgos: ${c.traits.join(', ')}`);
     }
   }
 
@@ -168,7 +174,7 @@ Reglas:
   - {"type":"add_beat","chapterId":"<id>","beat":{"kind":"inciting|rising|climax|falling|resolution|custom","title":"...","description":"...","notes":"...","characters":[],"status":"draft","source":"ai","position":<n>},"summary":"..."}
   - {"type":"update_beat","beatId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
-  - {"type":"add_character","character":{"name":"...","role":"...","personality":"...","voice":"...","goals":"...","backstory":"..."},"summary":"..."}
+  - {"type":"add_character","character":{"name":"...","type":"protagonist|antagonist|supporting|minor|love_interest|custom","pronouns":"...","personality":"...","voice":"...","goals":"...","backstory":"...","traits":["..."]},"summary":"..."}
   - {"type":"update_world","entityId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_bible","section":"summary|themes|characters|world|rules","value":"<texto nuevo de la sección>","summary":"..."}
   - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}
@@ -197,4 +203,36 @@ Proponé una secuencia de beats para ese capítulo, coherente con la biblia, los
 
 Respondé SOLO con un array JSON de beats, sin prosa, sin fences markdown, sin comentarios. Ejemplo:
 [{"kind":"inciting","title":"La invitación","description":"recibe una carta","notes":"","characters":[],"status":"draft"}]`;
+}
+
+/**
+ * Builds the prompt for the "generate character" flow: asks the model to
+ * propose one or more characters coherent with the bible, world and what is
+ * already written. Returns a JSON array of characters.
+ */
+export function buildGenerateCharacterPrompt(
+  context: string,
+  type?: string,
+  instructions?: string,
+): string {
+  const typeLine = type ? ` El personaje debe ser de tipo "${type}".` : '';
+  const instrLine = instructions?.trim() ? `\nInstrucciones del autor: ${instructions.trim()}` : '';
+  return `${context}
+
+Sos el co-writer de ficción de esta obra. El autor quiere crear un personaje nuevo, coherente con la biblia, el mundo y lo ya escrito.${typeLine}${instrLine}
+
+Cada personaje debe tener:
+- "name": nombre propio
+- "type": uno de "protagonist" | "antagonist" | "supporting" | "minor" | "love_interest" | "custom"
+- "pronouns": pronombres (puede ser "")
+- "age": edad (puede ser "")
+- "appearance": apariencia física
+- "personality": personalidad
+- "voice": cómo habla (estilo de diálogo)
+- "backstory": historia previa
+- "goals": qué quiere
+- "traits": array de rasgos (puede ser [])
+
+Respondé SOLO con un array JSON de personajes, sin prosa, sin fences markdown, sin comentarios. Ejemplo:
+[{"name":"Renzo","type":"protagonist","pronouns":"él","age":"58","appearance":"...","personality":"orgulloso, terco","voice":"seco, cortante","backstory":"...","goals":"recuperar su honor","traits":["terco","orgulloso"]}]`;
 }

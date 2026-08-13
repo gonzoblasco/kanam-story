@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAgentReply, isValidAction, filterValidActions, parseBeatList } from '@/lib/agentReply';
+import { parseAgentReply, isValidAction, filterValidActions, parseBeatList, parseSuggestedCharacterList } from '@/lib/agentReply';
 
 describe('parseAgentReply', () => {
   it('parsea un bloque JSON limpio', () => {
@@ -87,10 +87,13 @@ describe('isValidAction', () => {
     expect(isValidAction({ type: 'add_beat', chapterId: 'c1', beat: { title: 'Giro' }, summary: 'x' })).toBe(true);
   });
   it('rechaza add_character sin name', () => {
-    expect(isValidAction({ type: 'add_character', character: { role: 'x' }, summary: 'y' })).toBe(false);
+    expect(isValidAction({ type: 'add_character', character: { type: 'protagonist' }, summary: 'y' })).toBe(false);
   });
-  it('acepta add_character con name', () => {
-    expect(isValidAction({ type: 'add_character', character: { name: 'Lía' }, summary: 'y' })).toBe(true);
+  it('rechaza add_character sin type', () => {
+    expect(isValidAction({ type: 'add_character', character: { name: 'Lía' }, summary: 'y' })).toBe(false);
+  });
+  it('acepta add_character con name y type', () => {
+    expect(isValidAction({ type: 'add_character', character: { name: 'Lía', type: 'supporting' }, summary: 'y' })).toBe(true);
   });
 });
 
@@ -153,5 +156,46 @@ Saludos.`;
   it('devuelve array vacío si no hay array', () => {
     expect(parseBeatList('solo texto')).toEqual([]);
     expect(parseBeatList('')).toEqual([]);
+  });
+});
+
+describe('parseSuggestedCharacterList', () => {
+  it('parsea un array JSON limpio de personajes', () => {
+    const raw = JSON.stringify([
+      { name: 'Renzo', type: 'protagonist', pronouns: 'él', age: '58', appearance: '', personality: 'terco', voice: '', backstory: '', goals: '', traits: ['terco'] },
+      { name: 'Lía', type: 'supporting', pronouns: 'ella', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', traits: [] },
+    ]);
+    const result = parseSuggestedCharacterList(raw);
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe('Renzo');
+    expect(result[0].type).toBe('protagonist');
+    expect(result[0].traits).toEqual(['terco']);
+  });
+
+  it('tolera prosa y fences alrededor del array', () => {
+    const raw = `Acá va mi propuesta:
+\`\`\`json
+[{"name":"Mara","type":"antagonist","pronouns":"","age":"","appearance":"","personality":"","voice":"","backstory":"","goals":"","traits":[]}]
+\`\`\`
+Saludos.`;
+    const result = parseSuggestedCharacterList(raw);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Mara');
+  });
+
+  it('descarta personajes inválidos (sin name o type desconocido)', () => {
+    const raw = JSON.stringify([
+      { name: 'Válido', type: 'minor', pronouns: '', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', traits: [] },
+      { name: 'Sin type', pronouns: '', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', traits: [] },
+      { type: 'protagonist', pronouns: '', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', traits: [] },
+    ]);
+    const result = parseSuggestedCharacterList(raw);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Válido');
+  });
+
+  it('devuelve array vacío si no hay array', () => {
+    expect(parseSuggestedCharacterList('solo texto')).toEqual([]);
+    expect(parseSuggestedCharacterList('')).toEqual([]);
   });
 });

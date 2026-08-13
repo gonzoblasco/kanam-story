@@ -12,9 +12,10 @@ import type {
   Message,
   Beat,
 } from '@/types';
+import { mapRoleToType } from '@/lib/labels';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -82,6 +83,23 @@ function getDB() {
           for (const p of projects) {
             const style = typeof p.style === 'string' ? { mode: 'custom', custom: p.style } : p.style;
             await store.put({ ...p, style });
+          }
+        }
+
+        // v4 → v5: migrate Character `role` (string) → `type` (enum) + new fields.
+        if (oldVersion < 5 && db.objectStoreNames.contains('characters')) {
+          const store = transaction.objectStore('characters');
+          const characters = await store.getAll();
+          for (const c of characters) {
+            await store.put({
+              ...c,
+              type: mapRoleToType(c.role),
+              pronouns: c.pronouns ?? '',
+              groups: c.groups ?? [],
+              otherNames: c.otherNames ?? [],
+              traits: c.traits ?? [],
+              inContext: c.inContext ?? true,
+            });
           }
         }
       },
