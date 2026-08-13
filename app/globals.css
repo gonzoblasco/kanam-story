@@ -611,6 +611,16 @@ a {
   color: var(--sl-accent);
 }
 
+.chat-conv-item.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.chat-conv-item.disabled:hover {
+  background: transparent;
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;

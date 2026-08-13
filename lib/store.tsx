@@ -166,8 +166,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setStoryBible(bible ?? null);
     setConversations(convs);
     setBeats(bts);
-    setCurrentConversationId(null);
-    setMessages([]);
+    // NOTE: no reset currentConversationId/messages here. loadProjectData runs
+    // on every entity CRUD (updateScene, createBeat, ...), and resetting the
+    // active chat here would drop the conversation right after the agent applies
+    // a change. The conversation is reset only when switching projects
+    // (see selectProject).
   }, []);
 
   const selectProject = useCallback(
@@ -190,6 +193,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const p = await projectsDB.get(id);
       if (!p) return;
       setCurrentProject(p);
+      // Reset the chat when switching projects (new project context).
+      setCurrentConversationId(null);
+      setMessages([]);
       await loadProjectData(id);
       setCurrentSceneId(null);
     },
@@ -666,12 +672,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (actions: ContentAction[]): Promise<() => Promise<void>> => {
       if (!currentProject) return async () => {};
       // Capture previous values so we can revert each action.
+      // Read each entity fresh from the DB (not from the React snapshot) so that
+      // multiple actions on the same entity within one batch capture the correct
+      // intermediate value as the "before" for the undo.
       const undos: Array<() => Promise<void>> = [];
 
       for (const action of actions) {
         switch (action.type) {
           case 'rewrite_scene': {
-            const scene = scenes.find((s) => s.id === action.sceneId);
+            const scene = await scenesDB.get(action.sceneId);
             if (scene) {
               const prev = scene.content;
               await updateScene(action.sceneId, { content: action.after });
@@ -680,7 +689,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             break;
           }
           case 'update_beat': {
-            const beat = beats.find((b) => b.id === action.beatId);
+            const beat = await beatsDB.get(action.beatId);
             if (beat) {
               const prev = { ...beat };
               await updateBeat(action.beatId, action.changes);
@@ -689,12 +698,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             break;
           }
           case 'add_beat': {
-            await createBeat(action.beat);
-            undos.push(() => deleteBeat(action.beat.id));
+            const created = await createBeat(action.beat);
+            undos.push(() => deleteBeat(created.id));
             break;
           }
           case 'update_character': {
-            const character = characters.find((c) => c.id === action.characterId);
+            const character = await charactersDB.get(action.characterId);
             if (character) {
               const prev = { ...character };
               await updateCharacter(action.characterId, action.changes);
@@ -703,12 +712,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             break;
           }
           case 'add_character': {
-            await createCharacter(action.character);
-            undos.push(() => deleteCharacter(action.character.id));
+            const created = await createCharacter(action.character);
+            undos.push(() => deleteCharacter(created.id));
             break;
           }
           case 'update_world': {
-            const entity = world.find((w) => w.id === action.entityId);
+            const entity = await worldDB.get(action.entityId);
             if (entity) {
               const prev = { ...entity };
               await updateWorld(action.entityId, action.changes);
@@ -747,7 +756,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
     },
-    [currentProject, scenes, beats, characters, world, storyBible, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene],
+    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene],
   );
 
   const value: AppState = {

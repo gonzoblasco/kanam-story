@@ -226,6 +226,10 @@ export const charactersDB = {
     const all = await db.getAllFromIndex('characters', 'by-project', projectId);
     return all.sort((a, b) => a.name.localeCompare(b.name));
   },
+  async get(id: string): Promise<Character | undefined> {
+    const db = await getDB();
+    return db.get('characters', id);
+  },
   async create(data: Omit<Character, 'id' | 'createdAt' | 'updatedAt'>): Promise<Character> {
     const db = await getDB();
     const ch: Character = { ...data, id: id(), createdAt: now(), updatedAt: now() };
@@ -251,6 +255,10 @@ export const worldDB = {
     const db = await getDB();
     const all = await db.getAllFromIndex('world', 'by-project', projectId);
     return all.sort((a, b) => a.name.localeCompare(b.name));
+  },
+  async get(id: string): Promise<WorldEntity | undefined> {
+    const db = await getDB();
+    return db.get('world', id);
   },
   async create(data: Omit<WorldEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorldEntity> {
     const db = await getDB();

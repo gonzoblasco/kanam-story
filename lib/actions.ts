@@ -140,9 +140,17 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
     }
 
     case 'append_scene': {
+      // Derive projectId from any entity already present, so a scene isn't
+      // created orphaned (projectId "") when the state has no scenes yet.
+      const projectId =
+        state.scenes[0]?.projectId ??
+        state.beats[0]?.projectId ??
+        state.characters[0]?.projectId ??
+        state.world[0]?.projectId ??
+        '';
       const scene: Scene = {
         id: crypto.randomUUID(),
-        projectId: state.scenes[0]?.projectId ?? '',
+        projectId,
         chapterId: action.chapterId,
         title: 'Escena nueva',
         content: action.content,

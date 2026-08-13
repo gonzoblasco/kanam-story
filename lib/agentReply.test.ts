@@ -49,6 +49,15 @@ Saludos.`;
     expect(result).not.toBeNull();
     expect(result!.actions).toEqual([]);
   });
+
+  it('tolera una llave suelta en la prosa posterior al JSON', () => {
+    const raw =
+      'Claro: {"reply":"ok","actions":[{"type":"rewrite_scene","sceneId":"s1","after":"b","summary":"x"}]} Eso es todo.} ';
+    const result = parseAgentReply(raw);
+    expect(result).not.toBeNull();
+    expect(result!.reply).toBe('ok');
+    expect(result!.actions).toHaveLength(1);
+  });
 });
 
 describe('isValidAction', () => {
@@ -64,6 +73,24 @@ describe('isValidAction', () => {
   it('rechaza no-objetos', () => {
     expect(isValidAction(null)).toBe(false);
     expect(isValidAction('string')).toBe(false);
+  });
+  it('rechaza update_bible con sección inválida', () => {
+    expect(isValidAction({ type: 'update_bible', section: 'no-existe', value: 'x', summary: 'y' })).toBe(false);
+  });
+  it('acepta update_bible con sección válida', () => {
+    expect(isValidAction({ type: 'update_bible', section: 'themes', value: 'x', summary: 'y' })).toBe(true);
+  });
+  it('rechaza add_beat sin title', () => {
+    expect(isValidAction({ type: 'add_beat', chapterId: 'c1', beat: { kind: 'climax' }, summary: 'x' })).toBe(false);
+  });
+  it('acepta add_beat con title', () => {
+    expect(isValidAction({ type: 'add_beat', chapterId: 'c1', beat: { title: 'Giro' }, summary: 'x' })).toBe(true);
+  });
+  it('rechaza add_character sin name', () => {
+    expect(isValidAction({ type: 'add_character', character: { role: 'x' }, summary: 'y' })).toBe(false);
+  });
+  it('acepta add_character con name', () => {
+    expect(isValidAction({ type: 'add_character', character: { name: 'Lía' }, summary: 'y' })).toBe(true);
   });
 });
 

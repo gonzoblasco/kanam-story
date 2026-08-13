@@ -164,6 +164,7 @@ Reglas:
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
   - {"type":"add_character","character":{"name":"...","role":"...","personality":"...","voice":"...","goals":"...","backstory":"..."},"summary":"..."}
   - {"type":"update_world","entityId":"<id>","changes":{...},"summary":"..."}
+  - {"type":"update_bible","section":"summary|themes|characters|world|rules","value":"<texto nuevo de la sección>","summary":"..."}
   - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}
 - Si no proponés cambios, usá "actions": [].
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.

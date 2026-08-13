@@ -31,7 +31,6 @@ export default function ChatPanel() {
   const [busy, setBusy] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [pendingActions, setPendingActions] = useState<ContentAction[]>([]);
-  const [pendingSummary, setPendingSummary] = useState('');
   const [lastUndo, setLastUndo] = useState<(() => Promise<void>) | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -59,7 +58,6 @@ export default function ChatPanel() {
     setBusy(true);
     setStreamingText('');
     setPendingActions([]);
-    setPendingSummary('');
 
     // Ensure there is an active conversation to persist messages into.
     let convId = currentConversationId;
@@ -129,9 +127,6 @@ export default function ChatPanel() {
 
       if (actions.length > 0) {
         setPendingActions(actions);
-        setPendingSummary(
-          actions.map((a) => a.summary || a.type).join(' · '),
-        );
       }
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
@@ -152,7 +147,6 @@ export default function ChatPanel() {
     const undo = await applyContentActions(pendingActions);
     setLastUndo(() => undo);
     setPendingActions([]);
-    setPendingSummary('');
   }
 
   async function undoLast() {
@@ -163,7 +157,6 @@ export default function ChatPanel() {
 
   function rejectActions() {
     setPendingActions([]);
-    setPendingSummary('');
   }
 
   function describeAction(a: ContentAction): string {
@@ -224,13 +217,16 @@ export default function ChatPanel() {
           {conversations.map((c) => (
             <div
               key={c.id}
-              className={`chat-conv-item ${c.id === currentConversationId ? 'active' : ''}`}
-              onClick={() => selectConversation(c.id)}
+              className={`chat-conv-item ${c.id === currentConversationId ? 'active' : ''}${busy ? ' disabled' : ''}`}
+              onClick={() => {
+                if (!busy) selectConversation(c.id);
+              }}
             >
               <span className="text-truncate">{c.title}</span>
               <button
                 className="icon-btn ms-auto"
                 title="Eliminar conversación"
+                disabled={busy}
                 onClick={(e) => {
                   e.stopPropagation();
                   deleteConversation(c.id);

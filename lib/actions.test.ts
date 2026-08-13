@@ -222,6 +222,18 @@ describe('applyAction', () => {
     expect(undo(next).scenes).toHaveLength(1);
   });
 
+  it('append_scene con escenas vacías deriva projectId de otra entidad', () => {
+    const state = makeState({ scenes: [] });
+    const { next } = applyAction(state, {
+      type: 'append_scene',
+      chapterId: 'ch1',
+      content: '<p>nueva escena</p>',
+      summary: 'agregar escena',
+    });
+    expect(next.scenes).toHaveLength(1);
+    expect(next.scenes[0].projectId).toBe('p1');
+  });
+
   it('acciones con IDs inexistentes no cambian nada', () => {
     const state = makeState();
     const { next } = applyAction(state, {
