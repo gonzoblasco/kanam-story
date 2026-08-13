@@ -371,6 +371,59 @@ a {
   margin: 0 0.25rem;
 }
 
+/* U3: contextual AI selection indicator */
+.editor-content-wrap {
+  position: relative;
+}
+
+.ai-selection-indicator {
+  position: absolute;
+  transform: translateY(-100%);
+  margin-top: -0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--sl-primary, #0d6efd);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.ai-selection-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding-right: 0.25rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
+  margin-right: 0.25rem;
+}
+
+.ai-selection-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.ai-selection-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.ai-selection-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .tiptap-editor {
   min-height: 360px;
   outline: none;

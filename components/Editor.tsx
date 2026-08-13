@@ -3,6 +3,8 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '@/lib/store';
 import {
@@ -61,6 +63,10 @@ export default function Editor() {
   const [dialogueCharacter, setDialogueCharacter] = useState('');
   // U1: bump to re-render the format bar when the selection/transaction changes.
   const [, setEditorVersion] = useState(0);
+  // U3: contextual AI selection indicator.
+  const [selectionInfo, setSelectionInfo] = useState<{ from: number; to: number; text: string } | null>(null);
+  const [indicatorPos, setIndicatorPos] = useState<{ top: number; left: number } | null>(null);
+  const indicatorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -68,6 +74,12 @@ export default function Editor() {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
       }),
       Placeholder.configure({
         placeholder: 'Empezá a escribir tu escena…',
@@ -123,6 +135,48 @@ export default function Editor() {
     return () => {
       editor.off('transaction', bump);
     };
+  }, [editor]);
+
+  // U3: detect text selection and position the contextual AI indicator.
+  useEffect(() => {
+    if (!editor) return;
+    const updateSelection = () => {
+      const { from, to } = editor.state.selection;
+      const text = editor.state.doc.textBetween(from, to, '\n');
+      if (from === to || !text.trim()) {
+        setSelectionInfo(null);
+        setIndicatorPos(null);
+        return;
+      }
+      setSelectionInfo({ from, to, text });
+      // Position the indicator near the start of the selection.
+      const coords = editor.view.coordsAtPos(from);
+      const editorEl = editor.view.dom.getBoundingClientRect();
+      setIndicatorPos({
+        top: coords.top - editorEl.top,
+        left: coords.left - editorEl.left,
+      });
+    };
+    editor.on('selectionUpdate', updateSelection);
+    editor.on('transaction', updateSelection);
+    return () => {
+      editor.off('selectionUpdate', updateSelection);
+      editor.off('transaction', updateSelection);
+    };
+  }, [editor]);
+
+  // U3: hide the indicator when clicking outside the editor.
+  useEffect(() => {
+    if (!editor) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (indicatorRef.current?.contains(target)) return;
+      if (editor.view.dom.contains(target)) return;
+      setSelectionInfo(null);
+      setIndicatorPos(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
   }, [editor]);
 
   // U1: formatting commands.
@@ -604,7 +658,43 @@ export default function Editor() {
           </div>
         ) : null}
 
-        <EditorContent editor={editor} />
+        <div className="editor-content-wrap">
+          <EditorContent editor={editor} />
+          {/* U3: contextual AI selection indicator */}
+          {selectionInfo && indicatorPos ? (
+            <div
+              ref={indicatorRef}
+              className="ai-selection-indicator"
+              style={{ top: indicatorPos.top, left: indicatorPos.left }}
+              role="toolbar"
+              aria-label="Acciones de IA sobre la selección"
+            >
+              <span className="ai-selection-count">
+                {selectionInfo.text.trim().split(/\s+/).filter(Boolean).length} palabras
+              </span>
+              <button
+                type="button"
+                className="ai-selection-btn"
+                disabled={!!busy}
+                onClick={() => runAI('rewrite')}
+                title="Reescribir la selección"
+                aria-label="Reescribir la selección"
+              >
+                <i className="bi bi-pencil-square" />
+              </button>
+              <button
+                type="button"
+                className="ai-selection-btn"
+                disabled={!!busy}
+                onClick={() => runAI('describe')}
+                title="Describir la selección"
+                aria-label="Describir la selección"
+              >
+                <i className="bi bi-eye" />
+              </button>
+            </div>
+          ) : null}
+        </div>
         <div className="d-flex justify-content-between text-muted small mt-3">
           <span>
             <i className="bi bi-bookmark me-1" />
