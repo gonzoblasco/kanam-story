@@ -234,9 +234,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const data = await res.json();
             const models: string[] = data.models ?? [];
-            if (models.length > 0) {
-              s = { ...s, ollamaModel: models[0] };
-              await settingsDB.update({ ollamaModel: models[0] });
+            // Prefer deepseek-v4-flash when available; otherwise fall back to
+            // the first installed model.
+            const preferred = models.find((m) => m.includes('deepseek-v4-flash'));
+            const chosen = preferred ?? models[0];
+            if (chosen) {
+              s = { ...s, ollamaModel: chosen };
+              await settingsDB.update({ ollamaModel: chosen });
             }
           }
         } catch {
