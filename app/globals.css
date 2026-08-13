@@ -985,3 +985,21 @@ a {
   background: var(--sl-surface-2);
 }
 
+
+/* U2: heading buttons in the format bar (visually distinct sizes) */
+.format-btn-heading {
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* U2: links in the editor */
+.tiptap-editor a {
+  color: var(--sl-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.tiptap-editor a:hover {
+  text-decoration: none;
+}

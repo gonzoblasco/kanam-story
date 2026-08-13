@@ -67,7 +67,7 @@ export default function Editor() {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
         placeholder: 'Empezá a escribir tu escena…',
@@ -126,9 +126,16 @@ export default function Editor() {
   }, [editor]);
 
   // U1: formatting commands.
-  function toggleMark(mark: 'bold' | 'italic' | 'strike') {
+  function toggleMark(mark: 'bold' | 'italic' | 'strike' | 'underline') {
     if (!editor) return;
-    const cmd = mark === 'bold' ? 'toggleBold' : mark === 'italic' ? 'toggleItalic' : 'toggleStrike';
+    const cmd =
+      mark === 'bold'
+        ? 'toggleBold'
+        : mark === 'italic'
+          ? 'toggleItalic'
+          : mark === 'strike'
+            ? 'toggleStrike'
+            : 'toggleUnderline';
     editor.chain().focus()[cmd]().run();
   }
   function undo() {
@@ -136,6 +143,31 @@ export default function Editor() {
   }
   function redo() {
     editor?.chain().focus().redo().run();
+  }
+  // U2: lists, headings, links.
+  function toggleList(kind: 'bullet' | 'ordered') {
+    if (!editor) return;
+    if (kind === 'bullet') editor.chain().focus().toggleBulletList().run();
+    else editor.chain().focus().toggleOrderedList().run();
+  }
+  function toggleHeading(level: 1 | 2 | 3) {
+    if (!editor) return;
+    editor.chain().focus().toggleHeading({ level }).run();
+  }
+  function toggleLink() {
+    if (!editor) return;
+    if (editor.isActive('link')) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    const prev = (editor.getAttributes('link').href as string | undefined) ?? '';
+    const url = window.prompt('URL del enlace:', prev);
+    if (url === null) return; // cancelado
+    if (url.trim() === '') {
+      editor.chain().focus().unsetLink().run();
+    } else {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+    }
   }
 
   function buildContextNow() {
@@ -337,12 +369,59 @@ export default function Editor() {
           </button>
           <button
             type="button"
-            className="format-btn"
-            disabled
-            title="Subrayado (llega en U2 con @tiptap/extension-underline)"
-            aria-label="Subrayado (próximamente)"
+            className={`format-btn ${editor?.isActive('underline') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleUnderline().run()}
+            onClick={() => toggleMark('underline')}
+            title="Subrayado"
+            aria-label="Subrayado"
           >
             <u>U</u>
+          </button>
+          <span className="format-sep" aria-hidden="true" />
+          {([1, 2, 3] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              className={`format-btn format-btn-heading ${editor?.isActive('heading', { level: l }) ? 'active' : ''}`}
+              disabled={!editor?.can().chain().focus().toggleHeading({ level: l }).run()}
+              onClick={() => toggleHeading(l)}
+              title={`Título ${l}`}
+              aria-label={`Título ${l}`}
+            >
+              H{l}
+            </button>
+          ))}
+          <span className="format-sep" aria-hidden="true" />
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('bulletList') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleBulletList().run()}
+            onClick={() => toggleList('bullet')}
+            title="Lista con viñetas"
+            aria-label="Lista con viñetas"
+          >
+            <i className="bi bi-list-ul" />
+          </button>
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('orderedList') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleOrderedList().run()}
+            onClick={() => toggleList('ordered')}
+            title="Lista numerada"
+            aria-label="Lista numerada"
+          >
+            <i className="bi bi-list-ol" />
+          </button>
+          <span className="format-sep" aria-hidden="true" />
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('link') ? 'active' : ''}`}
+            disabled={!editor || (editor.state.selection.empty && !editor.isActive('link'))}
+            onClick={toggleLink}
+            title="Insertar enlace"
+            aria-label="Insertar enlace"
+          >
+            <i className="bi bi-link-45deg" />
           </button>
           <span className="format-sep" aria-hidden="true" />
           <button
