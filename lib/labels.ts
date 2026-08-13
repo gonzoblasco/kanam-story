@@ -12,6 +12,17 @@ export function povLabel(pov: Project['pov']): string {
   return POV_LABELS[pov];
 }
 
+/** Human-readable labels for the narrative tense (Slice 10). */
+export const TENSE_LABELS: Record<NonNullable<Project['tense']>, string> = {
+  past: 'Pasado',
+  present: 'Presente',
+  future: 'Futuro',
+};
+
+export function tenseLabel(tense: Project['tense']): string {
+  return tense ? TENSE_LABELS[tense] ?? tense : '';
+}
+
 /** Human-readable labels for the character type (Slice 7). */
 export const CHARACTER_TYPE_LABELS: Record<CharacterType, string> = {
   protagonist: 'Protagonista',

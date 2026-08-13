@@ -27,6 +27,7 @@ export interface Project {
   genres?: string[];       // Slice 6: multi-select con tags
   tone: string;
   pov: 'first' | 'third-limited' | 'third-omniscient' | 'second';
+  tense?: 'past' | 'present' | 'future'; // Slice 10: tiempo verbal del narrador
   style: ProjectStyle;     // Slice 6: objeto (antes string)
   braindump?: string;      // Slice 6: volcado libre de ideas (contexto de bajo peso)
   synopsis?: string;       // Slice 6: override manual sobre la sección auto-generada

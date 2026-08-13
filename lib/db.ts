@@ -15,7 +15,7 @@ import type {
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -115,6 +115,15 @@ function getDB() {
               traits: w.traits ?? [],
               inContext: w.inContext ?? true,
             });
+          }
+        }
+
+        // v6 → v7: add `tense` to existing projects (default 'past').
+        if (oldVersion < 7 && db.objectStoreNames.contains('projects')) {
+          const store = transaction.objectStore('projects');
+          const projects = await store.getAll();
+          for (const p of projects) {
+            await store.put({ ...p, tense: p.tense ?? 'past' });
           }
         }
       },

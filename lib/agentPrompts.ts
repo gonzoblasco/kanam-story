@@ -1,5 +1,5 @@
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
-import { povLabel, styleText, characterTypeLabel, worldKindLabel } from '@/lib/labels';
+import { povLabel, styleText, characterTypeLabel, worldKindLabel, tenseLabel } from '@/lib/labels';
 
 export interface AgentSources {
   project: Project;
@@ -45,6 +45,7 @@ export function buildAgentContext(sources: AgentSources): string {
   if (project.genres && project.genres.length > 0) parts.push(`Géneros: ${project.genres.join(', ')}`);
   if (project.tone) parts.push(`Tono: ${project.tone}`);
   if (project.pov) parts.push(`Punto de vista: ${povLabel(project.pov)}`);
+  if (project.tense) parts.push(`Tiempo verbal: ${tenseLabel(project.tense)}`);
   const style = styleText(project.style);
   if (style) parts.push(`Estilo: ${style}`);
   const synopsis = project.synopsis || project.description;

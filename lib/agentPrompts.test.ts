@@ -9,6 +9,7 @@ const project: Project = {
   genre: 'drama',
   tone: 'melancólico',
   pov: 'third-limited',
+  tense: 'past',
   style: { mode: 'custom', custom: 'sobrio' },
   createdAt: 0,
   updatedAt: 0,
@@ -247,6 +248,19 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('Club Argentino de Ajedrez');
     expect(ctx).toContain('[Lugar]');
     expect(ctx).not.toContain('Sociedad Secreta');
+  });
+
+  it('incluye el tiempo verbal cuando el proyecto lo tiene (Slice 10)', () => {
+    const ctx = buildAgentContext({
+      project: { ...project, tense: 'present' },
+      characters: [],
+      world: [],
+      chapters: [],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+    });
+    expect(ctx).toContain('Tiempo verbal: Presente');
   });
 });
 

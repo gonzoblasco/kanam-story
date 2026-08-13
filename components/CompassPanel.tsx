@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
-import { POV_LABELS } from '@/lib/labels';
+import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
 import type { Project } from '@/types';
 
 export default function CompassPanel() {
@@ -13,6 +13,7 @@ export default function CompassPanel() {
     theme: currentProject?.theme ?? '',
     protagonist: currentProject?.protagonist ?? '',
     pov: currentProject?.pov ?? 'third-limited',
+    tense: currentProject?.tense ?? 'past',
   });
 
   // Reset the local draft when switching projects.
@@ -25,6 +26,7 @@ export default function CompassPanel() {
       theme: currentProject.theme ?? '',
       protagonist: currentProject.protagonist ?? '',
       pov: currentProject.pov,
+      tense: currentProject.tense ?? 'past',
     });
   }, [currentProject?.id]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
@@ -106,6 +108,24 @@ export default function CompassPanel() {
             }}
           >
             {Object.entries(POV_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="form-label small">Tiempo verbal</label>
+          <select
+            className="form-select form-select-sm"
+            value={draft.tense}
+            onChange={(e) => {
+              const v = e.target.value as NonNullable<Project['tense']>;
+              setDraft((d) => ({ ...d, tense: v }));
+              commit({ tense: v });
+            }}
+          >
+            {Object.entries(TENSE_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
               </option>

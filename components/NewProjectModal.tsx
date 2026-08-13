@@ -26,6 +26,7 @@ export default function NewProjectModal({
       genre: String(fd.get('genre') || ''),
       tone: String(fd.get('tone') || ''),
       pov,
+      tense: 'past',
       style: style ? { mode: 'custom', custom: style } : { mode: 'custom', custom: '' },
     });
     onClose();

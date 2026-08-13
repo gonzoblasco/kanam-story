@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapRoleToType, characterTypeLabel, mapCategoryToKind, worldKindLabel, styleText } from '@/lib/labels';
+import { mapRoleToType, characterTypeLabel, mapCategoryToKind, worldKindLabel, styleText, tenseLabel } from '@/lib/labels';
 
 describe('mapRoleToType', () => {
   it('mapea valores conocidos en español e inglés', () => {
@@ -78,5 +78,17 @@ describe('styleText (Match My Style)', () => {
 
   it('devuelve vacío si no hay perfil', () => {
     expect(styleText({ mode: 'match' })).toBe('');
+  });
+});
+
+describe('tenseLabel', () => {
+  it('devuelve la etiqueta legible', () => {
+    expect(tenseLabel('past')).toBe('Pasado');
+    expect(tenseLabel('present')).toBe('Presente');
+    expect(tenseLabel('future')).toBe('Futuro');
+  });
+
+  it('devuelve vacío para undefined', () => {
+    expect(tenseLabel(undefined)).toBe('');
   });
 });

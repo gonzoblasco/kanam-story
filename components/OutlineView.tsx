@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { moveBeatInList } from '@/lib/outline';
+import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
 import type { Beat, BeatKind, BeatStatus } from '@/types';
 
 const KIND_LABELS: Record<BeatKind, string> = {
@@ -145,6 +146,10 @@ export default function OutlineView() {
   const [suggested, setSuggested] = useState<Beat[] | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
+  // Slice 10: outline filters (POV and tense).
+  const [filterPov, setFilterPov] = useState<string>('all');
+  const [filterTense, setFilterTense] = useState<string>('all');
+
   const chapter = chapters.find((c) => c.id === currentOutlineChapterId) ?? chapters[0] ?? null;
 
   // Reset the suggestion preview when the chapter changes, so a stale
@@ -171,6 +176,28 @@ export default function OutlineView() {
     }
     return map;
   }, [beats, scenes, chapter]);
+
+  // Slice 10: scenes without beats in the current chapter (orphan scenes).
+  const orphanScenes = useMemo(() => {
+    if (!chapter) return [];
+    return scenes
+      .filter((s) => s.chapterId === chapter.id)
+      .filter((s) => (sceneBeats[s.id] ?? []).length === 0);
+  }, [scenes, chapter, sceneBeats]);
+
+  // Slice 10: show a filter banner when the project has POV/tense set.
+  const hasProjectFilters = Boolean(currentProject?.pov) || Boolean(currentProject?.tense);
+  const filterActive = filterPov !== 'all' || filterTense !== 'all';
+
+  // Slice 10: filter beats by the selected POV/tense (cosmetic filter —
+  // beats don't store POV/tense, so the filter shows/hides the whole chapter
+  // section when the project's POV/tense doesn't match the filter).
+  const chapterVisible = useMemo(() => {
+    if (!filterActive) return true;
+    const povMatch = filterPov === 'all' || currentProject?.pov === filterPov;
+    const tenseMatch = filterTense === 'all' || currentProject?.tense === filterTense;
+    return povMatch && tenseMatch;
+  }, [filterActive, filterPov, filterTense, currentProject]);
 
   if (!currentProject) {
     return (
@@ -296,6 +323,46 @@ export default function OutlineView() {
         </button>
       </div>
 
+      {/* Slice 10: outline filters */}
+      {hasProjectFilters ? (
+        <div className="outline-filters d-flex gap-1 align-items-center mb-2">
+          <span className="small text-muted">Filtrar:</span>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 'auto' }}
+            value={filterPov}
+            onChange={(e) => setFilterPov(e.target.value)}
+          >
+            <option value="all">Todo POV</option>
+            {Object.entries(POV_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            className="form-select form-select-sm"
+            style={{ width: 'auto' }}
+            value={filterTense}
+            onChange={(e) => setFilterTense(e.target.value)}
+          >
+            <option value="all">Todo tiempo</option>
+            {Object.entries(TENSE_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
+      {filterActive && !chapterVisible ? (
+        <div className="small text-muted mb-2">
+          <i className="bi bi-funnel me-1" />
+          Este capítulo no coincide con el filtro (POV/tiempo del proyecto).
+        </div>
+      ) : (
+        <>
       {suggested ? (
         <div className="outline-suggested">
           <div className="outline-suggested-title">
@@ -351,6 +418,30 @@ export default function OutlineView() {
             {renderBeatList(sceneBeats[s.id] ?? [], chapter.id, s.id)}
           </div>
         ))}
+
+      {/* Slice 10: orphan scenes (without beats) — suggest linking */}
+      {orphanScenes.length > 0 ? (
+        <div className="outline-orphans mt-3">
+          <div className="small text-muted mb-1">
+            <i className="bi bi-link me-1" />
+            Escenas sin vincular al outline ({orphanScenes.length}):
+          </div>
+          {orphanScenes.map((s) => (
+            <div key={s.id} className="d-flex align-items-center gap-1 mb-1">
+              <span className="small flex-grow-1">{s.title}</span>
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                title="Crear un beat para esta escena"
+                onClick={() => addBeat(chapter.id, s.id)}
+              >
+                <i className="bi bi-plus-lg me-1" /> Vincular
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
+      )}
     </div>
   );
 }
