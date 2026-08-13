@@ -59,6 +59,8 @@ export default function Editor() {
   const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
   const [expandLength, setExpandLength] = useState<ExpandLength>('medium');
   const [dialogueCharacter, setDialogueCharacter] = useState('');
+  // U1: bump to re-render the format bar when the selection/transaction changes.
+  const [, setEditorVersion] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -111,6 +113,30 @@ export default function Editor() {
       editor.off('update', handleEditorUpdate);
     };
   }, [editor, handleEditorUpdate]);
+
+  // U1: re-render the format bar on every transaction so the active/disabled
+  // state of the buttons stays in sync with the cursor/selection.
+  useEffect(() => {
+    if (!editor) return;
+    const bump = () => setEditorVersion((v) => v + 1);
+    editor.on('transaction', bump);
+    return () => {
+      editor.off('transaction', bump);
+    };
+  }, [editor]);
+
+  // U1: formatting commands.
+  function toggleMark(mark: 'bold' | 'italic' | 'strike') {
+    if (!editor) return;
+    const cmd = mark === 'bold' ? 'toggleBold' : mark === 'italic' ? 'toggleItalic' : 'toggleStrike';
+    editor.chain().focus()[cmd]().run();
+  }
+  function undo() {
+    editor?.chain().focus().undo().run();
+  }
+  function redo() {
+    editor?.chain().focus().redo().run();
+  }
 
   function buildContextNow() {
     if (!currentProject) return '';
@@ -276,6 +302,70 @@ export default function Editor() {
             <span className="editor-compass-label">Promesa:</span> {currentProject.promise}
           </div>
         ) : null}
+
+        {/* U1: basic formatting toolbar (separate from the AI bar) */}
+        <div className="format-bar" role="toolbar" aria-label="Formato de texto">
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('bold') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleBold().run()}
+            onClick={() => toggleMark('bold')}
+            title="Negrita"
+            aria-label="Negrita"
+          >
+            <strong>B</strong>
+          </button>
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('italic') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleItalic().run()}
+            onClick={() => toggleMark('italic')}
+            title="Cursiva"
+            aria-label="Cursiva"
+          >
+            <em>I</em>
+          </button>
+          <button
+            type="button"
+            className={`format-btn ${editor?.isActive('strike') ? 'active' : ''}`}
+            disabled={!editor?.can().chain().focus().toggleStrike().run()}
+            onClick={() => toggleMark('strike')}
+            title="Tachado"
+            aria-label="Tachado"
+          >
+            <s>S</s>
+          </button>
+          <button
+            type="button"
+            className="format-btn"
+            disabled
+            title="Subrayado (llega en U2 con @tiptap/extension-underline)"
+            aria-label="Subrayado (próximamente)"
+          >
+            <u>U</u>
+          </button>
+          <span className="format-sep" aria-hidden="true" />
+          <button
+            type="button"
+            className="format-btn"
+            disabled={!editor?.can().chain().focus().undo().run()}
+            onClick={undo}
+            title="Deshacer"
+            aria-label="Deshacer"
+          >
+            <i className="bi bi-arrow-counterclockwise" />
+          </button>
+          <button
+            type="button"
+            className="format-btn"
+            disabled={!editor?.can().chain().focus().redo().run()}
+            onClick={redo}
+            title="Rehacer"
+            aria-label="Rehacer"
+          >
+            <i className="bi bi-arrow-clockwise" />
+          </button>
+        </div>
 
         <div className="ai-bar">
           <button

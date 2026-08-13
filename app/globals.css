@@ -319,6 +319,58 @@ a {
   font-weight: 600;
 }
 
+/* U1: basic formatting toolbar */
+.format-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  width: fit-content;
+}
+
+.format-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sl-text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.format-btn:hover:not(:disabled) {
+  background: var(--sl-surface);
+  border-color: var(--sl-border);
+}
+
+.format-btn.active {
+  background: var(--sl-primary, #0d6efd);
+  border-color: var(--sl-primary, #0d6efd);
+  color: #fff;
+}
+
+.format-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.format-sep {
+  width: 1px;
+  height: 1.2rem;
+  background: var(--sl-border);
+  margin: 0 0.25rem;
+}
+
 .tiptap-editor {
   min-height: 360px;
   outline: none;
