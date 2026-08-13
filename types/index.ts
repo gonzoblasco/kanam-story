@@ -1,0 +1,155 @@
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  genre: string;
+  tone: string;
+  pov: 'first' | 'third-limited' | 'third-omniscient' | 'second';
+  style: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Chapter {
+  id: string;
+  projectId: string;
+  title: string;
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Scene {
+  id: string;
+  projectId: string;
+  chapterId: string;
+  title: string;
+  content: string;
+  summary: string;
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Character {
+  id: string;
+  projectId: string;
+  name: string;
+  role: string;
+  age: string;
+  appearance: string;
+  personality: string;
+  voice: string;
+  backstory: string;
+  goals: string;
+  source?: 'manual' | 'biblia';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WorldEntity {
+  id: string;
+  projectId: string;
+  name: string;
+  category: 'location' | 'lore' | 'rule' | 'item' | 'other';
+  description: string;
+  source?: 'manual' | 'biblia';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BrainstormNote {
+  id: string;
+  projectId: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface StoryBibleSection {
+  key: 'summary' | 'themes' | 'characters' | 'world' | 'rules';
+  label: string;
+  manual: string;
+  auto: string;
+  updatedAt: number;
+}
+
+export interface StoryBible {
+  id: string;
+  projectId: string;
+  sections: StoryBibleSection[];
+  generatedAt: number;
+  updatedAt: number;
+}
+
+export interface Settings {
+  id: 'singleton';
+  ollamaUrl: string;
+  ollamaModel: string;
+  theme: 'light' | 'dark';
+  sidebarCollapsed: boolean;
+  rightPanelCollapsed: boolean;
+}
+
+export type AICommand = 'write' | 'describe' | 'rewrite' | 'brainstorm';
+
+// --- Chat (el corazón) ---
+
+export interface Conversation {
+  id: string;
+  projectId: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
+
+/**
+ * Acción que el agente ejecutó sobre el contenido (el agente "tiene manos").
+ * Debe ser aplicable y reversible (para aceptar/deshacer una propuesta antes de que quede firme).
+ */
+export type ContentAction =
+  | { type: 'rewrite_scene'; sceneId: string; before: string; after: string; summary: string }
+  | { type: 'update_beat'; beatId: string; changes: Partial<Beat>; summary: string }
+  | { type: 'add_beat'; chapterId: string; beat: Beat; summary: string }
+  | { type: 'update_character'; characterId: string; changes: Partial<Character>; summary: string }
+  | { type: 'add_character'; character: Character; summary: string }
+  | { type: 'update_world'; entityId: string; changes: Partial<WorldEntity>; summary: string }
+  | { type: 'update_bible'; section: StoryBibleSection['key']; value: string; summary: string }
+  | { type: 'append_scene'; chapterId: string; content: string; summary: string };
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  role: MessageRole;
+  content: string;
+  actions: ContentAction[];
+  createdAt: number;
+}
+
+// --- Outline & Beats ---
+
+export type BeatKind = 'inciting' | 'rising' | 'climax' | 'falling' | 'resolution' | 'custom';
+export type BeatStatus = 'draft' | 'done' | 'revising';
+export type BeatSource = 'manual' | 'ai';
+
+/** Mapa de estructura de un capítulo/escena. Se persiste en un store `beats` separado (con chapterId/sceneId). */
+export interface Beat {
+  id: string;
+  projectId?: string;
+  chapterId?: string;
+  sceneId?: string;
+  kind: BeatKind;
+  title: string;
+  description: string;   // qué pasa en este beat
+  notes: string;         // intención, tono, elementos a cuidar
+  characters: string[];  // ids de Character involucrados
+  location?: string;     // id de WorldEntity (lugar)
+  status: BeatStatus;
+  source: BeatSource;    // definido a mano o sugerido por IA
+  position: number;
+  createdAt: number;
+  updatedAt: number;
+}
