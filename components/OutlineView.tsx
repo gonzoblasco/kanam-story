@@ -149,10 +149,12 @@ export default function OutlineView() {
 
   // Reset the suggestion preview when the chapter changes, so a stale
   // preview from another chapter never lingers.
+  /* eslint-disable react-hooks/set-state-in-effect -- reset derived UI state on prop change */
   useEffect(() => {
     setSuggested(null);
     setSuggestError(null);
   }, [currentOutlineChapterId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const chapterBeats = useMemo(() => {
     if (!chapter) return [];

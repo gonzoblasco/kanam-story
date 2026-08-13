@@ -105,6 +105,8 @@ interface AppState {
   regenerateBibleSection: (key: StoryBible['sections'][number]['key']) => Promise<void>;
   /** Marks Bible sections as stale when their source material changed. */
   markBibleStale: (keys: StoryBible['sections'][number]['key'][]) => Promise<void>;
+  /** Clears the stale flag on Bible sections (e.g. after an undo reverts the change). */
+  clearBibleStale: (keys: StoryBible['sections'][number]['key'][]) => Promise<void>;
 
   previewBibleCharacters: (rawMarkdown: string) => Promise<Partial<Character>[]>;
   importCharactersFromBible: (entries: Partial<Character>[]) => Promise<Character[]>;
@@ -518,6 +520,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [storyBible],
   );
 
+  const clearBibleStale = useCallback(
+    async (keys: StoryBible['sections'][number]['key'][]): Promise<void> => {
+      if (!storyBible) return;
+      for (const key of keys) {
+        await storyBibleDB.updateSection(storyBible.id, key, { staleAt: undefined });
+      }
+      const refreshed = await storyBibleDB.get(storyBible.id);
+      if (refreshed) setStoryBible(refreshed);
+    },
+    [storyBible],
+  );
+
   const previewBibleCharacters = useCallback(
     async (rawMarkdown: string): Promise<Partial<Character>[]> => {
       const parsed = parseCharacterEntries(rawMarkdown);
@@ -780,6 +794,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const prev = scene.content;
               await updateScene(action.sceneId, { content: action.after });
               undos.push(() => updateScene(action.sceneId, { content: prev }));
+              // The manuscript changed → the manuscript-derived sections are stale.
+              await markBibleStale(['summary', 'themes', 'rules']);
+              undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
             }
             break;
           }
@@ -811,6 +828,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               undos.push(() => updateCharacter(action.characterId, prev));
               // Characters changed → the "characters" bible section is stale.
               await markBibleStale(['characters']);
+              undos.push(() => clearBibleStale(['characters']));
             }
             break;
           }
@@ -818,6 +836,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const created = await createCharacter(action.character);
             undos.push(() => deleteCharacter(created.id));
             await markBibleStale(['characters']);
+            undos.push(() => clearBibleStale(['characters']));
             break;
           }
           case 'update_world': {
@@ -828,6 +847,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               undos.push(() => updateWorld(action.entityId, prev));
               // World changed → the "world" bible section is stale.
               await markBibleStale(['world']);
+              undos.push(() => clearBibleStale(['world']));
             }
             break;
           }
@@ -850,6 +870,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               order: scenes.filter((s) => s.chapterId === action.chapterId).length,
             });
             undos.push(() => deleteScene(created.id));
+            // New manuscript content → manuscript-derived sections are stale.
+            await markBibleStale(['summary', 'themes', 'rules']);
+            undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
             break;
           }
         }
@@ -862,7 +885,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
     },
-    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale],
+    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
   );
 
   const value: AppState = {
@@ -913,6 +936,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     regenerateStoryBible,
     regenerateBibleSection,
     markBibleStale,
+    clearBibleStale,
     previewBibleCharacters,
     importCharactersFromBible,
     previewBibleWorld,
