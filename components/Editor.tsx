@@ -3,8 +3,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '@/lib/store';
 import {
@@ -74,12 +72,6 @@ export default function Editor() {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        defaultProtocol: 'https',
       }),
       Placeholder.configure({
         placeholder: 'Empezá a escribir tu escena…',
