@@ -112,8 +112,8 @@ interface AppState {
   loadBeatsByChapter: (chapterId: string) => Promise<void>;
   loadBeatsByScene: (sceneId: string) => Promise<void>;
 
-  /** Applies agent actions to the real state (persists to IndexedDB). */
-  applyContentActions: (actions: ContentAction[]) => Promise<void>;
+  /** Applies agent actions to the real state (persists to IndexedDB) and returns an undo function. */
+  applyContentActions: (actions: ContentAction[]) => Promise<() => Promise<void>>;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -663,38 +663,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyContentActions = useCallback(
-    async (actions: ContentAction[]) => {
-      if (!currentProject) return;
+    async (actions: ContentAction[]): Promise<() => Promise<void>> => {
+      if (!currentProject) return async () => {};
+      // Capture previous values so we can revert each action.
+      const undos: Array<() => Promise<void>> = [];
+
       for (const action of actions) {
         switch (action.type) {
           case 'rewrite_scene': {
             const scene = scenes.find((s) => s.id === action.sceneId);
-            if (scene) await updateScene(action.sceneId, { content: action.after });
-            break;
-          }
-          case 'update_beat':
-            await updateBeat(action.beatId, action.changes);
-            break;
-          case 'add_beat':
-            await createBeat(action.beat);
-            break;
-          case 'update_character':
-            await updateCharacter(action.characterId, action.changes);
-            break;
-          case 'add_character':
-            await createCharacter(action.character);
-            break;
-          case 'update_world':
-            await updateWorld(action.entityId, action.changes);
-            break;
-          case 'update_bible': {
-            if (storyBible) {
-              await updateBibleSection(storyBible.id, action.section, { manual: action.value });
+            if (scene) {
+              const prev = scene.content;
+              await updateScene(action.sceneId, { content: action.after });
+              undos.push(() => updateScene(action.sceneId, { content: prev }));
             }
             break;
           }
-          case 'append_scene':
-            await createScene({
+          case 'update_beat': {
+            const beat = beats.find((b) => b.id === action.beatId);
+            if (beat) {
+              const prev = { ...beat };
+              await updateBeat(action.beatId, action.changes);
+              undos.push(() => updateBeat(action.beatId, prev));
+            }
+            break;
+          }
+          case 'add_beat': {
+            await createBeat(action.beat);
+            undos.push(() => deleteBeat(action.beat.id));
+            break;
+          }
+          case 'update_character': {
+            const character = characters.find((c) => c.id === action.characterId);
+            if (character) {
+              const prev = { ...character };
+              await updateCharacter(action.characterId, action.changes);
+              undos.push(() => updateCharacter(action.characterId, prev));
+            }
+            break;
+          }
+          case 'add_character': {
+            await createCharacter(action.character);
+            undos.push(() => deleteCharacter(action.character.id));
+            break;
+          }
+          case 'update_world': {
+            const entity = world.find((w) => w.id === action.entityId);
+            if (entity) {
+              const prev = { ...entity };
+              await updateWorld(action.entityId, action.changes);
+              undos.push(() => updateWorld(action.entityId, prev));
+            }
+            break;
+          }
+          case 'update_bible': {
+            if (storyBible) {
+              const section = storyBible.sections.find((s) => s.key === action.section);
+              const prev = section?.manual ?? '';
+              await updateBibleSection(storyBible.id, action.section, { manual: action.value });
+              undos.push(() => updateBibleSection(storyBible.id, action.section, { manual: prev }));
+            }
+            break;
+          }
+          case 'append_scene': {
+            const created = await createScene({
               projectId: currentProject.id,
               chapterId: action.chapterId,
               title: 'Escena nueva',
@@ -702,11 +734,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
               summary: action.summary,
               order: scenes.filter((s) => s.chapterId === action.chapterId).length,
             });
+            undos.push(() => deleteScene(created.id));
             break;
+          }
         }
       }
+
+      // Revert in reverse order.
+      return async () => {
+        for (let i = undos.length - 1; i >= 0; i--) {
+          await undos[i]();
+        }
+      };
     },
-    [currentProject, scenes, storyBible, updateScene, updateBeat, createBeat, updateCharacter, createCharacter, updateWorld, updateBibleSection, createScene],
+    [currentProject, scenes, beats, characters, world, storyBible, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene],
   );
 
   const value: AppState = {

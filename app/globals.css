@@ -699,6 +699,30 @@ a {
   margin-top: 0.25rem;
 }
 
+.chat-pending-list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--sl-text);
+}
+
+.chat-pending-list li {
+  margin-bottom: 0.15rem;
+}
+
+.chat-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+  color: var(--sl-text-muted);
+}
+
 .chat-input {
   border-top: 1px solid var(--sl-border);
   padding: 0.75rem;

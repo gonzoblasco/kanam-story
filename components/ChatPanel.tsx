@@ -32,6 +32,7 @@ export default function ChatPanel() {
   const [streamingText, setStreamingText] = useState('');
   const [pendingActions, setPendingActions] = useState<ContentAction[]>([]);
   const [pendingSummary, setPendingSummary] = useState('');
+  const [lastUndo, setLastUndo] = useState<(() => Promise<void>) | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -143,15 +144,42 @@ export default function ChatPanel() {
   }
 
   async function acceptActions() {
-    if (pendingActions.length === 0) return;
-    await applyContentActions(pendingActions);
+    const undo = await applyContentActions(pendingActions);
+    setLastUndo(() => undo);
     setPendingActions([]);
     setPendingSummary('');
+  }
+
+  async function undoLast() {
+    if (!lastUndo) return;
+    await lastUndo();
+    setLastUndo(null);
   }
 
   function rejectActions() {
     setPendingActions([]);
     setPendingSummary('');
+  }
+
+  function describeAction(a: ContentAction): string {
+    switch (a.type) {
+      case 'rewrite_scene':
+        return `Reescribir escena: ${a.summary || a.sceneId}`;
+      case 'update_beat':
+        return `Actualizar beat: ${a.summary || a.beatId}`;
+      case 'add_beat':
+        return `Agregar beat: ${a.summary || a.beat.title}`;
+      case 'update_character':
+        return `Actualizar personaje: ${a.summary || a.characterId}`;
+      case 'add_character':
+        return `Agregar personaje: ${a.summary || a.character.name}`;
+      case 'update_world':
+        return `Actualizar mundo: ${a.summary || a.entityId}`;
+      case 'update_bible':
+        return `Actualizar biblia (${a.section}): ${a.summary}`;
+      case 'append_scene':
+        return `Agregar escena: ${a.summary || a.chapterId}`;
+    }
   }
 
   function stop() {
@@ -250,7 +278,11 @@ export default function ChatPanel() {
               <i className="bi bi-magic me-1" />
               El co-writer propone cambios
             </div>
-            <div className="chat-pending-summary">{pendingSummary}</div>
+            <ul className="chat-pending-list">
+              {pendingActions.map((a, i) => (
+                <li key={i}>{describeAction(a)}</li>
+              ))}
+            </ul>
             <div className="d-flex gap-2 mt-2">
               <button className="btn btn-sm btn-primary" onClick={acceptActions}>
                 <i className="bi bi-check-lg me-1" /> Aceptar
@@ -259,6 +291,15 @@ export default function ChatPanel() {
                 <i className="bi bi-x-lg me-1" /> Descartar
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {lastUndo ? (
+          <div className="chat-undo">
+            <span className="small">Cambios aplicados.</span>
+            <button className="btn btn-sm btn-outline-secondary" onClick={undoLast}>
+              <i className="bi bi-arrow-counterclockwise me-1" /> Deshacer
+            </button>
           </div>
         ) : null}
       </div>
