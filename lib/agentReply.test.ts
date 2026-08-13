@@ -95,6 +95,15 @@ describe('isValidAction', () => {
   it('acepta add_character con name y type', () => {
     expect(isValidAction({ type: 'add_character', character: { name: 'Lía', type: 'supporting' }, summary: 'y' })).toBe(true);
   });
+  it('acepta update_character con changes sin type', () => {
+    expect(isValidAction({ type: 'update_character', characterId: 'c1', changes: { personality: 'x' }, summary: 'y' })).toBe(true);
+  });
+  it('acepta update_character con type válido', () => {
+    expect(isValidAction({ type: 'update_character', characterId: 'c1', changes: { type: 'antagonist' }, summary: 'y' })).toBe(true);
+  });
+  it('rechaza update_character con type inválido', () => {
+    expect(isValidAction({ type: 'update_character', characterId: 'c1', changes: { type: 'villano' }, summary: 'y' })).toBe(false);
+  });
 });
 
 describe('filterValidActions', () => {

@@ -174,7 +174,7 @@ Reglas:
   - {"type":"add_beat","chapterId":"<id>","beat":{"kind":"inciting|rising|climax|falling|resolution|custom","title":"...","description":"...","notes":"...","characters":[],"status":"draft","source":"ai","position":<n>},"summary":"..."}
   - {"type":"update_beat","beatId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
-  - {"type":"add_character","character":{"name":"...","type":"protagonist|antagonist|supporting|minor|love_interest|custom","pronouns":"...","personality":"...","voice":"...","goals":"...","backstory":"...","traits":["..."]},"summary":"..."}
+  - {"type":"add_character","character":{"name":"...","type":"protagonist|antagonist|supporting|minor|love_interest|custom","pronouns":"...","age":"...","appearance":"...","personality":"...","voice":"...","goals":"...","backstory":"...","groups":["..."],"otherNames":["..."],"traits":["..."]},"summary":"..."}
   - {"type":"update_world","entityId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_bible","section":"summary|themes|characters|world|rules","value":"<texto nuevo de la sección>","summary":"..."}
   - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}

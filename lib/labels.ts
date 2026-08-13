@@ -33,10 +33,10 @@ export function characterTypeLabel(type: CharacterType): string {
  */
 export function mapRoleToType(role: string | undefined | null): CharacterType {
   const r = (role ?? '').trim().toLowerCase();
-  if (r.includes('protagon') || r === 'protagonist') return 'protagonist';
-  if (r.includes('antagon') || r === 'antagonist') return 'antagonist';
-  if (r.includes('secundar') || r === 'supporting') return 'supporting';
-  if (r.includes('menor') || r === 'minor') return 'minor';
+  if (r.includes('protagon')) return 'protagonist';
+  if (r.includes('antagon')) return 'antagonist';
+  if (r.includes('secundar')) return 'supporting';
+  if (r.includes('menor')) return 'minor';
   if (r.includes('love') || r.includes('interés') || r.includes('interes')) return 'love_interest';
   return 'supporting';
 }

@@ -78,8 +78,17 @@ export function isValidAction(action: unknown): action is ContentAction {
       const b = a.beat as Record<string, unknown>;
       return typeof b.title === 'string';
     }
-    case 'update_character':
-      return typeof a.characterId === 'string' && typeof a.changes === 'object' && a.changes !== null;
+    case 'update_character': {
+      if (typeof a.characterId !== 'string' || typeof a.changes !== 'object' || a.changes === null) {
+        return false;
+      }
+      // If the model proposes a `type` change, it must be a valid enum value.
+      const ch = a.changes as Record<string, unknown>;
+      if (ch.type !== undefined && (typeof ch.type !== 'string' || !(CHARACTER_TYPES as string[]).includes(ch.type))) {
+        return false;
+      }
+      return true;
+    }
     case 'add_character': {
       if (typeof a.character !== 'object' || a.character === null) return false;
       const c = a.character as Record<string, unknown>;
