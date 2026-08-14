@@ -1061,6 +1061,81 @@ a {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* --- B4: Búsqueda entre escenas --- */
+
+.search-chapter-title {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--sl-accent);
+  margin-bottom: 0.4rem;
+}
+
+.search-result {
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.search-result-title {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--sl-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.search-result-title:hover {
+  color: var(--sl-accent);
+}
+
+.search-result-match {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.search-result-field {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--sl-text-muted);
+  background: var(--sl-surface);
+  border: 1px solid var(--sl-border);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+}
+
+.search-result-snippet {
+  color: var(--sl-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-result-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--sl-accent);
+  background: var(--sl-surface);
+  border: 1px solid var(--sl-border);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
 .tiptap-editor a:hover {
   text-decoration: none;
 }

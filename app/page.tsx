@@ -10,11 +10,13 @@ import OutlineView from '@/components/OutlineView';
 import RightPanel from '@/components/RightPanel';
 import ExportMenu from '@/components/ExportMenu';
 import ThemeToggle from '@/components/ThemeToggle';
+import SearchPanel from '@/components/SearchPanel';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   if (!ready) {
     return (
@@ -71,6 +73,14 @@ export default function HomePage() {
             <i className="bi bi-plus-lg me-1" />
             Nuevo proyecto
           </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            title="Buscar en todas las escenas"
+            onClick={() => setShowSearch(true)}
+          >
+            <i className="bi bi-search me-1" />
+            Buscar
+          </button>
           <ExportMenu />
           <button
             className="icon-btn"
@@ -95,6 +105,7 @@ export default function HomePage() {
 
       <NewProjectModal show={showNewProject} onClose={() => setShowNewProject(false)} />
       <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} />
+      {showSearch ? <SearchPanel onClose={() => setShowSearch(false)} /> : null}
     </div>
   );
 }
