@@ -74,6 +74,10 @@ interface AppState {
 
   setSettings: (patch: Partial<Settings>) => Promise<void>;
   setView: (view: 'editor' | 'outline' | 'story') => void;
+  /** Nonce que el Editor observa para tomar el foco. */
+  editorFocusNonce: number;
+  /** Pide al editor tomar el foco (nonce observado por `Editor`). */
+  requestEditorFocus: () => void;
   setActiveStorySection: (key: StorySectionKey) => void;
   setCurrentOutlineChapterId: (id: string | null) => void;
   refreshProjects: () => Promise<void>;
@@ -183,8 +187,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [view, setViewState] = useState<'editor' | 'outline' | 'story'>('editor');
   const [activeStorySection, setActiveStorySectionState] = useState<StorySectionKey>('co-writer');
   const [currentOutlineChapterId, setCurrentOutlineChapterIdState] = useState<string | null>(null);
+  // U4: nonce que pide al editor tomar el foco (p.ej. tras generar una escena
+  // desde el outline). Cada `requestEditorFocus()` incrementa el contador y el
+  // `Editor` lo observa para llamar `editor.commands.focus()`.
+  const [editorFocusNonce, setEditorFocusNonce] = useState(0);
 
   const setView = useCallback((v: 'editor' | 'outline' | 'story') => setViewState(v), []);
+  const requestEditorFocus = useCallback(() => setEditorFocusNonce((n) => n + 1), []);
   const setActiveStorySection = useCallback((key: StorySectionKey) => setActiveStorySectionState(key), []);
   const setCurrentOutlineChapterId = useCallback(
     (id: string | null) => setCurrentOutlineChapterIdState(id),
@@ -1119,6 +1128,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentOutlineChapterId,
     setSettings,
     setView,
+    editorFocusNonce,
+    requestEditorFocus,
     setActiveStorySection,
     setCurrentOutlineChapterId,
     refreshProjects,

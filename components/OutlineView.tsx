@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { moveBeatInList } from '@/lib/outline';
+import { planGenerateScene } from '@/lib/sceneFromBeat';
 import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
 import type { Beat, BeatKind, BeatStatus } from '@/types';
 
@@ -27,6 +28,8 @@ function BeatCard({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onGenerateScene,
+  generating,
   canUp,
   canDown,
 }: {
@@ -35,6 +38,8 @@ function BeatCard({
   onDelete: (id: string) => void;
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
+  onGenerateScene: (id: string) => void;
+  generating: boolean;
   canUp: boolean;
   canDown: boolean;
 }) {
@@ -93,6 +98,21 @@ function BeatCard({
             <i className="bi bi-trash" />
           </button>
         </div>
+        {/* U4: generar una escena dedicada para este beat y abrirla en el editor. */}
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-primary outline-generate"
+          onClick={() => onGenerateScene(beat.id)}
+          disabled={generating}
+          aria-label={`Generar escena para "${draft.title || 'sin título'}"`}
+        >
+          {generating ? (
+            <span className="spinner-inline me-1" aria-hidden="true" />
+          ) : (
+            <i className="bi bi-file-earmark-plus me-1" aria-hidden="true" />
+          )}
+          Generar escena
+        </button>
       </div>
       <div className="outline-beat-body">
         <select
@@ -140,11 +160,19 @@ export default function OutlineView() {
     updateBeat,
     deleteBeat,
     suggestBeats,
+    createChapter,
+    createScene,
+    setView,
+    requestEditorFocus,
   } = useApp();
 
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Beat[] | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+  // U4: id del beat cuyo botón "Generar escena" está en progreso, y feedback
+  // de éxito/error anunciado por live region (role="status").
+  const [generatingBeatId, setGeneratingBeatId] = useState<string | null>(null);
+  const [generateFeedback, setGenerateFeedback] = useState<string | null>(null);
 
   // Slice 10: outline filters (POV and tense).
   const [filterPov, setFilterPov] = useState<string>('all');
@@ -283,6 +311,44 @@ export default function OutlineView() {
     setSuggested(null);
   };
 
+  // U4: crea la escena dedicada para un beat (y el capítulo si falta), la
+  // selecciona, relinkea el beat dentro de ella y abre el editor con el foco.
+  const generateScene = async (beatId: string) => {
+    const beat = beats.find((b) => b.id === beatId);
+    if (!beat || !currentProject || generatingBeatId) return;
+    setGeneratingBeatId(beatId);
+    setGenerateFeedback(null);
+    try {
+      const plan = planGenerateScene({
+        beat,
+        projectId: currentProject.id,
+        chapters,
+        scenes,
+      });
+      let chapterId = plan.scene.chapterId;
+      if (plan.createChapter) {
+        const created = await createChapter(plan.createChapter);
+        chapterId = created.id;
+      }
+      const scene = await createScene({
+        ...plan.scene,
+        chapterId: chapterId!,
+      });
+      // Relinkea el beat dentro de la escena recién creada para que el outline
+      // quede coherente (el beat "vive" ahora dentro de su escena).
+      if (beat.sceneId !== scene.id) {
+        await updateBeat(beat.id, { sceneId: scene.id, chapterId: chapterId! });
+      }
+      setView('editor');
+      requestEditorFocus();
+      setGenerateFeedback(`Escena "${scene.title}" generada.`);
+    } catch (e) {
+      setGenerateFeedback(e instanceof Error ? e.message : 'No se pudo generar la escena.');
+    } finally {
+      setGeneratingBeatId(null);
+    }
+  };
+
   const renderBeatList = (list: Beat[], chapterId: string, sceneId?: string) => (
     <div className="outline-beat-list">
       {list.map((b, i) => (
@@ -293,6 +359,8 @@ export default function OutlineView() {
           onDelete={deleteBeat}
           onMoveUp={(id) => moveBeat(id, -1)}
           onMoveDown={(id) => moveBeat(id, 1)}
+          onGenerateScene={generateScene}
+          generating={generatingBeatId === b.id}
           canUp={i > 0}
           canDown={i < list.length - 1}
         />
@@ -306,6 +374,10 @@ export default function OutlineView() {
   return (
     <div className="outline-view">
       <h1 className="view-title">Outline</h1>
+      {/* U4: live region polite — anuncia el resultado de generar una escena. */}
+      <div role="status" aria-live="polite" className="visually-hidden">
+        {generateFeedback ?? ''}
+      </div>
       <div className="outline-toolbar">
         <select
           className="form-select form-select-sm"

@@ -44,6 +44,7 @@ export default function Editor() {
     settings,
     updateScene,
     beats,
+    editorFocusNonce,
   } = useApp();
 
   const scene = scenes.find((s) => s.id === currentSceneId) || null;
@@ -96,6 +97,14 @@ export default function Editor() {
     setSummaryDraft(scene?.summary ?? '');
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [scene?.id, scene?.title, scene?.summary]);
+
+  // U4: tomar el foco cuando `requestEditorFocus()` lo pide (p.ej. tras generar
+  // una escena desde el outline), colocando el caret al final del contenido.
+  useEffect(() => {
+    if (editorFocusNonce > 0 && editor) {
+      editor.commands.focus('end');
+    }
+  }, [editorFocusNonce, editor]);
 
   const saveContent = useCallback(
     (html: string) => {
