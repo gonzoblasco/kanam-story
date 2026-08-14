@@ -242,15 +242,37 @@ a {
   padding: 1.25rem 1.5rem;
 }
 .stack-section-title {
+  margin: 0;
+}
+/* U2: toggle del acordeón dentro del h2. Operable por teclado (es un <button>),
+   foco visible con el anillo global `:focus-visible`. El h2 permanece siempre
+   presente para no romper la jerarquía de headings al colapsar. */
+.stack-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  padding: 0.4rem 0;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--sl-accent);
-  margin: 0 0 0.75rem;
-  display: flex;
-  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.stack-section-toggle:hover {
+  color: var(--sl-accent-2);
+}
+.stack-chevron {
+  margin-left: auto;
+  color: var(--sl-text-muted);
+  transition: transform 0.15s ease;
 }
 .stack-section-body {
   color: var(--sl-text);
+  padding-top: 0.75rem;
 }
 
 .empty-state {
