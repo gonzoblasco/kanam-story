@@ -58,6 +58,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   mockApp.storyBible = defaultBible;
   mockApp.regenerateStoryBible.mockResolvedValue(undefined);
+  // ensureStoryBible is called in a useEffect guarded by `storyBible`; give it a
+  // resolved Promise to match the store signature so it never throws if reached.
+  mockApp.ensureStoryBible.mockResolvedValue(defaultBible);
   mockApp.syncCharactersFromBible.mockResolvedValue({ created: 2, updated: 1 });
   mockApp.syncWorldFromBible.mockResolvedValue({ created: 0, updated: 0 });
 });
