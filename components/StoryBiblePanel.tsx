@@ -21,6 +21,7 @@ export default function StoryBiblePanel() {
     syncCharactersFromBible,
     previewBibleWorld,
     importWorldFromBible,
+    syncWorldFromBible,
   } = useApp();
 
   const [busy, setBusy] = useState(false);
@@ -53,14 +54,21 @@ export default function StoryBiblePanel() {
     setCharactersPreview(null);
     setWorldPreview(null);
     try {
-      // U5: auto-sync detected characters into the Characters tab.
+      await regenerateStoryBible();
+      // U5: auto-sync detected characters into the Characters tab (after regeneration).
       const { created, updated } = await syncCharactersFromBible();
       if (created > 0 || updated > 0) {
         setCharactersImportMsg(
           `Sincronizados ${created} personaje(s) nuevos y ${updated} actualizado(s) desde la Biblia.`,
         );
       }
-      await regenerateStoryBible();
+      // U6: auto-sync detected world entities into the World tab (after regeneration).
+      const worldSync = await syncWorldFromBible();
+      if (worldSync.created > 0 || worldSync.updated > 0) {
+        setWorldImportMsg(
+          `Sincronizadas ${worldSync.created} entrada(s) nuevas y ${worldSync.updated} actualizada(s) desde la Biblia.`,
+        );
+      }
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'Falló la regeneración');

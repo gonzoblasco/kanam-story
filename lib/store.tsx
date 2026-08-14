@@ -120,6 +120,8 @@ interface AppState {
   syncCharactersFromBible: () => Promise<{ created: number; updated: number }>;
   previewBibleWorld: (rawMarkdown: string) => Promise<Partial<WorldEntity>[]>;
   importWorldFromBible: (entries: Partial<WorldEntity>[]) => Promise<WorldEntity[]>;
+  /** U6: auto-sync world entities from the Bible into the World tab (dedupe by name, no overwrite of manual edits). */
+  syncWorldFromBible: () => Promise<{ created: number; updated: number }>;
 
   createConversation: (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Conversation>;
   selectConversation: (id: string | null) => Promise<void>;
@@ -613,9 +615,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Dedupes by name (case-insensitive) and never overwrites manual edits:
   // only fills empty fields on existing characters, and only touches
   // characters that came from the bible (source === 'biblia') or are new.
+  // Reads the bible fresh from the DB so it picks up a just-regenerated bible
+  // (the closure `storyBible` would be stale after `regenerateStoryBible`).
   const syncCharactersFromBible = useCallback(async (): Promise<{ created: number; updated: number }> => {
-    if (!currentProject || !storyBible) return { created: 0, updated: 0 };
-    const section = storyBible.sections.find((s) => s.key === 'characters');
+    if (!currentProject) return { created: 0, updated: 0 };
+    const bible = await storyBibleDB.getByProject(currentProject.id);
+    if (!bible) return { created: 0, updated: 0 };
+    const section = bible.sections.find((s) => s.key === 'characters');
     const text = (section?.manual.trim() || section?.auto || '').trim();
     if (!text) return { created: 0, updated: 0 };
 
@@ -663,7 +669,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
     return { created, updated };
-  }, [currentProject, storyBible, characters, previewBibleCharacters, createCharacter, updateCharacter]);
+  }, [currentProject, characters, previewBibleCharacters, createCharacter, updateCharacter]);
 
   const generateCharacter = useCallback(
     async (type?: string, instructions?: string): Promise<Partial<Character>[]> => {
@@ -771,6 +777,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     [currentProject, createWorld],
   );
+
+  // U6: auto-sync world entities from the Bible into the World tab.
+  // Same pattern as syncCharactersFromBible: dedupe by name (case-insensitive),
+  // mark new ones as source 'biblia', only fill empty fields on existing
+  // entities that came from the bible, never overwrite manual edits.
+  // Reads the bible fresh from the DB (post-regeneration).
+  const syncWorldFromBible = useCallback(async (): Promise<{ created: number; updated: number }> => {
+    if (!currentProject) return { created: 0, updated: 0 };
+    const bible = await storyBibleDB.getByProject(currentProject.id);
+    if (!bible) return { created: 0, updated: 0 };
+    const section = bible.sections.find((s) => s.key === 'world');
+    const text = (section?.manual.trim() || section?.auto || '').trim();
+    if (!text) return { created: 0, updated: 0 };
+
+    const entries = await previewBibleWorld(text);
+    if (entries.length === 0) return { created: 0, updated: 0 };
+
+    const byName = new Map<string, WorldEntity>();
+    for (const w of world) byName.set(w.name.trim().toLowerCase(), w);
+
+    let created = 0;
+    let updated = 0;
+    for (const e of entries) {
+      if (!e.name) continue;
+      const key = e.name.trim().toLowerCase();
+      const existing = byName.get(key);
+
+      if (!existing) {
+        await createWorld({
+          projectId: currentProject.id,
+          name: e.name,
+          kind: e.kind ?? 'other',
+          description: e.description ?? '',
+          source: 'biblia',
+        });
+        created++;
+        continue;
+      }
+
+      // Existing entity: only fill empty fields, and only if it came from the
+      // bible (never overwrite a manually-authored entity).
+      if (existing.source !== 'biblia') continue;
+      const patch: Partial<WorldEntity> = {};
+      if (!existing.description && e.description) patch.description = e.description;
+      if (Object.keys(patch).length > 0) {
+        await updateWorld(existing.id, patch);
+        updated++;
+      }
+    }
+    return { created, updated };
+  }, [currentProject, world, previewBibleWorld, createWorld, updateWorld]);
 
   const createConversation = useCallback(
     async (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Conversation> => {
@@ -1067,6 +1124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncCharactersFromBible,
     previewBibleWorld,
     importWorldFromBible,
+    syncWorldFromBible,
     createConversation,
     selectConversation,
     deleteConversation,
