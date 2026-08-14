@@ -50,6 +50,14 @@ import { shouldSnapshot, buildSnapshot } from '@/lib/snapshots';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
+import { GENRE_TEMPLATES, type ProjectTemplate } from '@/lib/projectTemplates';
+
+/** U5 — Punto de partida al crear un proyecto (nunca obligatorio). */
+export type StarterStructure =
+  | { kind: 'empty' }
+  | { kind: 'outline' }
+  | { kind: 'bible' }
+  | { kind: 'template'; templateKey: string };
 
 interface AppState {
   ready: boolean;
@@ -87,6 +95,11 @@ interface AppState {
   refreshProjects: () => Promise<void>;
   selectProject: (id: string | null) => Promise<void>;
   createProject: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
+  /** U5: crea un proyecto y opcionalmente su estructura inicial (capítulos/beats + biblia). */
+  createProjectWithStructure: (
+    data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>,
+    starter: StarterStructure,
+  ) => Promise<Project>;
   updateProject: (id: string, data: Partial<Project>) => Promise<void>;
 
   createChapter: (data: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Chapter>;
@@ -339,6 +352,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const createProject = useCallback(
     async (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
       const p = await projectsDB.create(data);
+      await refreshProjects();
+      await selectProject(p.id);
+      return p;
+    },
+    [refreshProjects, selectProject],
+  );
+
+  // U5: crea el proyecto y, según el punto de partida elegido (opcional),
+  // arma su estructura inicial: outline (capítulo + beat), biblia en blanco,
+  // plantilla de género (capítulos + beats sugeridos) o vacío (sin estructura).
+  const createProjectWithStructure = useCallback(
+    async (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>, starter: StarterStructure) => {
+      const p = await projectsDB.create(data);
+      if (starter.kind === 'outline') {
+        const chapter = await chaptersDB.create({
+          projectId: p.id,
+          title: 'Capítulo 1',
+          order: 0,
+        });
+        await beatsDB.create({
+          projectId: p.id,
+          chapterId: chapter.id,
+          kind: 'custom',
+          title: 'Primer beat',
+          description: '',
+          notes: '',
+          characters: [],
+          status: 'draft',
+          source: 'manual',
+          position: 0,
+        });
+      } else if (starter.kind === 'bible') {
+        await storyBibleDB.create(p.id);
+      } else if (starter.kind === 'template') {
+        const template: ProjectTemplate | undefined = GENRE_TEMPLATES.find(
+          (t) => t.key === starter.templateKey,
+        );
+        if (template) {
+          for (const [ci, ch] of template.chapters.entries()) {
+            const chapter = await chaptersDB.create({
+              projectId: p.id,
+              title: ch.title,
+              order: ci,
+            });
+            for (const [bi, beat] of ch.beats.entries()) {
+              await beatsDB.create({
+                projectId: p.id,
+                chapterId: chapter.id,
+                kind: beat.kind,
+                title: beat.title,
+                description: beat.description,
+                notes: beat.notes,
+                characters: [],
+                status: 'draft',
+                source: 'manual',
+                position: bi,
+              });
+            }
+          }
+          if (template.includeBible) {
+            await storyBibleDB.create(p.id);
+          }
+        }
+      }
       await refreshProjects();
       await selectProject(p.id);
       return p;
@@ -1152,6 +1229,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshProjects,
     selectProject,
     createProject,
+    createProjectWithStructure,
     updateProject,
     createChapter,
     updateChapter,

@@ -1,8 +1,13 @@
 'use client';
 
-import { useApp } from '@/lib/store';
+import { useState } from 'react';
+import { useApp, type StarterStructure } from '@/lib/store';
 import { POV_LABELS } from '@/lib/labels';
+import { GENRE_TEMPLATES } from '@/lib/projectTemplates';
 import type { Project } from '@/types';
+import StarterPicker, { type StarterKey } from '@/components/StarterPicker';
+
+const DEFAULT_STARTER: StarterKey = 'outline';
 
 export default function NewProjectModal({
   show,
@@ -11,16 +16,20 @@ export default function NewProjectModal({
   show: boolean;
   onClose: () => void;
 }) {
-  const { createProject, projects } = useApp();
+  const { createProjectWithStructure, projects } = useApp();
+  const [starter, setStarter] = useState<StarterKey>(DEFAULT_STARTER);
+  const [genre, setGenre] = useState<string>(GENRE_TEMPLATES[0]?.key ?? 'thriller');
+  const [creating, setCreating] = useState(false);
 
-  function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (creating) return;
     const fd = new FormData(e.currentTarget);
     const name = String(fd.get('name') || '').trim();
     if (!name) return;
     const pov = String(fd.get('pov') || 'third-limited') as Project['pov'];
     const style = String(fd.get('style') || '').trim();
-    createProject({
+    const projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> = {
       name,
       description: String(fd.get('description') || ''),
       genre: String(fd.get('genre') || ''),
@@ -28,8 +37,30 @@ export default function NewProjectModal({
       pov,
       tense: 'past',
       style: style ? { mode: 'custom', custom: style } : { mode: 'custom', custom: '' },
-    });
-    onClose();
+    };
+    let structure: StarterStructure;
+    switch (starter) {
+      case 'bible':
+        structure = { kind: 'bible' };
+        break;
+      case 'template':
+        structure = { kind: 'template', templateKey: genre };
+        break;
+      case 'empty':
+        structure = { kind: 'empty' };
+        break;
+      case 'outline':
+      default:
+        structure = { kind: 'outline' };
+        break;
+    }
+    setCreating(true);
+    try {
+      await createProjectWithStructure(projectData, structure);
+      onClose();
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
@@ -54,20 +85,22 @@ export default function NewProjectModal({
               <div className="modal-body">
                 <div className="row g-3">
                   <div className="col-md-8">
-                    <label className="form-label">Título</label>
-                    <input name="name" className="form-control" required autoFocus />
+                    <label className="form-label" htmlFor="np-name">Título</label>
+                    <input id="np-name" name="name" className="form-control" required autoFocus />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Género</label>
+                    <label className="form-label" htmlFor="np-genre">Género</label>
                     <input
+                      id="np-genre"
                       name="genre"
                       className="form-control"
                       placeholder="fantasía, thriller, literario…"
                     />
                   </div>
                   <div className="col-12">
-                    <label className="form-label">Sinopsis</label>
+                    <label className="form-label" htmlFor="np-description">Sinopsis</label>
                     <textarea
+                      id="np-description"
                       name="description"
                       className="form-control"
                       rows={2}
@@ -75,16 +108,17 @@ export default function NewProjectModal({
                     />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Tono</label>
+                    <label className="form-label" htmlFor="np-tone">Tono</label>
                     <input
+                      id="np-tone"
                       name="tone"
                       className="form-control"
                       placeholder="oscuro, ingenioso, melancólico…"
                     />
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Punto de vista</label>
-                    <select name="pov" className="form-select" defaultValue="third-limited">
+                    <label className="form-label" htmlFor="np-pov">Punto de vista</label>
+                    <select id="np-pov" name="pov" className="form-select" defaultValue="third-limited">
                       {Object.entries(POV_LABELS).map(([k, v]) => (
                         <option key={k} value={k}>
                           {v}
@@ -93,8 +127,9 @@ export default function NewProjectModal({
                     </select>
                   </div>
                   <div className="col-md-4">
-                    <label className="form-label">Estilo</label>
+                    <label className="form-label" htmlFor="np-style">Estilo</label>
                     <input
+                      id="np-style"
                       name="style"
                       className="form-control"
                       placeholder="prosa, escueto, lírico…"
@@ -102,21 +137,28 @@ export default function NewProjectModal({
                   </div>
                 </div>
 
+                <div className="divider" />
+
+                {/* U5: punto de partida opcional (radio group accesible). */}
+                <StarterPicker
+                  value={starter}
+                  onChange={setStarter}
+                  genre={genre}
+                  onGenreChange={setGenre}
+                />
+
                 {projects.length > 0 ? (
-                  <>
-                    <div className="divider" />
-                    <div className="small text-muted">
-                      Proyectos existentes: {projects.map((p) => p.name).join(', ')}
-                    </div>
-                  </>
+                  <div className="small text-muted">
+                    Proyectos existentes: {projects.map((p) => p.name).join(', ')}
+                  </div>
                 ) : null}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={onClose}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Crear proyecto
+                <button type="submit" className="btn btn-primary" disabled={creating}>
+                  {creating ? 'Creando…' : 'Crear proyecto'}
                 </button>
               </div>
             </form>

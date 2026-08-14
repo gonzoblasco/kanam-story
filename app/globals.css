@@ -1312,3 +1312,61 @@ a {
 .tiptap-editor a:hover {
   text-decoration: none;
 }
+
+/* --- U5: selector de punto de partida (radio group accesible) --- */
+
+.starter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.starter-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  color: var(--sl-text);
+}
+.starter-option:hover {
+  border-color: var(--sl-accent);
+}
+.starter-option-checked {
+  border-color: var(--sl-accent);
+  background: color-mix(in srgb, var(--sl-accent) 10%, var(--sl-surface-2));
+}
+.starter-radio {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid var(--sl-text-muted);
+  border-radius: 50%;
+  margin-top: 0.15rem;
+  display: inline-block;
+  position: relative;
+}
+.starter-option-checked .starter-radio {
+  border-color: var(--sl-accent-2);
+}
+.starter-option-checked .starter-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--sl-accent-2);
+}
+.starter-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.starter-option-label {
+  font-weight: 600;
+}
+.starter-option-desc {
+  font-size: 0.82rem;
+  color: var(--sl-text-muted);
+}
