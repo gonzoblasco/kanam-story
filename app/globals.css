@@ -322,6 +322,7 @@ a {
 /* U1: basic formatting toolbar */
 .format-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
   padding: 0.35rem 0.5rem;
@@ -330,6 +331,7 @@ a {
   border-radius: 10px;
   margin-bottom: 0.5rem;
   width: fit-content;
+  max-width: 100%;
 }
 
 .format-btn {
@@ -390,14 +392,17 @@ a {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   z-index: 20;
   white-space: nowrap;
+  transition: opacity 0.12s ease;
 }
 
 .ai-selection-count {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding-right: 0.25rem;
+  padding: 0.1rem 0.35rem 0.1rem 0.1rem;
   border-right: 1px solid rgba(255, 255, 255, 0.4);
   margin-right: 0.25rem;
+  pointer-events: none;
+  user-select: none;
 }
 
 .ai-selection-btn {
