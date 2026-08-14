@@ -111,8 +111,8 @@ export default function BrainstormPanel() {
         ) : null}
       </div>
 
-      <div className="sidebar-section-title">
-        <span>Notas ({brainstorm.length})</span>
+      <div className="stack-panel-header">
+        <span className="stack-panel-count">Notas ({brainstorm.length})</span>
       </div>
       {brainstorm.length === 0 ? (
         <div className="text-muted small">Todavía no hay notas.</div>
