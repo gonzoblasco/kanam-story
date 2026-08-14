@@ -156,6 +156,20 @@ describe('markdownToPdfmakeContent', () => {
     expect(content).toContainEqual(expect.objectContaining({ text: 'Un corazón que se pasa de portador.', italics: true }));
   });
 
+  it('parses inline bold inside a blockquote instead of leaking it', () => {
+    const content = markdownToPdfmakeContent('> Un **héroe** y una *nota*');
+    expect(content).toContainEqual(
+      expect.objectContaining({
+        text: [
+          expect.objectContaining({ text: 'Un ' }),
+          expect.objectContaining({ text: 'héroe', bold: true }),
+          expect.objectContaining({ text: ' y una ' }),
+          expect.objectContaining({ text: 'nota', italics: true }),
+        ],
+      }),
+    );
+  });
+
   it('maps plain paragraphs without styles', () => {
     const content = markdownToPdfmakeContent('Santiago abrió el bolso.');
     expect(content).toContainEqual(expect.objectContaining({ text: 'Santiago abrió el bolso.' }));

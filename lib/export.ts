@@ -206,7 +206,7 @@ export function markdownToPdfmakeContent(md: string): Content[] {
       list.push({ text: inlineToPdfmake(li[1]), margin: [0, 1, 0, 1] });
     } else if (quote) {
       flushList();
-      content.push({ text: quote[1], style: 'quote', margin: [8, 2, 0, 4], italics: true });
+      content.push({ text: inlineToPdfmake(quote[1]), style: 'quote', margin: [8, 2, 0, 4], italics: true });
     } else {
       flushList();
       content.push({ text: inlineToPdfmake(line), margin: [0, 2, 0, 6] });
