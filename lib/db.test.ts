@@ -361,6 +361,38 @@ describe('db: CRUD', () => {
     expect((await messagesDB.listByConversation(conv.id)).length).toBe(0);
     expect((await beatsDB.listByProject(p.id)).length).toBe(0);
   });
+
+  it('chapter delete cascades to its scenes and beats (chapter + scene level)', async () => {
+    const { projectsDB, chaptersDB, scenesDB, beatsDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const ch = await chaptersDB.create(makeChapter(p.id, 0));
+    const sc1 = await scenesDB.create(makeScene(p.id, ch.id, 0));
+    await scenesDB.create(makeScene(p.id, ch.id, 1));
+    // A chapter-level beat and a scene-level beat on sc1.
+    const chapterBeat = await beatsDB.create(makeBeat(p.id, ch.id));
+    const sceneBeat = await beatsDB.create({ ...makeBeat(p.id, ch.id), sceneId: sc1.id });
+
+    await chaptersDB.delete(ch.id);
+
+    expect((await chaptersDB.listByProject(p.id)).length).toBe(0);
+    expect((await scenesDB.listByChapter(ch.id)).length).toBe(0);
+    expect((await beatsDB.listByProject(p.id)).length).toBe(0);
+    expect(await beatsDB.get(chapterBeat.id)).toBeUndefined();
+    expect(await beatsDB.get(sceneBeat.id)).toBeUndefined();
+  });
+
+  it('scene delete cascades to its scene-level beats', async () => {
+    const { projectsDB, chaptersDB, scenesDB, beatsDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const ch = await chaptersDB.create(makeChapter(p.id, 0));
+    const sc = await scenesDB.create(makeScene(p.id, ch.id, 0));
+    const beat = await beatsDB.create({ ...makeBeat(p.id, ch.id), sceneId: sc.id });
+
+    await scenesDB.delete(sc.id);
+
+    expect((await scenesDB.listByChapter(ch.id)).length).toBe(0);
+    expect(await beatsDB.get(beat.id)).toBeUndefined();
+  });
 });
 
 // --- Fixtures (only required fields) ---
