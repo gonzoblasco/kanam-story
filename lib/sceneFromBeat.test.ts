@@ -73,4 +73,30 @@ describe('planGenerateScene', () => {
     const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes });
     expect(plan.scene.order).toBe(2);
   });
+
+  it('reutiliza la escena existente del beat en lugar de crear otra (clicks repetidos)', () => {
+    const scenes: Scene[] = [
+      { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'El primer encuentro', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+    ];
+    const beat = makeBeat({ sceneId: 's1' });
+    const plan = planGenerateScene({ beat, projectId: 'p1', chapters, scenes });
+    expect(plan.existingSceneId).toBe('s1');
+    expect(plan.createChapter).toBeNull();
+  });
+
+  it('no marca escena existente cuando el beat no tiene sceneId', () => {
+    const scenes: Scene[] = [
+      { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'A', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+    ];
+    const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes });
+    expect(plan.existingSceneId).toBeNull();
+  });
+
+  it('devuelve null en existingSceneId si la escena del beat ya no existe', () => {
+    const beat = makeBeat({ sceneId: 'desaparecida' });
+    const plan = planGenerateScene({ beat, projectId: 'p1', chapters, scenes: [] });
+    expect(plan.existingSceneId).toBeNull();
+    expect(plan.createChapter).toBeNull();
+    expect(plan.scene.chapterId).toBe('ch1');
+  });
 });

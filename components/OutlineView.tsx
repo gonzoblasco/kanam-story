@@ -162,6 +162,7 @@ export default function OutlineView() {
     suggestBeats,
     createChapter,
     createScene,
+    selectScene,
     setView,
     requestEditorFocus,
     announce,
@@ -314,6 +315,7 @@ export default function OutlineView() {
 
   // U4: crea la escena dedicada para un beat (y el capítulo si falta), la
   // selecciona, relinkea el beat dentro de ella y abre el editor con el foco.
+  // Si el beat ya pertenece a una escena, la reutiliza en lugar de duplicarla.
   const generateScene = async (beatId: string) => {
     const beat = beats.find((b) => b.id === beatId);
     if (!beat || !currentProject || generatingBeatId) return;
@@ -325,6 +327,16 @@ export default function OutlineView() {
         chapters,
         scenes,
       });
+
+      // Reutiliza la escena existente del beat (clicks repetidos no duplican).
+      if (plan.existingSceneId) {
+        selectScene(plan.existingSceneId);
+        setView('editor');
+        requestEditorFocus();
+        announce(`Escena "${beat.title.trim() || 'Escena nueva'}" abierta.`);
+        return;
+      }
+
       let chapterId = plan.scene.chapterId;
       if (plan.createChapter) {
         const created = await createChapter(plan.createChapter);

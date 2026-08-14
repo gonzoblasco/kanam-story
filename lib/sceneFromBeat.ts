@@ -9,6 +9,9 @@ import type { Beat, Chapter, Scene } from '@/types';
  * el beat dentro de ella (para que el outline quede coherente).
  *
  * Reglas (estructuras opcionales):
+ * - Si el beat ya pertenece a una escena existente, se **reutiliza** esa escena
+ *   (no se crea otra): el handler la selecciona y la abre, evitando duplicados
+ *   por clicks repetidos.
  * - Si el beat pertenece a un capítulo existente, se reutiliza.
  * - Si el beat no tiene capítulo, se planifica crearlo automáticamente.
  * - El título de la escena es el del beat (fallback "Escena nueva").
@@ -35,6 +38,12 @@ export interface SceneInput {
 
 export interface GenerateScenePlan {
   beatId: string;
+  /**
+   * Id de la escena existente a la que ya pertenece el beat, o `null` si hay
+   * que crear una nueva. Cuando no es nulo, el handler la selecciona y abre en
+   * vez de crear otra (evita duplicados por clicks repetidos).
+   */
+  existingSceneId: string | null;
   /** Capítulo a crear si el beat no pertenece a ninguno existente (null = reutilizar). */
   createChapter: ChapterInput | null;
   scene: SceneInput;
@@ -47,6 +56,11 @@ export function planGenerateScene(input: {
   scenes: Scene[];
 }): GenerateScenePlan {
   const { beat, projectId, chapters, scenes } = input;
+
+  // Reutiliza la escena a la que el beat ya pertenece (si sigue existiendo).
+  const existingSceneId = beat.sceneId
+    ? (scenes.find((s) => s.id === beat.sceneId)?.id ?? null)
+    : null;
 
   const existingChapter = beat.chapterId
     ? chapters.find((c) => c.id === beat.chapterId)
@@ -71,6 +85,7 @@ export function planGenerateScene(input: {
 
   return {
     beatId: beat.id,
+    existingSceneId,
     createChapter,
     scene: {
       projectId,
