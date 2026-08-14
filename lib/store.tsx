@@ -273,6 +273,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [selectProject]);
 
   useEffect(() => {
+    // Gate on `ready`: before IndexedDB loads the real settings, `settings.theme`
+    // is still the hardcoded 'dark' default. Running this effect on mount would
+    // flash the wrong theme and overwrite the persisted `kanam-theme` in
+    // localStorage, defeating the anti-flash script in layout.tsx. The inline
+    // script already applied the persisted theme before first paint; once the
+    // real settings arrive we reconcile and mirror the choice.
+    if (!ready) return;
     const theme = settings.theme === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-bs-theme', theme);
     // Mirror the theme to localStorage so the inline script in layout.tsx can
@@ -283,7 +290,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore (private mode, etc.) */
     }
-  }, [settings.theme]);
+  }, [settings.theme, ready]);
 
   const setSettings = useCallback(async (patch: Partial<Settings>) => {
     const updated = await settingsDB.update(patch);
