@@ -1,7 +1,8 @@
 'use client';
 
 import { useApp } from '@/lib/store';
-import type { Chapter } from '@/types';
+import { STORY_SECTIONS } from '@/lib/storySections';
+import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
   const {
@@ -19,7 +20,10 @@ export default function ProjectTree() {
     currentSceneId,
     selectScene,
     settings,
+    view,
     setView,
+    activeStorySection,
+    setActiveStorySection,
     setCurrentOutlineChapterId,
   } = useApp();
 
@@ -143,6 +147,49 @@ export default function ProjectTree() {
           </div>
         ))}
       </div>
+
+      <nav className="sidebar-section" aria-label="Secciones">
+        <div className="sidebar-section-title">
+          <span>Navegación</span>
+        </div>
+        <button
+          type="button"
+          className={`tree-item sidebar-nav-item ${view === 'editor' ? 'active' : ''}`}
+          aria-current={view === 'editor' ? 'true' : undefined}
+          onClick={() => setView('editor')}
+        >
+          <i className="bi bi-pencil" />
+          <span>Escritura</span>
+        </button>
+        <button
+          type="button"
+          className={`tree-item sidebar-nav-item ${view === 'outline' ? 'active' : ''}`}
+          aria-current={view === 'outline' ? 'true' : undefined}
+          onClick={() => setView('outline')}
+        >
+          <i className="bi bi-list-nested" />
+          <span>Outline</span>
+        </button>
+        <div className="sidebar-nav-group">Historia</div>
+        {STORY_SECTIONS.map((s) => {
+          const isActive = view === 'story' && activeStorySection === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              className={`tree-item sidebar-nav-item ${isActive ? 'active' : ''}`}
+              aria-current={isActive ? 'true' : undefined}
+              onClick={() => {
+                setActiveStorySection(s.key as StorySectionKey);
+                setView('story');
+              }}
+            >
+              <i className={`bi ${s.icon}`} />
+              <span>{s.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       <div className="sidebar-section">
         <div className="sidebar-section-title">

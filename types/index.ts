@@ -1,3 +1,13 @@
+/** Keys of the stacked sections shown in the Historia view (Fase 4, U1). */
+export type StorySectionKey =
+  | 'co-writer'
+  | 'brainstorm'
+  | 'characters'
+  | 'world'
+  | 'bible'
+  | 'bible-settings'
+  | 'compass';
+
 export type StyleMode = 'featured' | 'custom' | 'match';
 
 /** Narrative style of the project. `match` (Match My Style) arrives in Slice 9. */

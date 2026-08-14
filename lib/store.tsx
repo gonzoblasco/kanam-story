@@ -16,6 +16,7 @@ import type {
   ContentAction,
   StyleProfile,
   SceneSnapshot,
+  StorySectionKey,
 } from '@/types';
 import {
   projectsDB,
@@ -66,11 +67,14 @@ interface AppState {
   currentConversationId: string | null;
   messages: Message[];
   beats: Beat[];
-  view: 'editor' | 'outline';
+  view: 'editor' | 'outline' | 'story';
+  /** Sección de Historia activa en la vista apilada (sidebar). */
+  activeStorySection: StorySectionKey;
   currentOutlineChapterId: string | null;
 
   setSettings: (patch: Partial<Settings>) => Promise<void>;
-  setView: (view: 'editor' | 'outline') => void;
+  setView: (view: 'editor' | 'outline' | 'story') => void;
+  setActiveStorySection: (key: StorySectionKey) => void;
   setCurrentOutlineChapterId: (id: string | null) => void;
   refreshProjects: () => Promise<void>;
   selectProject: (id: string | null) => Promise<void>;
@@ -176,10 +180,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [beats, setBeats] = useState<Beat[]>([]);
-  const [view, setViewState] = useState<'editor' | 'outline'>('editor');
+  const [view, setViewState] = useState<'editor' | 'outline' | 'story'>('editor');
+  const [activeStorySection, setActiveStorySectionState] = useState<StorySectionKey>('co-writer');
   const [currentOutlineChapterId, setCurrentOutlineChapterIdState] = useState<string | null>(null);
 
-  const setView = useCallback((v: 'editor' | 'outline') => setViewState(v), []);
+  const setView = useCallback((v: 'editor' | 'outline' | 'story') => setViewState(v), []);
+  const setActiveStorySection = useCallback((key: StorySectionKey) => setActiveStorySectionState(key), []);
   const setCurrentOutlineChapterId = useCallback(
     (id: string | null) => setCurrentOutlineChapterIdState(id),
     [],
@@ -1109,9 +1115,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     messages,
     beats,
     view,
+    activeStorySection,
     currentOutlineChapterId,
     setSettings,
     setView,
+    setActiveStorySection,
     setCurrentOutlineChapterId,
     refreshProjects,
     selectProject,

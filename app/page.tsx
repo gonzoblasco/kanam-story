@@ -7,7 +7,7 @@ import SettingsModal from '@/components/SettingsModal';
 import ProjectTree from '@/components/ProjectTree';
 import Editor from '@/components/Editor';
 import OutlineView from '@/components/OutlineView';
-import RightPanel from '@/components/RightPanel';
+import StorySections from '@/components/StorySections';
 import ExportMenu from '@/components/ExportMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import SearchPanel from '@/components/SearchPanel';
@@ -31,16 +31,15 @@ export default function HomePage() {
     );
   }
 
-  const shellClass = [
-    'app-shell',
-    settings.sidebarCollapsed ? 'sidebar-collapsed' : '',
-    settings.rightPanelCollapsed ? 'right-collapsed' : '',
-  ]
+  const shellClass = ['app-shell', settings.sidebarCollapsed ? 'sidebar-collapsed' : '']
     .filter(Boolean)
     .join(' ');
 
   return (
     <div className={shellClass}>
+      <a className="skip-link" href="#contenido-principal">
+        Saltar al contenido principal
+      </a>
       <header className="topbar">
         <button
           className="icon-btn"
@@ -62,7 +61,7 @@ export default function HomePage() {
           ) : null}
           <button
             className="btn btn-sm btn-outline-secondary"
-            title={view === 'outline' ? 'Volver al editor' : 'Ver el outline'}
+            title="Alternar entre editor y outline"
             onClick={() => setView(view === 'outline' ? 'editor' : 'outline')}
           >
             <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
@@ -107,11 +106,9 @@ export default function HomePage() {
         <ProjectTree />
       </aside>
 
-      <main className="main">{view === 'outline' ? <OutlineView /> : <Editor />}</main>
-
-      <aside className="right-panel">
-        <RightPanel />
-      </aside>
+      <main id="contenido-principal" className="main">
+        {view === 'outline' ? <OutlineView /> : view === 'story' ? <StorySections /> : <Editor />}
+      </main>
 
       <NewProjectModal show={showNewProject} onClose={() => setShowNewProject(false)} />
       <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} />

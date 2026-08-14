@@ -64,45 +64,32 @@ a {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px 1fr 360px;
+  grid-template-columns: 280px 1fr;
   grid-template-rows: 56px 1fr;
   grid-template-areas:
-    'topbar topbar topbar'
-    'sidebar main right';
+    'topbar topbar'
+    'sidebar main';
   height: 100vh;
   overflow: hidden;
 }
 
 .app-shell.sidebar-collapsed {
-  grid-template-columns: 56px 1fr 360px;
-}
-
-.app-shell.right-collapsed {
-  grid-template-columns: 280px 1fr 56px;
-}
-
-.app-shell.sidebar-collapsed.right-collapsed {
-  grid-template-columns: 56px 1fr 56px;
+  grid-template-columns: 56px 1fr;
 }
 
 @media (max-width: 1100px) {
   .app-shell {
-    grid-template-columns: 240px 1fr 320px;
+    grid-template-columns: 240px 1fr;
   }
 }
 
 @media (max-width: 900px) {
   .app-shell,
-  .app-shell.sidebar-collapsed,
-  .app-shell.right-collapsed,
-  .app-shell.sidebar-collapsed.right-collapsed {
+  .app-shell.sidebar-collapsed {
     grid-template-columns: 220px 1fr;
     grid-template-areas:
       'topbar topbar'
       'sidebar main';
-  }
-  .right-panel {
-    display: none !important;
   }
 }
 
@@ -178,47 +165,92 @@ a {
   margin: 0 auto;
 }
 
-.right-panel {
-  grid-area: right;
-  background: var(--sl-surface);
-  border-left: 1px solid var(--sl-border);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
+/* ===== Fase 4 (U1): a11y integrada ===== */
 
-.right-panel-tabs {
-  display: flex;
-  align-items: stretch;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  border-bottom: 1px solid var(--sl-border);
-}
-
-.right-panel-tab {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  padding: 0.75rem 0.6rem;
-  text-align: center;
-  font-size: 0.8rem;
+/* Skip link: oculto hasta recibir foco, aparece al tabular. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 2000;
+  padding: 0.6rem 1rem;
+  background: var(--sl-accent-2);
+  color: #fff;
+  border-radius: 0 0 8px 8px;
   font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus-visible {
+  top: 0;
+  outline: 2px solid var(--sl-accent);
+  outline-offset: 2px;
+}
+
+/* Foco visible en todos los controles navegables (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid var(--sl-accent-2);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Sidebar: navegación de secciones (Escritura / Outline / Historia). */
+.sidebar-nav-group {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--sl-text-muted);
+  padding: 0.5rem 0.5rem 0.2rem;
+}
+.sidebar-nav-item {
+  width: 100%;
+  text-align: left;
   background: transparent;
   border: none;
+  font-size: 0.9rem;
+  color: var(--sl-text);
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
+}
+.sidebar-nav-item:hover {
+  background: var(--sl-surface-2);
+}
+.sidebar-nav-item.active {
+  background: var(--sl-surface-2);
+  color: var(--sl-accent);
+  border-left: 3px solid var(--sl-accent-2);
 }
 
-.right-panel-tab.active {
-  color: var(--sl-accent-2);
-  border-bottom-color: var(--sl-accent-2);
+/* Secciones apiladas de la vista Historia. */
+.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
-
-.right-panel-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
+.view-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--sl-text);
+  margin: 0 0 1rem;
+}
+.stack-section {
+  background: var(--sl-surface);
+  border: 1px solid var(--sl-border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.stack-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--sl-accent);
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+}
+.stack-section-body {
+  color: var(--sl-text);
 }
 
 .empty-state {
