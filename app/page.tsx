@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import NewProjectModal from '@/components/NewProjectModal';
 import SettingsModal from '@/components/SettingsModal';
@@ -16,6 +16,7 @@ import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
+  const newProjectTriggerRef = useRef<HTMLButtonElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -73,6 +74,7 @@ export default function HomePage() {
             {view === 'outline' ? 'Editor' : 'Outline'}
           </button>
           <button
+            ref={newProjectTriggerRef}
             className="btn btn-sm btn-outline-primary"
             onClick={() => setShowNewProject(true)}
           >
@@ -115,7 +117,15 @@ export default function HomePage() {
         {view === 'outline' ? <OutlineView /> : view === 'story' ? <StorySections /> : <Editor />}
       </main>
 
-      <NewProjectModal show={showNewProject} onClose={() => setShowNewProject(false)} />
+      <NewProjectModal
+        show={showNewProject}
+        onClose={() => {
+          setShowNewProject(false);
+          // Restaura el foco al botón que abrió el modal para que no quede
+          // atrapado en un nodo aria-hidden (a11y, WCAG 2.4.3).
+          newProjectTriggerRef.current?.focus();
+        }}
+      />
       <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} />
       {showSearch ? <SearchPanel onClose={() => setShowSearch(false)} /> : null}
       {showVersionHistory ? (
