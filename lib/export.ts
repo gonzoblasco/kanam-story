@@ -1,4 +1,5 @@
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
+import type { Content } from 'pdfmake/interfaces';
 import { characterTypeLabel } from '@/lib/labels';
 
 /**
@@ -108,4 +109,127 @@ export function downloadTextFile(filename: string, text: string, mime = 'text/ma
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** Triggers a browser download of an arbitrary Blob (binary exports). */
+export function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Builds a PDF of the manuscript using pdfmake. Converts the markdown into a
+ * pdfmake document definition (headings, paragraphs, lists) and downloads it.
+ */
+export async function exportManuscriptPdf(sources: ExportSources, filename: string): Promise<void> {
+  const md = buildManuscriptMarkdown(sources);
+  const content = markdownToPdfmakeContent(md);
+  // Dynamic import keeps pdfmake (large) out of the initial bundle.
+  const pdfMake = await import('pdfmake/build/pdfmake');
+  // vfs_fonts ships no types; its shape is { pdfMake: { vfs: Record<string,string> } }.
+  const vfsFonts = (await import('pdfmake/build/vfs_fonts')).default as unknown as {
+    pdfMake: { vfs: Record<string, string> };
+  };
+  pdfMake.addVirtualFileSystem(vfsFonts.pdfMake.vfs);
+  pdfMake.createPdf({ content, pageSize: 'A4', pageMargins: [56, 56, 56, 56] }).download(filename);
+}
+
+/**
+ * Converts markdown lines into a pdfmake content array.
+ * Supports H1/H2/H3 headings, consecutive lists (- and *), blockquotes and
+ * paragraphs. Consecutive list lines are grouped into a pdfmake `ul` block.
+ */
+export function markdownToPdfmakeContent(md: string): Content[] {
+  const lines = md.split('\n');
+  const content: Content[] = [];
+  let list: Content[] | null = null;
+
+  function flushList() {
+    if (list) {
+      content.push({ ul: list, margin: [0, 2, 0, 6] });
+      list = null;
+    }
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (!line.trim()) {
+      flushList();
+      content.push({ text: '', margin: [0, 0, 0, 4] });
+      continue;
+    }
+    const h1 = line.match(/^# (.+)$/);
+    const h2 = line.match(/^## (.+)$/);
+    const h3 = line.match(/^### (.+)$/);
+    const li = line.match(/^[-*] (.+)$/);
+    const quote = line.match(/^> (.+)$/);
+    if (h1) {
+      flushList();
+      content.push({ text: h1[1], style: 'h1', margin: [0, 12, 0, 6] });
+    } else if (h2) {
+      flushList();
+      content.push({ text: h2[1], style: 'h2', margin: [0, 10, 0, 4] });
+    } else if (h3) {
+      flushList();
+      content.push({ text: h3[1], style: 'h3', margin: [0, 8, 0, 4] });
+    } else if (li) {
+      if (!list) list = [];
+      list.push({ text: li[1], margin: [0, 1, 0, 1] });
+    } else if (quote) {
+      flushList();
+      content.push({ text: quote[1], style: 'quote', margin: [8, 2, 0, 4], italics: true });
+    } else {
+      flushList();
+      content.push({ text: line, margin: [0, 2, 0, 6] });
+    }
+  }
+  flushList();
+  return content;
+}
+
+/**
+ * Builds a .docx of the manuscript using the `docx` library and downloads it.
+ * Converts the markdown into docx paragraphs with heading styles.
+ */
+export async function exportManuscriptDocx(sources: ExportSources, filename: string): Promise<void> {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+  const md = buildManuscriptMarkdown(sources);
+
+  const paragraphs: InstanceType<typeof Paragraph>[] = [];
+  const title = md.split('\n')[0].replace(/^# /, '');
+  paragraphs.push(
+    new Paragraph({ text: title, heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }),
+  );
+
+  for (const raw of md.split('\n').slice(1)) {
+    const line = raw.trimEnd();
+    if (!line.trim()) {
+      paragraphs.push(new Paragraph({ text: '', spacing: { after: 120 } }));
+      continue;
+    }
+    const h1 = line.match(/^# (.+)$/);
+    const h2 = line.match(/^## (.+)$/);
+    const h3 = line.match(/^### (.+)$/);
+    const li = line.match(/^[-*] (.+)$/);
+    const quote = line.match(/^> (.+)$/);
+    const bold = line.match(/^\*\*(.+)\*\*$/);
+    if (h1) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(h1[1])] }));
+    else if (h2) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(h2[1])] }));
+    else if (h3) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(h3[1])] }));
+    else if (li) paragraphs.push(new Paragraph({ text: li[1], bullet: { level: 0 } }));
+    else if (quote)
+      paragraphs.push(new Paragraph({ children: [new TextRun({ text: quote[1], italics: true })], indent: { left: 720 } }));
+    else if (bold) paragraphs.push(new Paragraph({ children: [new TextRun({ text: bold[1], bold: true })] }));
+    else paragraphs.push(new Paragraph({ text: line, spacing: { after: 160 } }));
+  }
+
+  const doc = new Document({ sections: [{ children: paragraphs }] });
+  const blob = await Packer.toBlob(doc);
+  downloadBlob(filename, blob);
 }

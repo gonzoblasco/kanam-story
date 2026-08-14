@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildManuscriptMarkdown, markdownToPlainText } from '@/lib/export';
+import { buildManuscriptMarkdown, markdownToPlainText, markdownToPdfmakeContent } from '@/lib/export';
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
 
 const project: Project = {
@@ -116,3 +116,37 @@ describe('markdownToPlainText', () => {
     expect(plain).not.toContain('-');
   });
 });
+
+describe('markdownToPdfmakeContent', () => {
+  it('maps headings to pdfmake heading styles', () => {
+    const content = markdownToPdfmakeContent('# Título\n\n## Capítulo\n\n### Escena');
+    expect(content).toContainEqual(expect.objectContaining({ text: 'Título', style: 'h1' }));
+    expect(content).toContainEqual(expect.objectContaining({ text: 'Capítulo', style: 'h2' }));
+    expect(content).toContainEqual(expect.objectContaining({ text: 'Escena', style: 'h3' }));
+  });
+
+  it('groups consecutive list items into a pdfmake ul block', () => {
+    const content = markdownToPdfmakeContent('- **Santiago**\n- Otro');
+    expect(content).toContainEqual(
+      expect.objectContaining({ ul: [expect.objectContaining({ text: '**Santiago**' }), expect.objectContaining({ text: 'Otro' })] }),
+    );
+  });
+
+  it('maps blockquotes to italic text', () => {
+    const content = markdownToPdfmakeContent('> Un corazón que se pasa de portador.');
+    expect(content).toContainEqual(expect.objectContaining({ text: 'Un corazón que se pasa de portador.', italics: true }));
+  });
+
+  it('maps plain paragraphs without styles', () => {
+    const content = markdownToPdfmakeContent('Santiago abrió el bolso.');
+    expect(content).toContainEqual(expect.objectContaining({ text: 'Santiago abrió el bolso.' }));
+    expect(content).not.toContainEqual(expect.objectContaining({ style: 'h1' }));
+  });
+
+  it('preserves empty lines as spacing entries', () => {
+    const content = markdownToPdfmakeContent('# Título\n\nTexto');
+    // empty line → a spacing entry with empty text
+    expect(content.some((c: { text?: string }) => 'text' in c && c.text === '')).toBe(true);
+  });
+});
+

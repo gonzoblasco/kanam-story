@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
-import { buildManuscriptMarkdown, markdownToPlainText, downloadTextFile } from '@/lib/export';
+import {
+  buildManuscriptMarkdown,
+  markdownToPlainText,
+  downloadTextFile,
+  exportManuscriptPdf,
+  exportManuscriptDocx,
+} from '@/lib/export';
 
 export default function ExportMenu() {
   const { currentProject, chapters, scenes, characters, world, beats } = useApp();
@@ -31,6 +37,16 @@ export default function ExportMenu() {
     setOpen(false);
   }
 
+  function exportPdf() {
+    exportManuscriptPdf({ project, chapters, scenes, characters, world, beats }, `${slug}.pdf`).catch(() => {});
+    setOpen(false);
+  }
+
+  function exportDocx() {
+    exportManuscriptDocx({ project, chapters, scenes, characters, world, beats }, `${slug}.docx`).catch(() => {});
+    setOpen(false);
+  }
+
   return (
     <div className="position-relative">
       <button
@@ -49,6 +65,12 @@ export default function ExportMenu() {
             </button>
             <button className="export-menu-item" onClick={exportTxt}>
               <i className="bi bi-file-earmark-text me-2" /> Texto plano (.txt)
+            </button>
+            <button className="export-menu-item" onClick={exportPdf}>
+              <i className="bi bi-file-earmark-pdf me-2" /> PDF (.pdf)
+            </button>
+            <button className="export-menu-item" onClick={exportDocx}>
+              <i className="bi bi-file-earmark-word me-2" /> Word (.docx)
             </button>
           </div>
         </>
