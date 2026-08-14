@@ -74,13 +74,13 @@ beforeEach(async () => {
 
 describe('db: pure migrations', () => {
   it('migrateProjectStyle: string → { mode: custom, custom }', () => {
-    const out = migrateProjectStyle({ id: 'p1', style: 'gothic' } as Project);
+    const out = migrateProjectStyle({ id: 'p1', style: 'gothic' } as unknown as Project);
     expect(out.style).toEqual({ mode: 'custom', custom: 'gothic' });
   });
 
   it('migrateProjectStyle: keeps existing object style unchanged', () => {
     const style = { mode: 'featured', featured: 'noir' } as Project['style'];
-    const out = migrateProjectStyle({ id: 'p1', style } as Project);
+    const out = migrateProjectStyle({ id: 'p1', style } as unknown as Project);
     expect(out.style).toBe(style);
   });
 
@@ -89,7 +89,7 @@ describe('db: pure migrations', () => {
       id: 'c1',
       name: 'Ada',
       role: 'protagonist',
-    } as Character);
+    } as unknown as Character);
     expect(out.type).toBe('protagonist');
     expect(out.pronouns).toBe('');
     expect(out.groups).toEqual([]);
@@ -105,7 +105,7 @@ describe('db: pure migrations', () => {
       role: 'antagonist',
       pronouns: 'she/her',
       inContext: false,
-    } as Character);
+    } as unknown as Character);
     expect(out.type).toBe('antagonist');
     expect(out.pronouns).toBe('she/her');
     expect(out.inContext).toBe(false);
@@ -116,7 +116,7 @@ describe('db: pure migrations', () => {
       id: 'w1',
       name: 'New Terra',
       category: 'location',
-    } as WorldEntity);
+    } as unknown as WorldEntity);
     expect(out.kind).toBe('place');
     expect(out.otherNames).toEqual([]);
     expect(out.traits).toEqual([]);
@@ -124,9 +124,9 @@ describe('db: pure migrations', () => {
   });
 
   it('migrateWorldCategory: maps category legacy values (lugar, magia)', () => {
-    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'lugar' } as WorldEntity).kind).toBe('place');
-    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'magia' } as WorldEntity).kind).toBe('magic_system');
-    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'organizacion' } as WorldEntity).kind).toBe('organization');
+    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'lugar' } as unknown as WorldEntity).kind).toBe('place');
+    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'magia' } as unknown as WorldEntity).kind).toBe('magic_system');
+    expect(migrateWorldCategory({ id: 'w1', name: 'W', category: 'organizacion' } as unknown as WorldEntity).kind).toBe('organization');
   });
 
   it('migrateWorldCategory: unknown category falls back to other', () => {
@@ -134,7 +134,7 @@ describe('db: pure migrations', () => {
       id: 'w1',
       name: 'New Terra',
       category: 'unknown-thing',
-    } as WorldEntity);
+    } as unknown as WorldEntity);
     expect(out.kind).toBe('other');
     expect(out.inContext).toBe(true);
   });
