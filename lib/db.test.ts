@@ -157,8 +157,11 @@ describe('db: pure migrations', () => {
 describe('db: CRUD', () => {
   it('projects: create, list (desc by updatedAt), get, update, delete', async () => {
     const { projectsDB } = db;
-    const a = await projectsDB.create(makeProject({ name: 'A', updatedAt: 100 }));
-    await projectsDB.create(makeProject({ name: 'B', updatedAt: 200 }));
+    // `create` stamps its own `updatedAt` (Date.now), so to assert the desc
+    // sort deterministically we must give the two rows distinct timestamps.
+    const a = await projectsDB.create(makeProject({ name: 'A' }));
+    await new Promise((r) => setTimeout(r, 5));
+    await projectsDB.create(makeProject({ name: 'B' }));
 
     expect((await projectsDB.list()).map((p) => p.name)).toEqual(['B', 'A']);
 
