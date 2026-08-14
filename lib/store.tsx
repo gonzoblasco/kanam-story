@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import type {
   Project,
   Chapter,
@@ -78,6 +78,10 @@ interface AppState {
   editorFocusNonce: number;
   /** Pide al editor tomar el foco (nonce observado por `Editor`). */
   requestEditorFocus: () => void;
+  /** Mensaje para la live region global (role="status", persistente). */
+  announcement: string;
+  /** Anuncia un mensaje en la live region global. */
+  announce: (msg: string) => void;
   setActiveStorySection: (key: StorySectionKey) => void;
   setCurrentOutlineChapterId: (id: string | null) => void;
   refreshProjects: () => Promise<void>;
@@ -191,6 +195,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // desde el outline). Cada `requestEditorFocus()` incrementa el contador y el
   // `Editor` lo observa para llamar `editor.commands.focus()`.
   const [editorFocusNonce, setEditorFocusNonce] = useState(0);
+  // U4: anuncio global para live region. Se muestra en un `role="status"` que
+  // vive a nivel de página (persistente) para que el AT lo lea aunque el
+  // componente que generó el feedback cambie de vista (p.ej. Outline → Editor).
+  const [announcement, setAnnouncement] = useState('');
+  const announceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announce = useCallback((msg: string) => {
+    if (announceTimer.current) clearTimeout(announceTimer.current);
+    setAnnouncement(msg);
+    // Limpia el anuncio para que un mensaje repetido vuelva a anunciarse.
+    announceTimer.current = setTimeout(() => setAnnouncement(''), 5000);
+  }, []);
 
   const setView = useCallback((v: 'editor' | 'outline' | 'story') => setViewState(v), []);
   const requestEditorFocus = useCallback(() => setEditorFocusNonce((n) => n + 1), []);
@@ -1130,6 +1145,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setView,
     editorFocusNonce,
     requestEditorFocus,
+    announcement,
+    announce,
     setActiveStorySection,
     setCurrentOutlineChapterId,
     refreshProjects,

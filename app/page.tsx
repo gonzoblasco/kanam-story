@@ -14,7 +14,7 @@ import SearchPanel from '@/components/SearchPanel';
 import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 
 export default function HomePage() {
-  const { ready, currentProject, settings, setSettings, view, setView } = useApp();
+  const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -40,6 +40,11 @@ export default function HomePage() {
       <a className="skip-link" href="#contenido-principal">
         Saltar al contenido principal
       </a>
+      {/* U4: live region global persistente — anuncia feedback (p.ej. escena
+          generada) aunque el componente que lo originó cambie de vista. */}
+      <div role="status" aria-live="polite" className="visually-hidden">
+        {announcement}
+      </div>
       <header className="topbar">
         <button
           className="icon-btn"

@@ -164,15 +164,16 @@ export default function OutlineView() {
     createScene,
     setView,
     requestEditorFocus,
+    announce,
   } = useApp();
 
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Beat[] | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
-  // U4: id del beat cuyo botón "Generar escena" está en progreso, y feedback
-  // de éxito/error anunciado por live region (role="status").
+  // U4: id del beat cuyo botón "Generar escena" está en progreso. El feedback
+  // de éxito/error se anuncia por la live region global (`announce`), que vive
+  // a nivel de página para seguir presente tras cambiar a la vista editor.
   const [generatingBeatId, setGeneratingBeatId] = useState<string | null>(null);
-  const [generateFeedback, setGenerateFeedback] = useState<string | null>(null);
 
   // Slice 10: outline filters (POV and tense).
   const [filterPov, setFilterPov] = useState<string>('all');
@@ -317,7 +318,6 @@ export default function OutlineView() {
     const beat = beats.find((b) => b.id === beatId);
     if (!beat || !currentProject || generatingBeatId) return;
     setGeneratingBeatId(beatId);
-    setGenerateFeedback(null);
     try {
       const plan = planGenerateScene({
         beat,
@@ -341,9 +341,9 @@ export default function OutlineView() {
       }
       setView('editor');
       requestEditorFocus();
-      setGenerateFeedback(`Escena "${scene.title}" generada.`);
+      announce(`Escena "${scene.title}" generada.`);
     } catch (e) {
-      setGenerateFeedback(e instanceof Error ? e.message : 'No se pudo generar la escena.');
+      announce(e instanceof Error ? e.message : 'No se pudo generar la escena.');
     } finally {
       setGeneratingBeatId(null);
     }
@@ -374,10 +374,6 @@ export default function OutlineView() {
   return (
     <div className="outline-view">
       <h1 className="view-title">Outline</h1>
-      {/* U4: live region polite — anuncia el resultado de generar una escena. */}
-      <div role="status" aria-live="polite" className="visually-hidden">
-        {generateFeedback ?? ''}
-      </div>
       <div className="outline-toolbar">
         <select
           className="form-select form-select-sm"
