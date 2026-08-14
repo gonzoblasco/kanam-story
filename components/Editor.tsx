@@ -15,7 +15,7 @@ import {
   buildTensionPrompt,
   type ExpandLength,
 } from '@/lib/prompts';
-import { ollamaChat } from '@/lib/ollama';
+import { ollamaChatStream } from '@/lib/ollama';
 
 const REWRITE_STYLES = [
   'más evocativo y sensorial',
@@ -67,6 +67,9 @@ export default function Editor() {
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // B7: while streaming, suppress the debounced autosave so partial AI text is
+  // never persisted mid-generation.
+  const streamingRef = useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -104,6 +107,9 @@ export default function Editor() {
 
   const handleEditorUpdate = useCallback(() => {
     if (!editor) return;
+    // B7: never autosave partial AI text while a stream is in progress. The
+    // final content is saved explicitly once generation completes.
+    if (streamingRef.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       saveContent(editor.getHTML());
@@ -231,6 +237,37 @@ export default function Editor() {
     setBusy(kind);
     setError(null);
 
+    // B7: streaming state. `preStreamHtml` lets us revert the partial proposal
+    // if the user aborts or the request fails; `started` tracks whether any
+    // chunk has been inserted into the editor yet.
+    let preStreamHtml = '';
+    let full = '';
+    let started = false;
+
+    // B7: insert the first chunk (replacing the selection / whole scene where
+    // the kind requires it) and append subsequent chunks at the end of the
+    // growing text. `insertContent`/`insertContentAt` move the selection to the
+    // end of the inserted content, so the next chunk lands right after it.
+    const startInsert = (first: string) => {
+      if (kind === 'expand' || kind === 'tension') {
+        editor.commands.setContent(first, { emitUpdate: false });
+        editor.commands.setTextSelection(editor.state.doc.content.size);
+      } else if (kind === 'describe' || kind === 'rewrite' || kind === 'dialogue') {
+        // B7: dialogue keeps the blank-line wrapper the non-streaming path used.
+        const value = kind === 'dialogue' ? `\n\n${first}` : first;
+        editor.chain().focus().deleteSelection().insertContent(value).run();
+      } else {
+        editor.chain().focus().insertContent(first).run();
+      }
+    };
+    const appendInsert = (chunk: string) => {
+      if (kind === 'expand' || kind === 'tension') {
+        editor.chain().focus().insertContentAt(editor.state.doc.content.size, chunk).run();
+      } else {
+        editor.chain().focus().insertContent(chunk).run();
+      }
+    };
+
     try {
       const ctx = buildContextNow();
       const { from, to } = editor.state.selection;
@@ -279,32 +316,61 @@ export default function Editor() {
         temperature = 0.8;
       }
 
-      const content = await ollamaChat({
-        ollamaUrl: settings.ollamaUrl,
-        model: settings.ollamaModel,
-        messages: [{ role: 'user', content: prompt }],
-        signal: controller.signal,
-        temperature,
-      });
+      // B7: capture the pre-stream content and suppress autosave for the
+      // duration of the stream. Clear any pending debounce so a stale save
+      // can't fire mid-generation.
+      preStreamHtml = editor.getHTML();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      streamingRef.current = true;
 
-      const clean = content.trim();
+      await ollamaChatStream(
+        {
+          ollamaUrl: settings.ollamaUrl,
+          model: settings.ollamaModel,
+          messages: [{ role: 'user', content: prompt }],
+          signal: controller.signal,
+          temperature,
+        },
+        (chunk) => {
+          full += chunk;
+          if (!chunk) return;
+          if (!started) {
+            started = true;
+            const first = chunk.trimStart();
+            if (first) startInsert(first);
+          } else {
+            appendInsert(chunk);
+          }
+        },
+      );
+
+      const clean = full.trim();
       if (!clean) {
         setError('Respuesta vacía del modelo.');
-      } else if (kind === 'write') {
-        editor.chain().focus().insertContent(clean).run();
-      } else if (kind === 'describe' || kind === 'rewrite') {
-        editor.chain().focus().deleteSelection().insertContent(clean).run();
-      } else if (kind === 'expand' || kind === 'tension') {
-        editor.commands.setContent(clean, { emitUpdate: false });
-        updateScene(scene.id, { content: clean });
-      } else if (kind === 'dialogue') {
-        const block = `\n\n${clean}\n`;
-        editor.chain().focus().deleteSelection().insertContent(block).run();
+      } else {
+        // B7: autosave is suppressed while streaming, so persist the final
+        // streamed content explicitly once generation completes.
+        if (kind === 'dialogue') {
+          // Preserve the trailing newline the non-streaming path appended.
+          editor.chain().focus().insertContentAt(editor.state.doc.content.size, '\n').run();
+        }
+        if (kind === 'expand' || kind === 'tension') {
+          updateScene(scene.id, { content: editor.getHTML() });
+        } else {
+          saveContent(editor.getHTML());
+        }
       }
     } catch (e) {
+      // B7: revert any partial streamed proposal so the editor matches the
+      // saved state (the old non-streaming path left the editor untouched on
+      // error/abort).
+      if (started) {
+        editor.commands.setContent(preStreamHtml, { emitUpdate: false });
+      }
       if ((e as Error).name === 'AbortError') return;
       setError(e instanceof Error ? e.message : 'La petición a la IA falló');
     } finally {
+      streamingRef.current = false;
       setBusy(null);
       abortRef.current = null;
     }
