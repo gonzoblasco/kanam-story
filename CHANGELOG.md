@@ -18,6 +18,49 @@ Refined editor + Bible ↔ tabs sync (Phase 3). The writing area gets a full for
 ### Fixed
 - **Sync ran before regeneration (U5 review).** `syncCharactersFromBible` ran before `regenerateStoryBible`, syncing the stale bible. Now regeneration runs first and syncs read the fresh bible from the DB.
 
+## [0.6.0] - 2026-08-13
+
+Outline filters + orphan scene linking (Slice 10). The outline becomes navigable and filterable by POV and tense, and orphan scenes can be linked to chapters.
+
+### Added
+- **Outline filters by POV/tense.** Filter the outline by point-of-view and tense to focus on specific narrative threads.
+- **Orphan scene linking.** Scenes not yet attached to a chapter can be linked to one, keeping the outline coherent.
+
+### Changed
+- `OutlineView` gained filter controls and orphan-scene linking UI.
+
+## [0.5.0] - 2026-08-13
+
+Match My Style (Slice 9). The co-writer can now learn the author's voice from a sample and apply it to generated prose.
+
+### Added
+- **Match My Style.** Extract a style profile from a sample of the author's writing and inject it into generation prompts, so the co-writer matches the author's voice.
+- Style profile extraction and injection in `agentPrompts` / `agentReply`.
+
+## [0.4.0] - 2026-08-13
+
+Fine-grained typed worldbuilding (Slice 8). The World tab gets typed entities with a context toggle, mirroring the rich character sheets.
+
+### Added
+- **Typed worldbuilding.** World entities with typed `kind` (location, item, faction, etc.), rich fields and a context toggle to control what is injected into the agent context.
+- `inferKind` extraction from the bible for world entities.
+
+### Fixed
+- Renamed `inferCategory` to `inferKind` and dropped a duplicate keyword in bible extraction (Slice 8 review).
+
+## [0.3.0] - 2026-08-13
+
+Rich character sheets (Slice 7). Characters get typed roles, a context toggle and AI-assisted generation.
+
+### Added
+- **Rich character sheets.** Typed roles (protagonist, supporting, antagonist, etc.), rich fields (age, appearance, personality, voice, backstory, goals) and a context toggle to control what is injected into the agent context.
+- **AI character generation.** Generate or enrich a character with the co-writer.
+- Role labels and mapping in `lib/labels.ts`.
+
+### Fixed
+- Validate character type in `update_character` and clean role mapping (Slice 7 review).
+- Use `versionchange` transaction in the DB migration; disabled the non-functional match-style option (Slice 6 review).
+
 ## [0.2.0] - 2026-08-13
 
 Editable Story Bible (Slice 6). The bible stops being only auto-generated: it becomes the editable, typed base of coherence that feeds the co-writer.
