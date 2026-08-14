@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/store';
-import { searchScenes, buildReplacePlan, type SceneSearchHit } from '@/lib/search';
+import type { Scene } from '@/types';
+import { searchScenes, buildReplacePlan, htmlToText, type SceneSearchHit } from '@/lib/search';
 
 const FIELD_LABELS: Record<string, string> = {
   content: 'Contenido',
@@ -45,7 +46,7 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
     onClose();
   }
 
-  function handleReplace() {
+  async function handleReplace() {
     if (!currentProject) return;
     const q = query.trim();
     if (!q) return;
@@ -54,8 +55,14 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
       setError('No hay coincidencias para reemplazar.');
       return;
     }
+    // Conteo sobre el texto plano (lo que realmente se reemplaza), no sobre el HTML.
     const total = plan.reduce(
-      (acc, p) => acc + p.changes.reduce((a, c) => a + countIn(c.before, q), 0),
+      (acc, p) =>
+        acc +
+        p.changes.reduce(
+          (a, c) => a + countIn(c.field === 'content' ? htmlToText(c.before) : c.before, q),
+          0,
+        ),
       0,
     );
     const ok = window.confirm(
@@ -63,13 +70,22 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
     );
     if (!ok) return;
     setError(null);
-    let done = 0;
+    // Agrupar todos los cambios de una escena en un solo updateScene y aplicarlos
+    // secuencialmente: evita que las escrituras read-modify-write concurrentes de
+    // scenesDB.update se pisen entre sí cuando una escena cambia en varios campos.
+    const byScene = new Map<string, Partial<Scene>>();
     for (const p of plan) {
+      const patch: Partial<Scene> = {};
       for (const c of p.changes) {
-        if (c.field === 'content') updateScene(p.sceneId, { content: c.after });
-        else if (c.field === 'title') updateScene(p.sceneId, { title: c.after });
-        else if (c.field === 'summary') updateScene(p.sceneId, { summary: c.after });
+        if (c.field === 'content') patch.content = c.after;
+        else if (c.field === 'title') patch.title = c.after;
+        else if (c.field === 'summary') patch.summary = c.after;
       }
+      byScene.set(p.sceneId, patch);
+    }
+    let done = 0;
+    for (const [sceneId, patch] of byScene) {
+      await updateScene(sceneId, patch);
       done += 1;
     }
     setReplaced(done);
