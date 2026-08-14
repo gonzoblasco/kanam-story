@@ -116,6 +116,8 @@ interface AppState {
 
   previewBibleCharacters: (rawMarkdown: string) => Promise<Partial<Character>[]>;
   importCharactersFromBible: (entries: Partial<Character>[]) => Promise<Character[]>;
+  /** U5: auto-sync characters from the Bible into the Characters tab (dedupe by name, no overwrite of manual edits). */
+  syncCharactersFromBible: () => Promise<{ created: number; updated: number }>;
   previewBibleWorld: (rawMarkdown: string) => Promise<Partial<WorldEntity>[]>;
   importWorldFromBible: (entries: Partial<WorldEntity>[]) => Promise<WorldEntity[]>;
 
@@ -607,6 +609,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject, createCharacter],
   );
 
+  // U5: auto-sync characters from the Bible into the Characters tab.
+  // Dedupes by name (case-insensitive) and never overwrites manual edits:
+  // only fills empty fields on existing characters, and only touches
+  // characters that came from the bible (source === 'biblia') or are new.
+  const syncCharactersFromBible = useCallback(async (): Promise<{ created: number; updated: number }> => {
+    if (!currentProject || !storyBible) return { created: 0, updated: 0 };
+    const section = storyBible.sections.find((s) => s.key === 'characters');
+    const text = (section?.manual.trim() || section?.auto || '').trim();
+    if (!text) return { created: 0, updated: 0 };
+
+    const entries = await previewBibleCharacters(text);
+    if (entries.length === 0) return { created: 0, updated: 0 };
+
+    const byName = new Map<string, Character>();
+    for (const c of characters) byName.set(c.name.trim().toLowerCase(), c);
+
+    let created = 0;
+    let updated = 0;
+    for (const e of entries) {
+      if (!e.name) continue;
+      const key = e.name.trim().toLowerCase();
+      const existing = byName.get(key);
+
+      if (!existing) {
+        await createCharacter({
+          projectId: currentProject.id,
+          name: e.name,
+          type: e.type ?? 'supporting',
+          age: e.age ?? '',
+          appearance: e.appearance ?? '',
+          personality: e.personality ?? '',
+          voice: e.voice ?? '',
+          backstory: e.backstory ?? '',
+          goals: e.goals ?? '',
+          source: 'biblia',
+        });
+        created++;
+        continue;
+      }
+
+      // Existing character: only fill empty fields, and only if it came from
+      // the bible (never overwrite a manually-authored character).
+      if (existing.source !== 'biblia') continue;
+      const patch: Partial<Character> = {};
+      if (!existing.personality && e.personality) patch.personality = e.personality;
+      if (!existing.voice && e.voice) patch.voice = e.voice;
+      if (!existing.goals && e.goals) patch.goals = e.goals;
+      if (!existing.backstory && e.backstory) patch.backstory = e.backstory;
+      if (Object.keys(patch).length > 0) {
+        await updateCharacter(existing.id, patch);
+        updated++;
+      }
+    }
+    return { created, updated };
+  }, [currentProject, storyBible, characters, previewBibleCharacters, createCharacter, updateCharacter]);
+
   const generateCharacter = useCallback(
     async (type?: string, instructions?: string): Promise<Partial<Character>[]> => {
       if (!currentProject) return [];
@@ -1006,6 +1064,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearBibleStale,
     previewBibleCharacters,
     importCharactersFromBible,
+    syncCharactersFromBible,
     previewBibleWorld,
     importWorldFromBible,
     createConversation,

@@ -18,6 +18,7 @@ export default function StoryBiblePanel() {
     updateBibleSection,
     previewBibleCharacters,
     importCharactersFromBible,
+    syncCharactersFromBible,
     previewBibleWorld,
     importWorldFromBible,
   } = useApp();
@@ -52,6 +53,13 @@ export default function StoryBiblePanel() {
     setCharactersPreview(null);
     setWorldPreview(null);
     try {
+      // U5: auto-sync detected characters into the Characters tab.
+      const { created, updated } = await syncCharactersFromBible();
+      if (created > 0 || updated > 0) {
+        setCharactersImportMsg(
+          `Sincronizados ${created} personaje(s) nuevos y ${updated} actualizado(s) desde la Biblia.`,
+        );
+      }
       await regenerateStoryBible();
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
