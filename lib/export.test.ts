@@ -128,7 +128,26 @@ describe('markdownToPdfmakeContent', () => {
   it('groups consecutive list items into a pdfmake ul block', () => {
     const content = markdownToPdfmakeContent('- **Santiago**\n- Otro');
     expect(content).toContainEqual(
-      expect.objectContaining({ ul: [expect.objectContaining({ text: '**Santiago**' }), expect.objectContaining({ text: 'Otro' })] }),
+      expect.objectContaining({
+        ul: [
+          expect.objectContaining({ text: [expect.objectContaining({ text: 'Santiago', bold: true })] }),
+          expect.objectContaining({ text: 'Otro' }),
+        ],
+      }),
+    );
+  });
+
+  it('parses inline bold and italic markers instead of leaking them', () => {
+    const content = markdownToPdfmakeContent('Un **héroe** y una *nota*');
+    expect(content).toContainEqual(
+      expect.objectContaining({
+        text: [
+          expect.objectContaining({ text: 'Un ' }),
+          expect.objectContaining({ text: 'héroe', bold: true }),
+          expect.objectContaining({ text: ' y una ' }),
+          expect.objectContaining({ text: 'nota', italics: true }),
+        ],
+      }),
     );
   });
 
@@ -146,7 +165,7 @@ describe('markdownToPdfmakeContent', () => {
   it('preserves empty lines as spacing entries', () => {
     const content = markdownToPdfmakeContent('# Título\n\nTexto');
     // empty line → a spacing entry with empty text
-    expect(content.some((c: { text?: string }) => 'text' in c && c.text === '')).toBe(true);
+    expect(content.some((c) => typeof c === 'object' && c !== null && 'text' in c && c.text === '')).toBe(true);
   });
 });
 

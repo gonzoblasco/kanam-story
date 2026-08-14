@@ -13,6 +13,7 @@ import {
 export default function ExportMenu() {
   const { currentProject, chapters, scenes, characters, world, beats } = useApp();
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!currentProject) return null;
 
@@ -38,13 +39,17 @@ export default function ExportMenu() {
   }
 
   function exportPdf() {
-    exportManuscriptPdf({ project, chapters, scenes, characters, world, beats }, `${slug}.pdf`).catch(() => {});
-    setOpen(false);
+    setError(null);
+    exportManuscriptPdf({ project, chapters, scenes, characters, world, beats }, `${slug}.pdf`)
+      .then(() => setOpen(false))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Falló la exportación a PDF'));
   }
 
   function exportDocx() {
-    exportManuscriptDocx({ project, chapters, scenes, characters, world, beats }, `${slug}.docx`).catch(() => {});
-    setOpen(false);
+    setError(null);
+    exportManuscriptDocx({ project, chapters, scenes, characters, world, beats }, `${slug}.docx`)
+      .then(() => setOpen(false))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Falló la exportación a Word'));
   }
 
   return (
@@ -60,6 +65,7 @@ export default function ExportMenu() {
         <>
           <div className="export-backdrop" onClick={() => setOpen(false)} />
           <div className="export-menu">
+            {error ? <div className="small text-danger px-2 py-1">{error}</div> : null}
             <button className="export-menu-item" onClick={exportMarkdown}>
               <i className="bi bi-filetype-md me-2" /> Markdown (.md)
             </button>

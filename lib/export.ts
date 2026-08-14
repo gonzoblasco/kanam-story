@@ -132,12 +132,35 @@ export async function exportManuscriptPdf(sources: ExportSources, filename: stri
   const content = markdownToPdfmakeContent(md);
   // Dynamic import keeps pdfmake (large) out of the initial bundle.
   const pdfMake = await import('pdfmake/build/pdfmake');
-  // vfs_fonts ships no types; its shape is { pdfMake: { vfs: Record<string,string> } }.
-  const vfsFonts = (await import('pdfmake/build/vfs_fonts')).default as unknown as {
-    pdfMake: { vfs: Record<string, string> };
-  };
-  pdfMake.addVirtualFileSystem(vfsFonts.pdfMake.vfs);
+  // vfs_fonts ships no types; its runtime shape is a flat map of
+  // { "<font>.ttf": base64 } (module.exports = vfs), NOT { pdfMake: { vfs } }.
+  const vfsFonts = (await import('pdfmake/build/vfs_fonts')).default as unknown as Record<string, string>;
+  pdfMake.addVirtualFileSystem(vfsFonts);
   pdfMake.createPdf({ content, pageSize: 'A4', pageMargins: [56, 56, 56, 56] }).download(filename);
+}
+
+/**
+ * Splits a markdown inline string into pdfmake inline text nodes, honoring
+ * `**bold**` and `*italic*` markers (pdfmake does not parse markdown itself,
+ * so the markers would otherwise leak literally into the PDF). Returns a plain
+ * string when there is no inline formatting.
+ */
+function inlineToPdfmake(text: string): Content {
+  const out: Content[] = [];
+  const re = /\*\*(.+?)\*\*|\*(?!\s)(.+?)(?<!\s)\*/g;
+  let last = 0;
+  let matched = false;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    matched = true;
+    if (m.index > last) out.push({ text: text.slice(last, m.index) });
+    if (m[1] !== undefined) out.push({ text: m[1], bold: true });
+    else out.push({ text: m[2], italics: true });
+    last = re.lastIndex;
+  }
+  if (!matched) return text;
+  if (last < text.length) out.push({ text: text.slice(last) });
+  return out;
 }
 
 /**
@@ -180,13 +203,13 @@ export function markdownToPdfmakeContent(md: string): Content[] {
       content.push({ text: h3[1], style: 'h3', margin: [0, 8, 0, 4] });
     } else if (li) {
       if (!list) list = [];
-      list.push({ text: li[1], margin: [0, 1, 0, 1] });
+      list.push({ text: inlineToPdfmake(li[1]), margin: [0, 1, 0, 1] });
     } else if (quote) {
       flushList();
       content.push({ text: quote[1], style: 'quote', margin: [8, 2, 0, 4], italics: true });
     } else {
       flushList();
-      content.push({ text: line, margin: [0, 2, 0, 6] });
+      content.push({ text: inlineToPdfmake(line), margin: [0, 2, 0, 6] });
     }
   }
   flushList();
@@ -199,6 +222,23 @@ export function markdownToPdfmakeContent(md: string): Content[] {
  */
 export async function exportManuscriptDocx(sources: ExportSources, filename: string): Promise<void> {
   const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+
+  /** Splits a markdown inline string into docx TextRuns (bold/italic). */
+  function inlineToDocxRuns(text: string): InstanceType<typeof TextRun>[] {
+    const runs: InstanceType<typeof TextRun>[] = [];
+    const re = /\*\*(.+?)\*\*|\*(?!\s)(.+?)(?<!\s)\*/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) runs.push(new TextRun(text.slice(last, m.index)));
+      if (m[1] !== undefined) runs.push(new TextRun({ text: m[1], bold: true }));
+      else runs.push(new TextRun({ text: m[2], italics: true }));
+      last = re.lastIndex;
+    }
+    if (last < text.length) runs.push(new TextRun(text.slice(last)));
+    return runs;
+  }
+
   const md = buildManuscriptMarkdown(sources);
 
   const paragraphs: InstanceType<typeof Paragraph>[] = [];
@@ -222,11 +262,11 @@ export async function exportManuscriptDocx(sources: ExportSources, filename: str
     if (h1) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(h1[1])] }));
     else if (h2) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(h2[1])] }));
     else if (h3) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(h3[1])] }));
-    else if (li) paragraphs.push(new Paragraph({ text: li[1], bullet: { level: 0 } }));
+    else if (li) paragraphs.push(new Paragraph({ children: inlineToDocxRuns(li[1]), bullet: { level: 0 } }));
     else if (quote)
       paragraphs.push(new Paragraph({ children: [new TextRun({ text: quote[1], italics: true })], indent: { left: 720 } }));
     else if (bold) paragraphs.push(new Paragraph({ children: [new TextRun({ text: bold[1], bold: true })] }));
-    else paragraphs.push(new Paragraph({ text: line, spacing: { after: 160 } }));
+    else paragraphs.push(new Paragraph({ children: inlineToDocxRuns(line), spacing: { after: 160 } }));
   }
 
   const doc = new Document({ sections: [{ children: paragraphs }] });
