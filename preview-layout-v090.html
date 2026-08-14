@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanam Story — Layout v0.9.0 (preview)</title>
+<style>
+  :root {
+    --sl-bg: #0f1115;
+    --sl-surface: #161922;
+    --sl-surface-2: #1d2230;
+    --sl-border: #2a3041;
+    --sl-text: #e6e8ee;
+    --sl-text-muted: #8a91a4;
+    --sl-accent: #b48cff;
+    --sl-accent-2: #7c5cff;
+    --sl-danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--sl-bg);
+    color: var(--sl-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ===== Layout grid ===== */
+  .app-shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 52px 1fr;
+    grid-template-areas:
+      'topbar topbar'
+      'sidebar main';
+    height: 100vh;
+  }
+
+  /* ===== Topbar ===== */
+  .topbar {
+    grid-area: topbar;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background: var(--sl-surface);
+    border-bottom: 1px solid var(--sl-border);
+  }
+  .topbar .brand { font-weight: 700; color: var(--sl-accent); }
+  .topbar .spacer { flex: 1; }
+  .topbar .btn {
+    background: transparent; color: var(--sl-text-muted);
+    border: 1px solid var(--sl-border); border-radius: 6px;
+    padding: 5px 10px; font-size: 12px; cursor: pointer;
+  }
+  .topbar .btn:hover { color: var(--sl-text); border-color: var(--sl-accent-2); }
+  .topbar .icon { background: transparent; border: none; color: var(--sl-text-muted); font-size: 16px; cursor: pointer; }
+  .topbar .icon:hover { color: var(--sl-text); }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    grid-area: sidebar;
+    background: var(--sl-surface);
+    border-right: 1px solid var(--sl-border);
+    overflow-y: auto;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .section-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--sl-text-muted); padding: 10px 14px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 14px; cursor: pointer; color: var(--sl-text-muted);
+    font-size: 13px; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--sl-surface-2); color: var(--sl-text); }
+  .nav-item.active { background: var(--sl-surface-2); color: var(--sl-accent); border-left-color: var(--sl-accent-2); }
+  .nav-item .ic { font-size: 14px; width: 18px; text-align: center; }
+  .nav-item .badge { margin-left: auto; font-size: 10px; background: var(--sl-surface-2); color: var(--sl-text-muted); border-radius: 8px; padding: 1px 7px; }
+
+  .tree-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 14px 5px 24px; cursor: pointer; color: var(--sl-text-muted); font-size: 13px;
+  }
+  .tree-item:hover { background: var(--sl-surface-2); color: var(--sl-text); }
+  .tree-item.active { color: var(--sl-accent); }
+  .tree-item .ic { font-size: 12px; width: 16px; }
+  .tree-children { margin-left: 18px; }
+
+  /* ===== Main ===== */
+  .main {
+    grid-area: main;
+    overflow-y: auto;
+    background: var(--sl-bg);
+    padding: 20px 28px;
+  }
+
+  /* ===== Editor view ===== */
+  .view-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .view-meta { color: var(--sl-text-muted); font-size: 12px; margin-bottom: 16px; }
+  .editor-toolbar {
+    display: flex; gap: 4px; padding: 6px 8px; background: var(--sl-surface);
+    border: 1px solid var(--sl-border); border-radius: 10px; margin-bottom: 14px; width: fit-content; max-width: 100%; flex-wrap: wrap;
+  }
+  .tb-btn { background: transparent; border: none; color: var(--sl-text-muted); padding: 4px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .tb-btn:hover { background: var(--sl-surface-2); color: var(--sl-text); }
+  .editor-body {
+    background: var(--sl-surface); border: 1px solid var(--sl-border); border-radius: 10px;
+    padding: 24px 28px; min-height: 300px; font-size: 15px; line-height: 1.7; color: var(--sl-text);
+  }
+  .editor-body .placeholder { color: var(--sl-text-muted); }
+
+  /* ===== Outline view ===== */
+  .outline-block { margin-bottom: 16px; }
+  .outline-block .ob-title { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .beat {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: var(--sl-surface); border: 1px solid var(--sl-border); border-radius: 8px;
+    margin-bottom: 6px; font-size: 13px;
+  }
+  .beat .gen-btn {
+    margin-left: auto; background: var(--sl-accent-2); color: #fff; border: none;
+    border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600;
+  }
+  .beat .gen-btn:hover { filter: brightness(1.1); }
+
+  /* ===== Stacked sections (Opción B) ===== */
+  .stacked { display: flex; flex-direction: column; gap: 18px; }
+  .stack-section {
+    background: var(--sl-surface); border: 1px solid var(--sl-border); border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stack-section h3 { font-size: 15px; margin-bottom: 10px; color: var(--sl-accent); display: flex; align-items: center; gap: 8px; }
+  .stack-section .hint { color: var(--sl-text-muted); font-size: 12px; }
+  .placeholder-list { color: var(--sl-text-muted); font-size: 13px; }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 60px 20px; color: var(--sl-text-muted);
+  }
+  .empty-state .big-ic { font-size: 44px; margin-bottom: 14px; }
+  .empty-state .primary {
+    margin-top: 16px; background: var(--sl-accent-2); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .primary:hover { filter: brightness(1.1); }
+  .inline-link { color: var(--sl-accent); cursor: pointer; text-decoration: underline; }
+  .note { background: var(--sl-surface-2); border: 1px solid var(--sl-border); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--sl-text-muted); margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="brand">✦ Kanam Story</span>
+    <button class="btn">Buscar</button>
+    <button class="btn">Versiones</button>
+    <button class="btn">Exportar</button>
+    <div class="spacer"></div>
+    <button class="icon">⚙</button>
+    <button class="icon">☀</button>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="section-label">Proyecto</div>
+    <div class="nav-item active" data-view="editor"><span class="ic">✎</span> Escritura</div>
+    <div class="nav-item" data-view="outline"><span class="ic">☰</span> Outline <span class="badge">3</span></div>
+
+    <div class="section-label">Historia</div>
+    <div class="nav-item" data-view="stacked" data-section="co-writer"><span class="ic">✦</span> Co-writer</div>
+    <div class="nav-item" data-view="stacked" data-section="brainstorm"><span class="ic">💡</span> Brainstorm</div>
+    <div class="nav-item" data-view="stacked" data-section="characters"><span class="ic">👥</span> Personajes <span class="badge">2</span></div>
+    <div class="nav-item" data-view="stacked" data-section="world"><span class="ic">🌍</span> Mundo</div>
+    <div class="nav-item" data-view="stacked" data-section="bible"><span class="ic">📖</span> Biblia</div>
+    <div class="nav-item" data-view="stacked" data-section="settings"><span class="ic">⚙</span> Ajustes <span class="badge">nuevo</span></div>
+
+    <div class="section-label">Manuscrito (opcional)</div>
+    <div id="tree-area"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+  // ---- Estado simulado ----
+  const state = {
+    view: 'editor',
+    section: null,
+    hasStructure: false, // toggle: árbol de capítulos presente o no
+  };
+
+  // ---- Sidebar nav ----
+  document.querySelectorAll('.nav-item[data-view]').forEach((el) => {
+    el.addEventListener('click', () => {
+      state.view = el.dataset.view;
+      state.section = el.dataset.section || null;
+      document.querySelectorAll('.nav-item[data-view]').forEach((n) => n.classList.remove('active'));
+      el.classList.add('active');
+      render();
+    });
+  });
+
+  // ---- Árbol (estructura opcional) ----
+  function renderTree() {
+    const tree = document.getElementById('tree-area');
+    if (!state.hasStructure) {
+      tree.innerHTML = `
+        <div class="tree-item" style="cursor:default; color:var(--sl-text-muted); font-size:12px;">
+          Sin capítulos aún. Podés empezar desde el outline o la biblia.
+        </div>
+        <div class="tree-item" style="cursor:pointer;" onclick="state.hasStructure=true; render();">
+          <span class="ic">＋</span> Crear capítulo (opcional)
+        </div>`;
+    } else {
+      tree.innerHTML = `
+        <div class="tree-item"><span class="ic">▸</span> Capítulo 1</div>
+        <div class="tree-children">
+          <div class="tree-item active"><span class="ic">📄</span> Escena 1: La carta</div>
+          <div class="tree-item"><span class="ic">📄</span> Escena 2: El encuentro</div>
+        </div>
+        <div class="tree-item"><span class="ic">＋</span> Agregar capítulo</div>`;
+    }
+  }
+
+  // ---- Vistas ----
+  function editorView() {
+    return `
+      <div class="view-title">La carta</div>
+      <div class="view-meta">Capítulo 1 · Escena 1 · tercera persona · pasado</div>
+      <div class="editor-toolbar">
+        <button class="tb-btn"><b>B</b></button><button class="tb-btn"><i>I</i></button>
+        <button class="tb-btn"><u>U</u></button><button class="tb-btn">S</button><span style="width:1px;background:var(--sl-border);margin:0 4px;"></span>
+        <button class="tb-btn">≡</button><button class="tb-btn">1.</button><button class="tb-btn">H1</button><button class="tb-btn">H2</button><button class="tb-btn">H3</button><button class="tb-btn">🔗</button>
+      </div>
+      <div class="editor-body">
+        <p>Santiago abrió el sobre con manos temblorosas. La carta no tenía remitente, solo una línea escrita en tinta violeta:</p>
+        <p style="font-style:italic;color:var(--sl-accent);">"No busques al portador. Él ya sabe que lo encontraste."</p>
+        <p class="placeholder" style="margin-top:12px;">▍</p>
+      </div>
+      <div class="note">Esto es el editor con la escena generada. En el flujo propuesto, podés llegar acá desde el outline sin pre-crear el capítulo a mano.</div>
+    `;
+  }
+
+  function outlineView() {
+    return `
+      <div class="view-title">Outline</div>
+      <div class="view-meta">Estructura de la historia · generá escenas desde los beats</div>
+      <div class="outline-block">
+        <div class="ob-title">Acto 1 — La llegada</div>
+        <div class="beat"><span>🎬</span> <b>Inciting:</b> Santiago recibe una carta misteriosa <button class="gen-btn" onclick="state.view='editor';render();">Generar escena</button></div>
+        <div class="beat"><span>📈</span> <b>Rising:</b> Sigue al portador hasta el Club <button class="gen-btn" onclick="state.view='editor';render();">Generar escena</button></div>
+        <div class="beat"><span>📈</span> <b>Rising:</b> Descubre la verdad sobre el bolso <button class="gen-btn" onclick="state.view='editor';render();">Generar escena</button></div>
+      </div>
+      <div class="note">Cada beat tiene "Generar escena". Al clickear, se crea la escena (sin pre-crear capítulo a mano) y se abre el editor con ella. <b>Las estructuras son opcionales</b> — podés trabajar solo desde acá.</div>
+    `;
+  }
+
+  function stackedView() {
+    const sections = [
+      { id: 'co-writer', icon: '✦', title: 'Co-writer', body: '<div class="hint">Conversá con tu co-writer: debatí ideas, explorá finales, pedí cambios.</div><div class="placeholder-list" style="margin-top:10px;">[Input de chat aquí — apilado con el resto]</div>' },
+      { id: 'brainstorm', icon: '💡', title: 'Brainstorm', body: '<div class="placeholder-list">Notas de brainstorming, lluvia de ideas, alternativas.</div>' },
+      { id: 'characters', icon: '👥', title: 'Personajes', body: '<div class="placeholder-list"><b>Santiago</b> · protagonista<br><b>La portadora</b> · antagonista</div>' },
+      { id: 'world', icon: '🌍', title: 'Mundo', body: '<div class="placeholder-list"><b>El Club</b> · lugar · salón con olor a naftalina</div>' },
+      { id: 'bible', icon: '📖', title: 'Biblia', body: '<div class="placeholder-list">Resumen · Temas · Personajes · Mundo · Reglas (auto-generados y editables)</div>' },
+      { id: 'settings', icon: '⚙', title: 'Ajustes', body: '<div class="placeholder-list">Braindump · Géneros · Estilo · Sinopsis · Match My Style</div>' },
+    ];
+    return `
+      <div class="view-title">Historia</div>
+      <div class="view-meta">Todas las secciones apiladas — hacé scroll. Sin pestañas.</div>
+      <div class="stacked">
+        ${sections.map((s) => `
+          <section class="stack-section" id="sec-${s.id}">
+            <h3>${s.icon} ${s.title}</h3>
+            ${s.body}
+          </section>`).join('')}
+      </div>
+      <div class="note">Las secciones van apiladas en el área central (como Sudowrite/NovelCrafter), una sobre otra, con scroll. El panel derecho con las 7 pestañas desaparece — esto elimina el desbordamiento del toolbar y la confusión "Biblia" vs "Story Bible" (ahora "Ajustes").</div>
+    `;
+  }
+
+  function emptyProjectView() {
+    return `
+      <div class="empty-state">
+        <div class="big-ic">✦</div>
+        <div style="font-weight:600;font-size:16px;margin-bottom:6px;">Empezá tu historia</div>
+        <div style="font-size:13px;max-width:320px;">No hace falta crear capítulos ni escenas primero. Elegí un punto de partida:</div>
+        <div style="margin-top:18px;display:flex;gap:10px;">
+          <button class="primary" onclick="state.view='outline';render();">Empezar por el outline</button>
+          <button class="primary" style="background:var(--sl-surface-2);color:var(--sl-text);border:1px solid var(--sl-border);" onclick="state.view='stacked';render();">Empezar por la biblia</button>
+        </div>
+        <div class="note" style="margin-top:18px;max-width:360px;">Las estructuras (capítulos, escenas) son <b>opcionales</b>. Podés generar desde el outline y que se cree la escena automáticamente.</div>
+      </div>
+    `;
+  }
+
+  function render() {
+    renderTree();
+    const main = document.getElementById('main');
+    // Si no hay proyecto / estructura, mostrar onboarding — pero para el preview mantenemos navegable.
+    main.innerHTML = '';
+    if (state.view === 'editor') main.innerHTML = editorView();
+    else if (state.view === 'outline') main.innerHTML = outlineView();
+    else if (state.view === 'stacked') main.innerHTML = stackedView();
+  }
+
+  render();
+</script>
+</body>
+</html>
