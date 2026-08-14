@@ -335,9 +335,14 @@ export default function Editor() {
           full += chunk;
           if (!chunk) return;
           if (!started) {
-            started = true;
             const first = chunk.trimStart();
-            if (first) startInsert(first);
+            // Only mark the stream as started once real text is inserted. If a
+            // whitespace-only leading chunk set `started` here, the selection
+            // would never be replaced for describe/rewrite/dialogue.
+            if (first) {
+              started = true;
+              startInsert(first);
+            }
           } else {
             appendInsert(chunk);
           }
@@ -352,7 +357,10 @@ export default function Editor() {
         // streamed content explicitly once generation completes.
         if (kind === 'dialogue') {
           // Preserve the trailing newline the non-streaming path appended.
-          editor.chain().focus().insertContentAt(editor.state.doc.content.size, '\n').run();
+          // Insert at the cursor (already right after the last streamed chunk)
+          // rather than at the end of the whole document, which would be wrong
+          // for a dialogue block inserted mid-scene.
+          editor.chain().focus().insertContent('\n').run();
         }
         if (kind === 'expand' || kind === 'tension') {
           updateScene(scene.id, { content: editor.getHTML() });
