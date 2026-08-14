@@ -8,7 +8,7 @@ import type { BrainstormNote } from '@/types';
 import MarkdownView from '@/components/MarkdownView';
 
 export default function BrainstormPanel() {
-  const { currentProject, brainstorm, characters, world, settings, createNote, updateNote, deleteNote } = useApp();
+  const { currentProject, brainstorm, characters, world, settings, createNote, updateNote, deleteNote, announce } = useApp();
   const [topic, setTopic] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +113,18 @@ export default function BrainstormPanel() {
 
       <div className="stack-panel-header">
         <span className="stack-panel-count">Notas ({brainstorm.length})</span>
+        <div className="stack-panel-actions">
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => {
+              createNote({ projectId: currentProject!.id, title: 'Nueva nota', content: '' });
+              announce('Nota en blanco creada. Escribí tu título y contenido.');
+            }}
+            aria-label="Crear nota en blanco"
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Nueva nota
+          </button>
+        </div>
       </div>
       {brainstorm.length === 0 ? (
         <div className="text-muted small">Todavía no hay notas.</div>

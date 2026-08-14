@@ -254,7 +254,7 @@ export default function OutlineView() {
     const siblings = beats.filter((b) =>
       sceneId ? b.sceneId === sceneId : b.chapterId === chapterId && !b.sceneId,
     );
-    await createBeat({
+    const beat = await createBeat({
       projectId: currentProject.id,
       chapterId,
       sceneId,
@@ -267,6 +267,7 @@ export default function OutlineView() {
       source: 'manual',
       position: siblings.length,
     });
+    announce(`Beat "${beat.title}" agregado al ${sceneId ? 'escena' : 'capítulo'}.`);
   };
 
   const moveBeat = async (id: string, dir: -1 | 1) => {
@@ -377,8 +378,12 @@ export default function OutlineView() {
           canDown={i < list.length - 1}
         />
       ))}
-      <button className="btn btn-sm btn-outline-primary" onClick={() => addBeat(chapterId, sceneId)}>
-        <i className="bi bi-plus-lg me-1" /> Beat
+      <button
+        className="btn btn-sm btn-outline-primary"
+        onClick={() => addBeat(chapterId, sceneId)}
+        aria-label={`Agregar beat a ${sceneId ? 'escena' : 'capítulo'}`}
+      >
+        <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Beat
       </button>
     </div>
   );
@@ -516,8 +521,9 @@ export default function OutlineView() {
                 className="btn btn-sm btn-outline-secondary"
                 title="Crear un beat para esta escena"
                 onClick={() => addBeat(chapter.id, s.id)}
+                aria-label={`Vincular escena "${s.title}" al outline`}
               >
-                <i className="bi bi-plus-lg me-1" /> Vincular
+                <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Vincular
               </button>
             </div>
           ))}

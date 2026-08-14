@@ -97,6 +97,7 @@ export default function WorldPanel() {
     revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
+    announce,
   } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
   const autoFillAttemptedRef = useRef<string | null>(null);
@@ -133,6 +134,7 @@ export default function WorldPanel() {
       traits: [],
       inContext: true,
     });
+    announce('Entrada de mundo en blanco creada. Escribí el nombre y descripción.');
   }
 
   function remove(w: WorldEntity) {
@@ -144,8 +146,12 @@ export default function WorldPanel() {
       <div className="stack-panel-header">
         <span className="stack-panel-count">Mundo ({world.length})</span>
         <div className="stack-panel-actions">
-          <button className="btn btn-sm btn-outline-primary" onClick={add}>
-            <i className="bi bi-plus-lg me-1" /> Agregar
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={add}
+            aria-label="Agregar entrada de mundo en blanco"
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Agregar
           </button>
         </div>
       </div>

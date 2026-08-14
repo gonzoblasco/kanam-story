@@ -97,6 +97,7 @@ export default function CharactersPanel() {
     revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
+    announce,
   } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
   const autoFillAttemptedRef = useRef<string | null>(null);
@@ -148,6 +149,7 @@ export default function CharactersPanel() {
       traits: [],
       inContext: true,
     });
+    announce('Personaje en blanco creado. Escribí el nombre y detalles.');
   }
 
   function remove(c: Character) {
@@ -205,8 +207,12 @@ export default function CharactersPanel() {
           <button className="btn btn-sm btn-ai" onClick={() => setGenOpen((o) => !o)}>
             <i className="bi bi-magic me-1" /> Generar
           </button>
-          <button className="btn btn-sm btn-outline-primary" onClick={add}>
-            <i className="bi bi-plus-lg me-1" /> Agregar
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={add}
+            aria-label="Agregar personaje en blanco"
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Agregar
           </button>
         </div>
       </div>
