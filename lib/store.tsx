@@ -42,6 +42,7 @@ import {
 import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
 import { parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
+import { buildCharacterSyncPlan, buildWorldSyncPlan } from '@/lib/bibleSync';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -619,6 +620,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // characters that came from the bible (source === 'biblia') or are new.
   // Reads the bible fresh from the DB so it picks up a just-regenerated bible
   // (the closure `storyBible` would be stale after `regenerateStoryBible`).
+  // The dedupe/merge logic lives in the pure `buildCharacterSyncPlan` (U8).
   const syncCharactersFromBible = useCallback(async (): Promise<{ created: number; updated: number }> => {
     if (!currentProject) return { created: 0, updated: 0 };
     const bible = await storyBibleDB.getByProject(currentProject.id);
@@ -630,45 +632,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const entries = await previewBibleCharacters(text);
     if (entries.length === 0) return { created: 0, updated: 0 };
 
-    const byName = new Map<string, Character>();
-    for (const c of characters) byName.set(c.name.trim().toLowerCase(), c);
-
+    const plan = buildCharacterSyncPlan(entries, characters);
     let created = 0;
+    for (const e of plan.toCreate) {
+      await createCharacter({ projectId: currentProject.id, ...e });
+      created++;
+    }
     let updated = 0;
-    for (const e of entries) {
-      if (!e.name) continue;
-      const key = e.name.trim().toLowerCase();
-      const existing = byName.get(key);
-
-      if (!existing) {
-        await createCharacter({
-          projectId: currentProject.id,
-          name: e.name,
-          type: e.type ?? 'supporting',
-          age: e.age ?? '',
-          appearance: e.appearance ?? '',
-          personality: e.personality ?? '',
-          voice: e.voice ?? '',
-          backstory: e.backstory ?? '',
-          goals: e.goals ?? '',
-          source: 'biblia',
-        });
-        created++;
-        continue;
-      }
-
-      // Existing character: only fill empty fields, and only if it came from
-      // the bible (never overwrite a manually-authored character).
-      if (existing.source !== 'biblia') continue;
-      const patch: Partial<Character> = {};
-      if (!existing.personality && e.personality) patch.personality = e.personality;
-      if (!existing.voice && e.voice) patch.voice = e.voice;
-      if (!existing.goals && e.goals) patch.goals = e.goals;
-      if (!existing.backstory && e.backstory) patch.backstory = e.backstory;
-      if (Object.keys(patch).length > 0) {
-        await updateCharacter(existing.id, patch);
-        updated++;
-      }
+    for (const u of plan.toUpdate) {
+      await updateCharacter(u.id, u.patch);
+      updated++;
     }
     return { created, updated };
   }, [currentProject, characters, previewBibleCharacters, createCharacter, updateCharacter]);
@@ -785,6 +758,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // mark new ones as source 'biblia', only fill empty fields on existing
   // entities that came from the bible, never overwrite manual edits.
   // Reads the bible fresh from the DB (post-regeneration).
+  // The dedupe/merge logic lives in the pure `buildWorldSyncPlan` (U8).
   const syncWorldFromBible = useCallback(async (): Promise<{ created: number; updated: number }> => {
     if (!currentProject) return { created: 0, updated: 0 };
     const bible = await storyBibleDB.getByProject(currentProject.id);
@@ -796,37 +770,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const entries = await previewBibleWorld(text);
     if (entries.length === 0) return { created: 0, updated: 0 };
 
-    const byName = new Map<string, WorldEntity>();
-    for (const w of world) byName.set(w.name.trim().toLowerCase(), w);
-
+    const plan = buildWorldSyncPlan(entries, world);
     let created = 0;
+    for (const e of plan.toCreate) {
+      await createWorld({ projectId: currentProject.id, ...e });
+      created++;
+    }
     let updated = 0;
-    for (const e of entries) {
-      if (!e.name) continue;
-      const key = e.name.trim().toLowerCase();
-      const existing = byName.get(key);
-
-      if (!existing) {
-        await createWorld({
-          projectId: currentProject.id,
-          name: e.name,
-          kind: e.kind ?? 'other',
-          description: e.description ?? '',
-          source: 'biblia',
-        });
-        created++;
-        continue;
-      }
-
-      // Existing entity: only fill empty fields, and only if it came from the
-      // bible (never overwrite a manually-authored entity).
-      if (existing.source !== 'biblia') continue;
-      const patch: Partial<WorldEntity> = {};
-      if (!existing.description && e.description) patch.description = e.description;
-      if (Object.keys(patch).length > 0) {
-        await updateWorld(existing.id, patch);
-        updated++;
-      }
+    for (const u of plan.toUpdate) {
+      await updateWorld(u.id, u.patch);
+      updated++;
     }
     return { created, updated };
   }, [currentProject, world, previewBibleWorld, createWorld, updateWorld]);
