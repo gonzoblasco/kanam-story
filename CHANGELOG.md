@@ -2,6 +2,26 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.8.0] - 2026-08-14
+
+Backlog de la Fase 3 (B1-B7): calidad de testeo, export de documentos, búsqueda entre escenas, tema claro, versionado de escenas y streaming en el editor. Desarrollado con pipeline multi-agente + revision cruzada.
+
+### Added
+- **Tests de la capa de datos (B1).** Migraciones de la DB extraídas a funciones puras (`lib/migrations.ts`) y cobertura CRUD de todos los stores con `fake-indexeddb` (`lib/db.test.ts`).
+- **Tests de componentes (B2).** jsdom + `@testing-library/react` para StoryBiblePanel (auto-sync U5/U6), CharactersPanel y WorldPanel (revertir imports U7).
+- **Export PDF y DOCX (B3).** `exportManuscriptPdf` (pdfmake) y `exportManuscriptDocx` (docx), client-side, con inline markdown parseado (negritas/cursivas) y errores visibles en el menu.
+- **Busqueda entre escenas (B4).** `lib/search.ts` (busca en contenido/titulo/summary, reemplaza solo en nodos de texto) + `SearchPanel` con resultados agrupados por capitulo, navegacion y find/replace con confirmacion.
+- **Tema claro (B5).** Toggle light/dark con preferencia persistida, contraste corregido (WCAG AA) y anti-flash al recargar (`ThemeToggle` + script inline en `layout.tsx`).
+- **Versioning / snapshots de escenas (B6).** `lib/snapshots.ts` (dedupe + diff LCS) + store `sceneSnapshots` (DB v8) + `VersionHistoryPanel` con historial, diff y restauracion.
+- **Streaming en el editor (B7).** `runAI` migrado a `ollamaChatStream` (SSE): el texto se inserta en vivo, autosave suprimido durante el stream, revert parcial en abort/error.
+
+### Fixed
+- PDF export crasheaba: `vfs_fonts` es un mapa plano, no `{ pdfMake: { vfs } }` (B3 review).
+- Condicion de carrera en find/replace: escrituras read-modify-write concurrentes perdian cambios (B4 review).
+- Anti-flash se anulaba: el effect de tema corria con el default 'dark' antes de cargar las settings (B5 review).
+- Streaming: el cierre del dialogo caia al final del documento y el primer chunk con solo whitespace no reemplazaba la seleccion (B7 review).
+- CI: jsdom 30 requiere `undici.markAsUncloneable`, ausente en Node 20 — el CI paso a Node 22 + `.nvmrc`.
+
 ## [0.7.0] - 2026-08-14
 
 Refined editor + Bible ↔ tabs sync (Phase 3). The writing area gets a full formatting toolbar and a contextual AI selection indicator, and the Story Bible now auto-syncs its characters and world into their tabs.
