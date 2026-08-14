@@ -209,8 +209,7 @@ export default function StoryBiblePanel() {
 
   return (
     <div>
-      <div className="d-flex align-items-center mb-2 gap-1">
-        <strong>Biblia de la historia</strong>
+      <div className="stack-panel-header">
         <button
           className="btn btn-sm btn-ai ms-auto"
           onClick={regenerate}
@@ -228,7 +227,7 @@ export default function StoryBiblePanel() {
           )}
         </button>
       </div>
-      <div className="small text-muted mb-3">
+      <div className="stack-panel-hint">
         Resumen auto-generado a partir del manuscrito. Editá cualquier sección para ajustar.
       </div>
 

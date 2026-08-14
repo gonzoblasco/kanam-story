@@ -305,6 +305,7 @@ export default function OutlineView() {
 
   return (
     <div className="outline-view">
+      <h1 className="view-title">Outline</h1>
       <div className="outline-toolbar">
         <select
           className="form-select form-select-sm"
@@ -402,9 +403,9 @@ export default function OutlineView() {
       ) : null}
 
       <div className="outline-chapter">
-        <div className="outline-chapter-title">
+        <h2 className="outline-chapter-title">
           <i className="bi bi-bookmark me-1" /> {chapter.title}
-        </div>
+        </h2>
         {renderBeatList(chapterBeats, chapter.id)}
       </div>
 
@@ -412,9 +413,9 @@ export default function OutlineView() {
         .filter((s) => s.chapterId === chapter.id)
         .map((s) => (
           <div key={s.id} className="outline-scene">
-            <div className="outline-scene-title">
+            <h3 className="outline-scene-title">
               <i className="bi bi-file-text me-1" /> {s.title}
-            </div>
+            </h3>
             {renderBeatList(sceneBeats[s.id] ?? [], chapter.id, s.id)}
           </div>
         ))}

@@ -197,19 +197,17 @@ export default function ChatPanel() {
 
   return (
     <div className="chat-panel">
-      <div className="chat-header">
-        <div className="d-flex align-items-center gap-2">
-          <i className="bi bi-stars" />
-          <span className="fw-semibold">Co-writer</span>
+      <div className="stack-panel-header">
+        <div className="stack-panel-actions">
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={startConversation}
+            disabled={busy}
+            title="Nueva conversación"
+          >
+            <i className="bi bi-plus-lg me-1" /> Nueva
+          </button>
         </div>
-        <button
-          className="btn btn-sm btn-outline-primary"
-          onClick={startConversation}
-          disabled={busy}
-          title="Nueva conversación"
-        >
-          <i className="bi bi-plus-lg me-1" /> Nueva
-        </button>
       </div>
 
       {conversations.length > 0 ? (

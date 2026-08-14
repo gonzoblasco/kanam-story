@@ -91,9 +91,8 @@ export default function StoryBibleSettingsPanel() {
   }
 
   return (
-    <div className="sidebar-section">
-      <div className="sidebar-section-title">Story Bible</div>
-      <div className="small text-muted mb-2">
+    <div>
+      <div className="stack-panel-hint">
         La base de coherencia: qué contás, cómo lo contás y qué ideas tenés en el tintero. El co-writer
         la respeta al escribir y debatir.
       </div>

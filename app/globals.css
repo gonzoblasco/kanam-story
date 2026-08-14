@@ -274,6 +274,31 @@ a {
   color: var(--sl-text);
   padding-top: 0.75rem;
 }
+/* U3: sistema de headers consistentes para las cards apiladas. Cada panel
+   interno reutiliza `.stack-panel-header` (fila de acciones alineada) y
+   `.stack-panel-hint` (subtítulo), eliminando títulos duplicados que ya
+   aporta el h2 del acordeón. */
+.stack-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.stack-panel-count {
+  font-weight: 600;
+  color: var(--sl-text);
+}
+.stack-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stack-panel-hint {
+  color: var(--sl-text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
 
 .empty-state {
   display: grid;
@@ -747,15 +772,6 @@ a {
   min-height: 0;
 }
 
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--sl-border);
-  color: var(--sl-accent);
-}
-
 .chat-conv-list {
   border-bottom: 1px solid var(--sl-border);
   max-height: 140px;
@@ -936,9 +952,8 @@ a {
 .outline-chapter-title,
 .outline-scene-title {
   font-weight: 600;
-  font-size: 0.95rem;
   color: var(--sl-text);
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -946,9 +961,12 @@ a {
 .outline-scene {
   margin-top: 0.5rem;
 }
+.outline-chapter-title {
+  font-size: 1.15rem;
+}
 .outline-scene-title {
-  font-size: 0.85rem;
-  color: var(--sl-text-muted);
+  font-size: 0.95rem;
+  color: var(--sl-text);
 }
 
 .outline-beat-list {

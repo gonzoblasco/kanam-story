@@ -40,9 +40,8 @@ export default function CompassPanel() {
   };
 
   return (
-    <div className="sidebar-section">
-      <div className="sidebar-section-title">Brújula Narrativa</div>
-      <div className="small text-muted mb-2">
+    <div>
+      <div className="stack-panel-hint">
         Orientación: qué prometiste contar. El co-writer la respeta al debatir.
       </div>
       <div className="d-flex flex-column gap-2">

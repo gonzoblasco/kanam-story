@@ -141,11 +141,13 @@ export default function WorldPanel() {
 
   return (
     <div>
-      <div className="d-flex align-items-center mb-2">
-        <strong>Mundo ({world.length})</strong>
-        <button className="btn btn-sm btn-outline-primary ms-auto" onClick={add}>
-          <i className="bi bi-plus-lg me-1" /> Agregar
-        </button>
+      <div className="stack-panel-header">
+        <span className="stack-panel-count">Mundo ({world.length})</span>
+        <div className="stack-panel-actions">
+          <button className="btn btn-sm btn-outline-primary" onClick={add}>
+            <i className="bi bi-plus-lg me-1" /> Agregar
+          </button>
+        </div>
       </div>
       {world.length === 0 ? (
         <div className="text-muted small">Todavía no hay entradas.</div>

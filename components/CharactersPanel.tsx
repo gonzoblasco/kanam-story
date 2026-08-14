@@ -199,9 +199,9 @@ export default function CharactersPanel() {
 
   return (
     <div>
-      <div className="d-flex align-items-center mb-2">
-        <strong>Personajes ({characters.length})</strong>
-        <div className="ms-auto d-flex gap-1">
+      <div className="stack-panel-header">
+        <span className="stack-panel-count">Personajes ({characters.length})</span>
+        <div className="stack-panel-actions">
           <button className="btn btn-sm btn-ai" onClick={() => setGenOpen((o) => !o)}>
             <i className="bi bi-magic me-1" /> Generar
           </button>
