@@ -17,6 +17,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" data-bs-theme="dark">
+      <head>
+        {/* Apply the persisted theme before first paint to avoid a flash of the
+            wrong theme on reload. The store mirrors the choice to localStorage
+            (key `kanam-theme`); IndexedDB remains the source of truth. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('kanam-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-bs-theme',t);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <AppProvider>
           <ClientShell>{children}</ClientShell>

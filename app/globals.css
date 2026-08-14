@@ -17,8 +17,11 @@
   --sl-border: #e6e2f0;
   --sl-text: #1a1a22;
   --sl-text-muted: #6b6b7a;
-  --sl-accent: #7c5cff;
-  --sl-accent-2: #b48cff;
+  /* Darker purples than the dark theme: `--sl-accent` is used as text color on
+     light surfaces and `--sl-accent-2` as the background of buttons / user chat
+     bubbles (with white text). Both must clear WCAG AA contrast on white. */
+  --sl-accent: #5f3dc4;
+  --sl-accent-2: #6a4bd8;
 }
 
 html,

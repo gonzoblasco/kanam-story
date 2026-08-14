@@ -9,6 +9,7 @@ import Editor from '@/components/Editor';
 import OutlineView from '@/components/OutlineView';
 import RightPanel from '@/components/RightPanel';
 import ExportMenu from '@/components/ExportMenu';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView } = useApp();
@@ -78,15 +79,7 @@ export default function HomePage() {
           >
             <i className="bi bi-gear" />
           </button>
-          <button
-            className="icon-btn"
-            title="Cambiar tema"
-            onClick={() =>
-              setSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })
-            }
-          >
-            <i className={`bi bi-${settings.theme === 'dark' ? 'sun' : 'moon-stars'}`} />
-          </button>
+          <ThemeToggle />
         </div>
       </header>
 

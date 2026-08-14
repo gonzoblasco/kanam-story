@@ -273,10 +273,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [selectProject]);
 
   useEffect(() => {
-    if (settings.theme === 'dark') {
-      document.documentElement.setAttribute('data-bs-theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-bs-theme', 'light');
+    const theme = settings.theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    // Mirror the theme to localStorage so the inline script in layout.tsx can
+    // apply it before React hydrates (avoids a flash of the wrong theme on
+    // reload). IndexedDB remains the source of truth; this is only a paint hint.
+    try {
+      localStorage.setItem('kanam-theme', theme);
+    } catch {
+      /* ignore (private mode, etc.) */
     }
   }, [settings.theme]);
 
