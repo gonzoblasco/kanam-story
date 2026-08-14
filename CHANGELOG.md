@@ -2,6 +2,22 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.7.0] - 2026-08-14
+
+Refined editor + Bible ↔ tabs sync (Phase 3). The writing area gets a full formatting toolbar and a contextual AI selection indicator, and the Story Bible now auto-syncs its characters and world into their tabs.
+
+### Added
+- **Formatting toolbar (U1/U2).** Bold, italic, strikethrough, underline, undo/redo, bulleted and numbered lists, H1-H3 headings, and links (`setLink`/`unsetLink`). StarterKit 3.27.1 provides underline and link out of the box.
+- **Contextual AI selection indicator (U3).** Selecting text in the editor shows a floating pill (like Sudowrite) with a selected-word counter and Rewrite/Describe buttons that reuse the existing `runAI` logic. Hides on deselect or click-outside.
+- **Selected-word counter + toolbar polish (U4).** Precise word count (multi-line aware), `flex-wrap` on the toolbar to avoid overflow, active states for format buttons.
+- **Auto-sync characters from Bible (U5).** Regenerating the Story Bible auto-imports detected characters into the Characters tab, deduped by name (case-insensitive), marked `source: 'biblia'`, never overwriting manual edits.
+- **Auto-sync world from Bible (U6).** Same pattern for world entities into the World tab.
+- **Revert bible imports (U7).** A "Revert import" button on character/world cards (visible when `source === 'biblia'`) detaches the entity from the bible non-destructively.
+- **Pure sync-plan logic + tests (U8).** `lib/bibleSync.ts` extracts the dedupe/merge logic (DB-free, unit-testable); 8 new tests cover dedupe, no-overwrite, bible marking and revert.
+
+### Fixed
+- **Sync ran before regeneration (U5 review).** `syncCharactersFromBible` ran before `regenerateStoryBible`, syncing the stale bible. Now regeneration runs first and syncs read the fresh bible from the DB.
+
 ## [0.2.0] - 2026-08-13
 
 Editable Story Bible (Slice 6). The bible stops being only auto-generated: it becomes the editable, typed base of coherence that feeds the co-writer.
