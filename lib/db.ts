@@ -12,7 +12,12 @@ import type {
   Message,
   Beat,
 } from '@/types';
-import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
+import {
+  migrateProjectStyle,
+  migrateCharacterRole,
+  migrateWorldCategory,
+  migrateProjectTense,
+} from '@/lib/migrations';
 
 const DB_NAME = 'kanam-story';
 const DB_VERSION = 7;
@@ -80,51 +85,28 @@ function getDB() {
         if (oldVersion < 4 && db.objectStoreNames.contains('projects')) {
           const store = transaction.objectStore('projects');
           const projects = await store.getAll();
-          for (const p of projects) {
-            const style = typeof p.style === 'string' ? { mode: 'custom', custom: p.style } : p.style;
-            await store.put({ ...p, style });
-          }
+          for (const p of projects) await store.put(migrateProjectStyle(p));
         }
 
         // v4 → v5: migrate Character `role` (string) → `type` (enum) + new fields.
         if (oldVersion < 5 && db.objectStoreNames.contains('characters')) {
           const store = transaction.objectStore('characters');
           const characters = await store.getAll();
-          for (const c of characters) {
-            await store.put({
-              ...c,
-              type: mapRoleToType(c.role),
-              pronouns: c.pronouns ?? '',
-              groups: c.groups ?? [],
-              otherNames: c.otherNames ?? [],
-              traits: c.traits ?? [],
-              inContext: c.inContext ?? true,
-            });
-          }
+          for (const c of characters) await store.put(migrateCharacterRole(c));
         }
 
         // v5 → v6: migrate WorldEntity `category` (string) → `kind` (enum) + new fields.
         if (oldVersion < 6 && db.objectStoreNames.contains('world')) {
           const store = transaction.objectStore('world');
           const entities = await store.getAll();
-          for (const w of entities) {
-            await store.put({
-              ...w,
-              kind: mapCategoryToKind(w.category),
-              otherNames: w.otherNames ?? [],
-              traits: w.traits ?? [],
-              inContext: w.inContext ?? true,
-            });
-          }
+          for (const w of entities) await store.put(migrateWorldCategory(w));
         }
 
         // v6 → v7: add `tense` to existing projects (default 'past').
         if (oldVersion < 7 && db.objectStoreNames.contains('projects')) {
           const store = transaction.objectStore('projects');
           const projects = await store.getAll();
-          for (const p of projects) {
-            await store.put({ ...p, tense: p.tense ?? 'past' });
-          }
+          for (const p of projects) await store.put(migrateProjectTense(p));
         }
       },
     });
