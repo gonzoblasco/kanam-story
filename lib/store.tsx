@@ -122,6 +122,8 @@ interface AppState {
   importWorldFromBible: (entries: Partial<WorldEntity>[]) => Promise<WorldEntity[]>;
   /** U6: auto-sync world entities from the Bible into the World tab (dedupe by name, no overwrite of manual edits). */
   syncWorldFromBible: () => Promise<{ created: number; updated: number }>;
+  /** U7: revert a bible auto-import — detach the entity from the bible (keeps it, stops future syncs from touching it). */
+  revertBibleImport: (kind: 'character' | 'world', id: string) => Promise<void>;
 
   createConversation: (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Conversation>;
   selectConversation: (id: string | null) => Promise<void>;
@@ -829,6 +831,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { created, updated };
   }, [currentProject, world, previewBibleWorld, createWorld, updateWorld]);
 
+  // U7: revert a bible auto-import. Detaches the entity from the bible by
+  // clearing its `source` (keeps the entity, but future syncs will no longer
+  // touch it). Non-destructive — the user keeps their edits.
+  const revertBibleImport = useCallback(
+    async (kind: 'character' | 'world', id: string): Promise<void> => {
+      if (!currentProject) return;
+      if (kind === 'character') {
+        await updateCharacter(id, { source: 'manual' });
+      } else {
+        await updateWorld(id, { source: 'manual' });
+      }
+    },
+    [currentProject, updateCharacter, updateWorld],
+  );
+
   const createConversation = useCallback(
     async (data: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Conversation> => {
       const c = await conversationsDB.create(data);
@@ -1125,6 +1142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     previewBibleWorld,
     importWorldFromBible,
     syncWorldFromBible,
+    revertBibleImport,
     createConversation,
     selectConversation,
     deleteConversation,

@@ -94,6 +94,7 @@ export default function CharactersPanel() {
     updateCharacter,
     deleteCharacter,
     generateCharacter,
+    revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
   } = useApp();
@@ -337,6 +338,15 @@ export default function CharactersPanel() {
                 <button className="btn btn-sm btn-primary" onClick={() => setEditing(null)}>
                   Listo
                 </button>
+                {c.source === 'biblia' ? (
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => revertBibleImport('character', c.id)}
+                    title="Quitar la marca 'de biblia': el próximo sync ya no lo tocará"
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1" /> Revertir import
+                  </button>
+                ) : null}
                 <button className="btn btn-sm btn-outline-danger" onClick={() => remove(c)}>
                   <i className="bi bi-trash" /> Eliminar
                 </button>

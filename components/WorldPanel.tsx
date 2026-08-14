@@ -94,6 +94,7 @@ export default function WorldPanel() {
     createWorld,
     updateWorld,
     deleteWorld,
+    revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
   } = useApp();
@@ -201,6 +202,15 @@ export default function WorldPanel() {
                 <button className="btn btn-sm btn-primary" onClick={() => setEditing(null)}>
                   Listo
                 </button>
+                {w.source === 'biblia' ? (
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => revertBibleImport('world', w.id)}
+                    title="Quitar la marca 'de biblia': el próximo sync ya no lo tocará"
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1" /> Revertir import
+                  </button>
+                ) : null}
                 <button className="btn btn-sm btn-outline-danger" onClick={() => remove(w)}>
                   <i className="bi bi-trash" /> Eliminar
                 </button>
