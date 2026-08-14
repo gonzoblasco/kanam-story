@@ -15,6 +15,7 @@ import type {
   Beat,
   ContentAction,
   StyleProfile,
+  SceneSnapshot,
 } from '@/types';
 import {
   projectsDB,
@@ -28,6 +29,7 @@ import {
   conversationsDB,
   messagesDB,
   beatsDB,
+  sceneSnapshotsDB,
 } from '@/lib/db';
 import {
   parseCharacterEntries,
@@ -43,6 +45,7 @@ import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPromp
 import { parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 import { buildCharacterSyncPlan, buildWorldSyncPlan } from '@/lib/bibleSync';
+import { shouldSnapshot, buildSnapshot } from '@/lib/snapshots';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -82,6 +85,12 @@ interface AppState {
   updateScene: (id: string, data: Partial<Scene>) => Promise<void>;
   deleteScene: (id: string) => Promise<void>;
   selectScene: (id: string | null) => void;
+
+  // B6: scene versioning / snapshots.
+  /** Lista las versiones previas de una escena (más reciente primero). */
+  listSceneSnapshots: (sceneId: string) => Promise<SceneSnapshot[]>;
+  /** Restaura una escena a una versión previa (con confirmación en la UI). */
+  restoreSceneSnapshot: (sceneId: string, snapshot: SceneSnapshot) => Promise<void>;
 
   createCharacter: (data: Omit<Character, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Character>;
   updateCharacter: (id: string, data: Partial<Character>) => Promise<void>;
@@ -354,6 +363,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateScene = useCallback(
     async (id: string, data: Partial<Scene>) => {
+      // B6: capture a snapshot of the scene's PREVIOUS state before applying the
+      // change, so the history always reflects what the scene looked like at each
+      // save. Dedupe identical snapshots (no noise when autosave fires without
+      // real changes). The snapshot is taken from the DB (source of truth), not
+      // the React snapshot, so concurrent saves capture the correct intermediate
+      // value.
+      const existing = await scenesDB.get(id);
+      if (existing) {
+        const last = await sceneSnapshotsDB.getLatest(id);
+        if (shouldSnapshot(existing, last)) {
+          await sceneSnapshotsDB.create(buildSnapshot(existing, Date.now()));
+        }
+      }
       await scenesDB.update(id, data);
       if (currentProject) await loadProjectData(currentProject.id);
     },
@@ -370,6 +392,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const selectScene = useCallback((id: string | null) => setCurrentSceneId(id), []);
+
+  // B6: list the version history of a scene (newest first).
+  const listSceneSnapshots = useCallback(async (sceneId: string): Promise<SceneSnapshot[]> => {
+    return sceneSnapshotsDB.listByScene(sceneId);
+  }, []);
+
+  // B6: restore a scene to a previous version. The UI confirms before calling.
+  // Restoring writes the snapshot's fields back onto the scene; the write goes
+  // through `updateScene`, which itself captures a snapshot of the current
+  // (pre-restore) state — so the restore is itself reversible from the history.
+  const restoreSceneSnapshot = useCallback(
+    async (sceneId: string, snapshot: SceneSnapshot): Promise<void> => {
+      await updateScene(sceneId, {
+        title: snapshot.title,
+        content: snapshot.content,
+        summary: snapshot.summary,
+      });
+    },
+    [updateScene],
+  );
 
   const createCharacter = useCallback(
     async (data: Omit<Character, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1082,6 +1124,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateScene,
     deleteScene,
     selectScene,
+    listSceneSnapshots,
+    restoreSceneSnapshot,
     createCharacter,
     updateCharacter,
     deleteCharacter,

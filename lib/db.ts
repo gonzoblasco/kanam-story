@@ -11,6 +11,7 @@ import type {
   Conversation,
   Message,
   Beat,
+  SceneSnapshot,
 } from '@/types';
 import {
   migrateProjectStyle,
@@ -20,7 +21,7 @@ import {
 } from '@/lib/migrations';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -77,6 +78,13 @@ function getDB() {
           store.createIndex('by-project', 'projectId');
           store.createIndex('by-chapter', 'chapterId');
           store.createIndex('by-scene', 'sceneId');
+        }
+        // v7 → v8: B6 — scene versioning/snapshots.
+        if (!db.objectStoreNames.contains('sceneSnapshots')) {
+          const store = db.createObjectStore('sceneSnapshots', { keyPath: 'id' });
+          store.createIndex('by-project', 'projectId');
+          store.createIndex('by-scene', 'sceneId');
+          store.createIndex('by-scene-created', ['sceneId', 'createdAt']);
         }
 
         // v3 → v4: migrate `style` from string to ProjectStyle object.
@@ -144,7 +152,7 @@ export const projectsDB = {
   async delete(id: string): Promise<void> {
     const db = await getDB();
     const tx = db.transaction(
-      ['projects', 'chapters', 'scenes', 'characters', 'world', 'brainstorm', 'storyBible', 'conversations', 'messages', 'beats'],
+      ['projects', 'chapters', 'scenes', 'characters', 'world', 'brainstorm', 'storyBible', 'conversations', 'messages', 'beats', 'sceneSnapshots'],
       'readwrite',
     );
     await tx.objectStore('projects').delete(id);
@@ -183,6 +191,10 @@ export const projectsDB = {
     }
     const beatIdx = tx.objectStore('beats').index('by-project');
     for await (const cursor of beatIdx.iterate(id)) {
+      await cursor.delete();
+    }
+    const snapIdx = tx.objectStore('sceneSnapshots').index('by-project');
+    for await (const cursor of snapIdx.iterate(id)) {
       await cursor.delete();
     }
     await tx.done;
@@ -262,10 +274,55 @@ export const scenesDB = {
   },
   async delete(id: string): Promise<void> {
     const db = await getDB();
-    const tx = db.transaction(['scenes', 'beats'], 'readwrite');
+    const tx = db.transaction(['scenes', 'beats', 'sceneSnapshots'], 'readwrite');
     await tx.objectStore('scenes').delete(id);
     const beatIdx = tx.objectStore('beats').index('by-scene');
     for await (const cursor of beatIdx.iterate(id)) {
+      await cursor.delete();
+    }
+    const snapIdx = tx.objectStore('sceneSnapshots').index('by-scene');
+    for await (const cursor of snapIdx.iterate(id)) {
+      await cursor.delete();
+    }
+    await tx.done;
+  },
+};
+
+// --- B6: scene versioning / snapshots ---
+
+export const sceneSnapshotsDB = {
+  /** Lista las snapshots de una escena, de más reciente a más antigua. */
+  async listByScene(sceneId: string): Promise<SceneSnapshot[]> {
+    const db = await getDB();
+    const all = await db.getAllFromIndex('sceneSnapshots', 'by-scene', sceneId);
+    return all.sort((a, b) => b.createdAt - a.createdAt);
+  },
+  /** Última snapshot guardada de una escena (para dedupe de idénticos). */
+  async getLatest(sceneId: string): Promise<SceneSnapshot | undefined> {
+    const db = await getDB();
+    const all = await db.getAllFromIndex('sceneSnapshots', 'by-scene', sceneId);
+    if (all.length === 0) return undefined;
+    return all.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
+  },
+  async get(id: string): Promise<SceneSnapshot | undefined> {
+    const db = await getDB();
+    return db.get('sceneSnapshots', id);
+  },
+  async create(snapshot: SceneSnapshot): Promise<SceneSnapshot> {
+    const db = await getDB();
+    await db.put('sceneSnapshots', snapshot);
+    return snapshot;
+  },
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('sceneSnapshots', id);
+  },
+  /** Borra todas las snapshots de una escena (cascade al borrar la escena). */
+  async deleteByScene(sceneId: string): Promise<void> {
+    const db = await getDB();
+    const tx = db.transaction('sceneSnapshots', 'readwrite');
+    const idx = tx.objectStore('sceneSnapshots').index('by-scene');
+    for await (const cursor of idx.iterate(sceneId)) {
       await cursor.delete();
     }
     await tx.done;

@@ -1136,6 +1136,95 @@ a {
   border-radius: 999px;
   padding: 0.05rem 0.45rem;
 }
+
+/* --- B6: Historial de versiones (snapshots) --- */
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.version-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  color: var(--sl-text);
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+}
+.version-item:hover {
+  border-color: var(--sl-accent);
+}
+.version-item.active {
+  border-color: var(--sl-accent);
+  background: var(--sl-surface);
+  color: var(--sl-accent);
+  font-weight: 600;
+}
+
+.version-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.version-diff {
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.diff-block {
+  margin-bottom: 0.4rem;
+}
+
+.diff-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+.diff-label-removed {
+  color: var(--sl-danger);
+}
+.diff-label-added {
+  color: #2ecc71;
+}
+
+.diff-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+}
+.diff-line-removed {
+  color: var(--sl-danger);
+  background: color-mix(in srgb, var(--sl-danger) 12%, transparent);
+}
+.diff-line-added {
+  color: #2ecc71;
+  background: color-mix(in srgb, #2ecc71 12%, transparent);
+}
+
+.diff-sign {
+  display: inline-block;
+  width: 1rem;
+  user-select: none;
+}
+
 .tiptap-editor a:hover {
   text-decoration: none;
 }

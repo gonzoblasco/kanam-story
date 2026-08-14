@@ -27,6 +27,7 @@ import type {
   Message,
   Project,
   Scene,
+  SceneSnapshot,
   Settings,
   WorldEntity,
 } from '@/types';
@@ -50,6 +51,7 @@ const ALL_STORES = [
   'conversations',
   'messages',
   'beats',
+  'sceneSnapshots',
 ];
 
 type Db = typeof import('@/lib/db');
@@ -59,11 +61,11 @@ beforeEach(async () => {
   // Rebuild the module so lib/db's cached dbPromise points at a fresh singleton.
   vi.resetModules();
   db = await import('@/lib/db');
-  // Force lib/db to create the DB at v7 (with all stores) via its own upgrade,
+  // Force lib/db to create the DB at v8 (with all stores) via its own upgrade,
   // then clear every store. We deliberately do NOT drop the DB — deleteDatabase
   // blocks on the singleton's open connection and hangs.
   await db.projectsDB.list();
-  const connection = await openDB(DB_NAME, 7);
+  const connection = await openDB(DB_NAME, 8);
   for (const store of ALL_STORES) {
     if (connection.objectStoreNames.contains(store)) await connection.clear(store);
   }
@@ -323,6 +325,66 @@ describe('db: CRUD', () => {
     expect((await beatsDB.listByProject(p.id)).length).toBe(0);
   });
 
+  it('sceneSnapshots: create, listByScene (newest first), getLatest, get, delete', async () => {
+    const { projectsDB, chaptersDB, scenesDB, sceneSnapshotsDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const ch = await chaptersDB.create(makeChapter(p.id, 0));
+    const sc = await scenesDB.create(makeScene(p.id, ch.id, 0));
+
+    const s1: SceneSnapshot = {
+      id: 'snap1',
+      sceneId: sc.id,
+      projectId: p.id,
+      title: 'Título',
+      content: '<p>v1</p>',
+      summary: '',
+      createdAt: 100,
+    };
+    const s2: SceneSnapshot = { ...s1, id: 'snap2', content: '<p>v2</p>', createdAt: 200 };
+    await sceneSnapshotsDB.create(s1);
+    await sceneSnapshotsDB.create(s2);
+
+    // listByScene devuelve de más reciente a más antigua.
+    const list = await sceneSnapshotsDB.listByScene(sc.id);
+    expect(list.map((s) => s.id)).toEqual(['snap2', 'snap1']);
+
+    // getLatest devuelve la más reciente.
+    expect((await sceneSnapshotsDB.getLatest(sc.id))!.id).toBe('snap2');
+    expect((await sceneSnapshotsDB.get('snap1'))!.content).toBe('<p>v1</p>');
+
+    await sceneSnapshotsDB.delete('snap1');
+    expect((await sceneSnapshotsDB.listByScene(sc.id)).length).toBe(1);
+  });
+
+  it('sceneSnapshots: deleteByScene removes all snapshots of a scene', async () => {
+    const { projectsDB, chaptersDB, scenesDB, sceneSnapshotsDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const ch = await chaptersDB.create(makeChapter(p.id, 0));
+    const sc = await scenesDB.create(makeScene(p.id, ch.id, 0));
+    await sceneSnapshotsDB.create({
+      id: 's1', sceneId: sc.id, projectId: p.id, title: '', content: '', summary: '', createdAt: 1,
+    });
+    await sceneSnapshotsDB.create({
+      id: 's2', sceneId: sc.id, projectId: p.id, title: '', content: '', summary: '', createdAt: 2,
+    });
+
+    await sceneSnapshotsDB.deleteByScene(sc.id);
+    expect((await sceneSnapshotsDB.listByScene(sc.id)).length).toBe(0);
+  });
+
+  it('scene delete cascades to its sceneSnapshots', async () => {
+    const { projectsDB, chaptersDB, scenesDB, sceneSnapshotsDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const ch = await chaptersDB.create(makeChapter(p.id, 0));
+    const sc = await scenesDB.create(makeScene(p.id, ch.id, 0));
+    await sceneSnapshotsDB.create({
+      id: 's1', sceneId: sc.id, projectId: p.id, title: '', content: '', summary: '', createdAt: 1,
+    });
+
+    await scenesDB.delete(sc.id);
+    expect((await sceneSnapshotsDB.listByScene(sc.id)).length).toBe(0);
+  });
+
   it('project delete cascades to all child stores', async () => {
     const {
       projectsDB,
@@ -335,11 +397,12 @@ describe('db: CRUD', () => {
       conversationsDB,
       messagesDB,
       beatsDB,
+      sceneSnapshotsDB,
     } = db;
 
     const p = await projectsDB.create(makeProject());
     const ch = await chaptersDB.create(makeChapter(p.id, 0));
-    await scenesDB.create(makeScene(p.id, ch.id, 0));
+    const sc = await scenesDB.create(makeScene(p.id, ch.id, 0));
     await charactersDB.create(makeCharacter(p.id));
     await worldDB.create(makeWorldEntity(p.id));
     await brainstormDB.create(makeBrainstorm(p.id));
@@ -347,6 +410,9 @@ describe('db: CRUD', () => {
     const conv = await conversationsDB.create(makeConversation(p.id));
     await messagesDB.create(makeMessage(conv.id));
     await beatsDB.create(makeBeat(p.id, ch.id));
+    await sceneSnapshotsDB.create({
+      id: 's1', sceneId: sc.id, projectId: p.id, title: '', content: '', summary: '', createdAt: 1,
+    });
 
     await projectsDB.delete(p.id);
 
@@ -360,6 +426,7 @@ describe('db: CRUD', () => {
     expect((await conversationsDB.listByProject(p.id)).length).toBe(0);
     expect((await messagesDB.listByConversation(conv.id)).length).toBe(0);
     expect((await beatsDB.listByProject(p.id)).length).toBe(0);
+    expect((await sceneSnapshotsDB.listByScene(sc.id)).length).toBe(0);
   });
 
   it('chapter delete cascades to its scenes and beats (chapter + scene level)', async () => {

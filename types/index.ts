@@ -61,6 +61,22 @@ export interface Scene {
   updatedAt: number;
 }
 
+/**
+ * B6 — Versioning / snapshots. A point-in-time copy of a scene's editable
+ * fields (title, content, summary), captured each time the scene is saved.
+ * Stored in a dedicated `sceneSnapshots` store (keyed by `id`), indexed by
+ * `sceneId` + `createdAt` so the history can be listed newest-first.
+ */
+export interface SceneSnapshot {
+  id: string;
+  sceneId: string;
+  projectId: string;
+  title: string;
+  content: string;
+  summary: string;
+  createdAt: number;
+}
+
 export type CharacterType =
   | 'protagonist'
   | 'antagonist'

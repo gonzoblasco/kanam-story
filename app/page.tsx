@@ -11,12 +11,14 @@ import RightPanel from '@/components/RightPanel';
 import ExportMenu from '@/components/ExportMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import SearchPanel from '@/components/SearchPanel';
+import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView } = useApp();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   if (!ready) {
     return (
@@ -81,6 +83,14 @@ export default function HomePage() {
             <i className="bi bi-search me-1" />
             Buscar
           </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            title="Ver versiones previas de la escena actual"
+            onClick={() => setShowVersionHistory(true)}
+          >
+            <i className="bi bi-clock-history me-1" />
+            Versiones
+          </button>
           <ExportMenu />
           <button
             className="icon-btn"
@@ -106,6 +116,9 @@ export default function HomePage() {
       <NewProjectModal show={showNewProject} onClose={() => setShowNewProject(false)} />
       <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} />
       {showSearch ? <SearchPanel onClose={() => setShowSearch(false)} /> : null}
+      {showVersionHistory ? (
+        <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} />
+      ) : null}
     </div>
   );
 }
