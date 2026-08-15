@@ -1,6 +1,6 @@
 {
   "name": "kanam-story",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Co-writer de ficción local-first (BYOK → Ollama) en español, donde la conversación ES el producto. Storage via IndexedDB, UI via Next.js + TipTap + Bootstrap.",
   "license": "UNLICENSED",

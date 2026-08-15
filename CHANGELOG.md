@@ -2,6 +2,29 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.9.0] - 2026-08-15
+
+Accessible navigation redesign (Phase 4). The story sections move from right-panel tabs to stacked sections in the main area, with accessibility integrated from the design (WCAG), not added as a final layer. Developed with the multi-agent chain pipeline + cross-review.
+
+### Added
+- **Stacked story sections (U1).** The 7 story sections (Co-writer, Brainstorm, Characters, World, Bible, Settings, Compass) now stack vertically in the main area instead of living in right-panel tabs. Grid went from 3 to 2 columns and `RightPanel` was dropped as a tab container. Sidebar navigates Writing / Outline / Story with `aria-current`.
+- **Scrollspy + collapsible sections (U2).** An `IntersectionObserver` highlights the active section in the sidebar as you scroll, updating `aria-current="true"`. Each section is an accessible accordion: a native `<button>` inside the h2 with `aria-expanded` and `aria-controls`; collapsing keeps the h2 visible to preserve the heading hierarchy.
+- **Generate scene from outline beat (U4).** Each beat in the outline gets a "Generate scene" button that creates the scene (and the chapter automatically if the beat has none - optional structures), links the beat inside it and opens the editor with focus. Pure testable logic in `lib/sceneFromBeat.ts` (`planGenerateScene`). Re-generating a beat that already has a scene reuses it instead of duplicating.
+- **Genre-template onboarding (U5).** Creating a project now offers 4 optional starting points: blank outline, story bible, genre template (thriller/romance/sci-fi) or empty project. Pure data in `lib/projectTemplates.ts`; applied via `createProjectWithStructure`.
+- **Contextual inline creation (U6).** "+" buttons in each view (Brainstorm note, character, world entry, outline beat, orphan-scene link) with descriptive `aria-label` and creation announced via the global live region.
+- **Sticky chat input + contextual insertion (U7).** The co-writer input stays anchored to the bottom of the chat card with internal message scroll. Accepting a proposal navigates to the section where the change applies (character, beat, world, bible, scene). Pure target resolution in `lib/actionTargets.ts` (`getActionsTarget`).
+- **Accessibility integrated from the design.** Skip link, `<nav aria-label="Secciones">`, `<main id="contenido-principal">`, each section as `<section aria-labelledby>` with h2 under h1 (no heading jumps), global `:focus-visible` ring, WCAG AA contrast, accessible radio group for onboarding (roving tabindex + arrow keys), live regions for chat and creation feedback, and managed focus on accept/discard/undo.
+
+### Changed
+- **"Story Bible" renamed to "Ajustes" (U3).** The internal heading is gone; the stacked section shows a single coherent title. Unified card headers/hints (`.stack-panel-header`/`.stack-panel-hint`) across all 7 cards; removed the `<strong>` duplicates of the accordion h2.
+- **OutlineView heading hierarchy (U3).** Added `<h1>Outline</h1>`; chapters/scenes moved to `<h2>`/`<h3>` for a consistent h1→h2→h3 tree.
+
+### Fixed
+- **Focus after sending (U7 review).** The `finally` of `send()` called `focus()` while the textarea was still `disabled`, so focus was lost; deferred with `setTimeout(0)`.
+- **Focus loss on accept/discard/undo (U7 review).** Focus fell to `<body>` when the accept/discard/undo button unmounted; added `requestSectionFocus` to focus the destination section heading on accept, and return focus to the input on discard/undo (WCAG 2.4.3).
+- **Flaky DB test.** The `beforeEach` of `lib/db.test.ts` is stable (5/5 runs); the `7c2432c` commit already removed the `updatedAt` sort flakiness.
+- **tsc in tests.** Fixed 4 pre-existing type errors in test files (`StarterPicker.test.tsx`, `bibleSync.test.ts` x2, `export.test.ts`) so `tsc --noEmit` passes clean.
+
 ## [0.8.0] - 2026-08-14
 
 Backlog de la Fase 3 (B1-B7): calidad de testeo, export de documentos, búsqueda entre escenas, tema claro, versionado de escenas y streaming en el editor. Desarrollado con pipeline multi-agente + revision cruzada.
@@ -163,6 +186,15 @@ Closes the gap between the auto-generated Bible and the editable tabs: detected 
 - `tsc --noEmit` clean.
 - Clean lint in the 10 files touched by this release (the 10 pre-existing errors in `ProjectTree.tsx`/`SettingsModal.tsx`/`WorldPanel.tsx` remain, out of scope).
 
-[Unreleased]: https://github.com/gonzoblasco/kanam-story/compare/v0.2.0-beta...HEAD
+[Unreleased]: https://github.com/gonzoblasco/kanam-story/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/gonzoblasco/kanam-story/compare/v0.2.0-beta...v0.1.0
 [0.2.0-beta]: https://github.com/gonzoblasco/kanam-story/compare/v0.1.0-beta...v0.2.0-beta
 [0.1.0-beta]: https://github.com/gonzoblasco/kanam-story/releases/tag/v0.1.0-beta
