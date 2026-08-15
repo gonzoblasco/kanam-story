@@ -30,6 +30,7 @@ function BeatCard({
   onMoveDown,
   onGenerateScene,
   generating,
+  chapterGenerating,
   canUp,
   canDown,
 }: {
@@ -40,6 +41,7 @@ function BeatCard({
   onMoveDown: (id: string) => void;
   onGenerateScene: (id: string) => void;
   generating: boolean;
+  chapterGenerating: boolean;
   canUp: boolean;
   canDown: boolean;
 }) {
@@ -103,7 +105,7 @@ function BeatCard({
           type="button"
           className="btn btn-sm btn-outline-primary outline-generate"
           onClick={() => onGenerateScene(beat.id)}
-          disabled={generating}
+          disabled={generating || chapterGenerating}
           aria-label={`Generar escena para "${draft.title || 'sin título'}"`}
         >
           {generating ? (
@@ -175,6 +177,12 @@ export default function OutlineView() {
   // de éxito/error se anuncia por la live region global (`announce`), que vive
   // a nivel de página para seguir presente tras cambiar a la vista editor.
   const [generatingBeatId, setGeneratingBeatId] = useState<string | null>(null);
+  // U4+: progreso de generación masiva del capítulo.
+  const [chapterGeneration, setChapterGeneration] = useState<{
+    running: boolean;
+    done: number;
+    total: number;
+  } | null>(null);
 
   // Slice 10: outline filters (POV and tense).
   const [filterPov, setFilterPov] = useState<string>('all');
@@ -314,13 +322,11 @@ export default function OutlineView() {
     setSuggested(null);
   };
 
-  // U4: crea la escena dedicada para un beat (y el capítulo si falta), la
-  // selecciona, relinkea el beat dentro de ella y abre el editor con el foco.
-  // Si el beat ya pertenece a una escena, la reutiliza en lugar de duplicarla.
-  const generateScene = async (beatId: string) => {
+  // U4: crea la escena dedicada para un beat (y el capítulo si falta).
+  // Devuelve la escena creada/reutilizada, o null si falló.
+  const runGenerateScene = async (beatId: string): Promise<{ id: string; title: string; isNew: boolean } | null> => {
     const beat = beats.find((b) => b.id === beatId);
-    if (!beat || !currentProject || generatingBeatId) return;
-    setGeneratingBeatId(beatId);
+    if (!beat || !currentProject) return null;
     try {
       const plan = planGenerateScene({
         beat,
@@ -329,13 +335,8 @@ export default function OutlineView() {
         scenes,
       });
 
-      // Reutiliza la escena existente del beat (clicks repetidos no duplican).
       if (plan.existingSceneId) {
-        selectScene(plan.existingSceneId);
-        setView('editor');
-        requestEditorFocus();
-        announce(`Escena "${beat.title.trim() || 'Escena nueva'}" abierta.`);
-        return;
+        return { id: plan.existingSceneId, title: beat.title.trim() || 'Escena', isNew: false };
       }
 
       let chapterId = plan.scene.chapterId;
@@ -347,18 +348,67 @@ export default function OutlineView() {
         ...plan.scene,
         chapterId: chapterId!,
       });
-      // Relinkea el beat dentro de la escena recién creada para que el outline
-      // quede coherente (el beat "vive" ahora dentro de su escena).
       if (beat.sceneId !== scene.id) {
         await updateBeat(beat.id, { sceneId: scene.id, chapterId: chapterId! });
       }
+      return { id: scene.id, title: scene.title, isNew: true };
+    } catch (e) {
+      announce(e instanceof Error ? e.message : 'No se pudo generar la escena.');
+      return null;
+    }
+  };
+
+  // U4: crea la escena dedicada para un beat (y el capítulo si falta), la
+  // selecciona, relinkea el beat dentro de ella y abre el editor con el foco.
+  // Si el beat ya pertenece a una escena, la reutiliza en lugar de duplicarla.
+  const generateScene = async (beatId: string) => {
+    if (generatingBeatId || (chapterGeneration?.running ?? false)) return;
+    setGeneratingBeatId(beatId);
+    try {
+      const result = await runGenerateScene(beatId);
+      if (!result) return;
+      selectScene(result.id);
       setView('editor');
       requestEditorFocus();
-      announce(`Escena "${scene.title}" generada.`);
+      announce(`Escena "${result.title.trim() || 'Escena nueva'}" ${result.isNew ? 'generada' : 'abierta'}.`);
     } catch (e) {
       announce(e instanceof Error ? e.message : 'No se pudo generar la escena.');
     } finally {
       setGeneratingBeatId(null);
+    }
+  };
+
+  // U4+: genera una escena por cada beat del capítulo que aún no tenga escena.
+  // Se queda en el outline para que el usuario elija cuál abrir.
+  const generateChapter = async () => {
+    if (!chapter || generatingBeatId || (chapterGeneration?.running ?? false)) return;
+    const targets = chapterBeats.filter((b) => !b.sceneId);
+    if (targets.length === 0) {
+      announce('Todas las escenas del capítulo ya están generadas.');
+      return;
+    }
+    setChapterGeneration({ running: true, done: 0, total: targets.length });
+    let completed = 0;
+    let failed = 0;
+    try {
+      for (const beat of targets) {
+        setChapterGeneration((prev) => (prev ? { ...prev, done: completed } : prev));
+        const result = await runGenerateScene(beat.id);
+        if (result) {
+          completed++;
+        } else {
+          failed++;
+        }
+      }
+      if (failed === 0) {
+        announce(`Capítulo generado: ${completed} ${completed === 1 ? 'escena creada' : 'escenas creadas'}.`);
+      } else {
+        announce(`Capítulo generado parcialmente: ${completed} escenas creadas, ${failed} fallos.`);
+      }
+    } catch (e) {
+      announce(e instanceof Error ? e.message : 'No se pudo generar el capítulo.');
+    } finally {
+      setChapterGeneration(null);
     }
   };
 
@@ -374,6 +424,7 @@ export default function OutlineView() {
           onMoveDown={(id) => moveBeat(id, 1)}
           onGenerateScene={generateScene}
           generating={generatingBeatId === b.id}
+          chapterGenerating={chapterGeneration?.running ?? false}
           canUp={i > 0}
           canDown={i < list.length - 1}
         />
@@ -406,6 +457,25 @@ export default function OutlineView() {
         <button className="btn btn-sm btn-ai" onClick={suggest} disabled={suggesting}>
           <i className="bi bi-magic me-1" />
           {suggesting ? 'Sugiriendo…' : 'Sugerir outline'}
+        </button>
+        {/* U4+: genera todas las escenas del capítulo a partir de sus beats. */}
+        <button
+          className="btn btn-sm btn-primary"
+          onClick={generateChapter}
+          disabled={chapterGeneration?.running ?? false}
+          aria-label="Generar todas las escenas del capítulo"
+        >
+          {chapterGeneration?.running ? (
+            <>
+              <span className="spinner-inline me-1" aria-hidden="true" />
+              {chapterGeneration.done}/{chapterGeneration.total}
+            </>
+          ) : (
+            <>
+              <i className="bi bi-magic me-1" aria-hidden="true" />
+              Generar capítulo
+            </>
+          )}
         </button>
       </div>
 
