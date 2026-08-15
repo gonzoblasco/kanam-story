@@ -37,7 +37,7 @@ function makeWorld(overrides: Partial<WorldEntity> = {}): WorldEntity {
 
 describe('buildCharacterSyncPlan', () => {
   it('crea personajes nuevos con source biblia y dedupe case-insensitive', () => {
-    const entries = [
+    const entries: Partial<Character>[] = [
       { name: 'Renzo', type: 'protagonist', personality: 'terco' },
       { name: '  renzo  ', type: 'protagonist', personality: 'orgulloso' }, // duplicado (trim + case)
       { name: 'Lía', type: 'supporting', personality: 'dulce' },
@@ -92,7 +92,7 @@ describe('buildCharacterSyncPlan', () => {
 
 describe('buildWorldSyncPlan', () => {
   it('crea entidades nuevas con source biblia y dedupe case-insensitive', () => {
-    const entries = [
+    const entries: Partial<WorldEntity>[] = [
       { name: 'Club', kind: 'place', description: 'salón' },
       { name: '  club  ', kind: 'place', description: 'otro' }, // duplicado
       { name: 'Bosque', kind: 'place', description: 'oscuro' },

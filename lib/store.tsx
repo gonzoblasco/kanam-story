@@ -86,6 +86,13 @@ interface AppState {
   editorFocusNonce: number;
   /** Pide al editor tomar el foco (nonce observado por `Editor`). */
   requestEditorFocus: () => void;
+  /** U8: nonce que `StorySections` observa para enfocar una sección apilada. */
+  sectionFocusNonce: number;
+  /** U8: sección a enfocar cuando `sectionFocusNonce` cambia. */
+  sectionFocusTarget: StorySectionKey | null;
+  /** U8: pide enfocar la sección apilada indicada (p.ej. tras aceptar una
+   *  propuesta del co-writer que navega a Personajes/Mundo/Biblia). */
+  requestSectionFocus: (key: StorySectionKey) => void;
   /** Mensaje para la live region global (role="status", persistente). */
   announcement: string;
   /** Anuncia un mensaje en la live region global. */
@@ -208,6 +215,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // desde el outline). Cada `requestEditorFocus()` incrementa el contador y el
   // `Editor` lo observa para llamar `editor.commands.focus()`.
   const [editorFocusNonce, setEditorFocusNonce] = useState(0);
+  // U8: nonce + destino para enfocar una sección apilada tras una navegación
+  // contextual (p.ej. aceptar una propuesta del co-writer que apunta a
+  // Personajes/Mundo/Biblia). `StorySections` observa el nonce y enfoca el
+  // heading de la sección, evitando que el foco caiga a <body> al desmontarse
+  // el botón Aceptar/Descartar.
+  const [sectionFocusNonce, setSectionFocusNonce] = useState(0);
+  const [sectionFocusTarget, setSectionFocusTarget] = useState<StorySectionKey | null>(null);
   // U4: anuncio global para live region. Se muestra en un `role="status"` que
   // vive a nivel de página (persistente) para que el AT lo lea aunque el
   // componente que generó el feedback cambie de vista (p.ej. Outline → Editor).
@@ -222,6 +236,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setView = useCallback((v: 'editor' | 'outline' | 'story') => setViewState(v), []);
   const requestEditorFocus = useCallback(() => setEditorFocusNonce((n) => n + 1), []);
+  const requestSectionFocus = useCallback((key: StorySectionKey) => {
+    setSectionFocusTarget(key);
+    setSectionFocusNonce((n) => n + 1);
+  }, []);
   const setActiveStorySection = useCallback((key: StorySectionKey) => setActiveStorySectionState(key), []);
   const setCurrentOutlineChapterId = useCallback(
     (id: string | null) => setCurrentOutlineChapterIdState(id),
@@ -1222,6 +1240,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setView,
     editorFocusNonce,
     requestEditorFocus,
+    sectionFocusNonce,
+    sectionFocusTarget,
+    requestSectionFocus,
     announcement,
     announce,
     setActiveStorySection,

@@ -29,6 +29,7 @@ export default function ChatPanel() {
     announce,
     setView,
     setActiveStorySection,
+    requestSectionFocus,
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -163,8 +164,11 @@ export default function ChatPanel() {
       setStreamingText('');
       abortRef.current = null;
       // Foco gestionado: al terminar de enviar, el foco vuelve al input para
-      // continuar escribiendo sin tener que volver a tabular hasta él.
-      inputRef.current?.focus();
+      // continuar escribiendo sin tener que volver a tabular hasta él. El
+      // textarea está `disabled` mientras `busy`, así que `focus()` debe
+      // diferirse al re-render que lo habilita (si no, es un no-op y el foco
+      // queda perdido).
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
   }
 
@@ -180,6 +184,9 @@ export default function ChatPanel() {
       if (target.view === 'story' && target.section) {
         setActiveStorySection(target.section);
         setView('story');
+        // U8: enfoca el heading de la sección destino para que el foco no caiga
+        // a <body> al desmontarse el botón Aceptar (WCAG 2.4.3).
+        requestSectionFocus(target.section);
         announce(`Cambios aplicados en ${target.label}.`);
       } else if (target.view === 'outline') {
         setView('outline');
@@ -198,11 +205,15 @@ export default function ChatPanel() {
     await lastUndo();
     setLastUndo(null);
     announce('Cambios deshechos.');
+    // U8: devuelve el foco al input (el botón Deshacer se desmonta).
+    inputRef.current?.focus();
   }
 
   function rejectActions() {
     setPendingActions([]);
     announce('Propuesta descartada.');
+    // U8: devuelve el foco al input (el botón Descartar se desmonta).
+    inputRef.current?.focus();
   }
 
   function describeAction(a: ContentAction): string {

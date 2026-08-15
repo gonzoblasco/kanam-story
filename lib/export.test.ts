@@ -9,7 +9,7 @@ const project: Project = {
   genre: 'thriller',
   tone: 'oscuro',
   pov: 'third-limited',
-  style: 'escueto',
+  style: { mode: 'custom', custom: 'escueto' },
   createdAt: 0,
   updatedAt: 0,
 };

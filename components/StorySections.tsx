@@ -29,7 +29,7 @@ const SECTION_COMPONENT: Record<string, () => React.ReactNode> = {
  *  `aria-expanded`/`aria-controls` y un toggle operable por teclado). El h2 se
  *  mantiene siempre presente para no romper la jerarquía de headings. */
 export default function StorySections() {
-  const { activeStorySection, setActiveStorySection } = useApp();
+  const { activeStorySection, setActiveStorySection, sectionFocusNonce, sectionFocusTarget } = useApp();
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(STORY_SECTIONS.map((s) => [s.key, true])),
   );
@@ -81,6 +81,19 @@ export default function StorySections() {
       scrollspyRef.current = activeStorySection;
     }
   }, [activeStorySection]);
+
+  // U8: cuando `requestSectionFocus()` pide enfocar una sección (p.ej. tras
+  // aceptar una propuesta del co-writer que navega a Personajes/Mundo/Biblia),
+  // mueve el foco al toggle del heading. Evita que el foco caiga a <body> al
+  // desmontarse el botón Aceptar/Descartar (WCAG 2.4.3).
+  useEffect(() => {
+    if (sectionFocusNonce > 0 && sectionFocusTarget) {
+      const toggle = document.querySelector<HTMLButtonElement>(
+        `#section-${sectionFocusTarget} .stack-section-toggle`,
+      );
+      toggle?.focus();
+    }
+  }, [sectionFocusNonce, sectionFocusTarget]);
 
   function toggle(key: string) {
     setOpen((prev) => ({ ...prev, [key]: !prev[key] }));

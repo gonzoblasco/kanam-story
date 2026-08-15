@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import StarterPicker from '@/components/StarterPicker';
+import StarterPicker, { type StarterKey } from '@/components/StarterPicker';
 
 describe('StarterPicker (U5)', () => {
   it('expone las 4 opciones como radiogroup accesible', () => {
@@ -40,7 +40,7 @@ describe('StarterPicker (U5)', () => {
   it('navega por flechas (ArrowDown) y llama onChange', async () => {
     const user = userEvent.setup();
     function Harness() {
-      const [value, setValue] = React.useState('outline');
+      const [value, setValue] = React.useState<StarterKey>('outline');
       return (
         <StarterPicker value={value} onChange={setValue} genre="thriller" onGenreChange={() => {}} />
       );
