@@ -33,6 +33,27 @@ const EXPAND_LENGTHS: { key: ExpandLength; label: string }[] = [
 
 const DIALOGUE_COUNT = 4;
 
+/**
+ * Convierte texto plano con saltos de línea en HTML estructurado para TipTap.
+ * Doble salto de línea separa párrafos; salto simple dentro de un párrafo se
+ * conserva como salto de línea HTML.
+ */
+function proseToHtml(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  return trimmed
+    .split(/\n\s*\n/)
+    .map((paragraph) => {
+      const escaped = paragraph
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      return `<p>${escaped}</p>`;
+    })
+    .join('');
+}
+
 export default function Editor() {
   const {
     currentProject,
@@ -391,6 +412,15 @@ export default function Editor() {
       } else {
         // B7: autosave is suppressed while streaming, so persist the final
         // streamed content explicitly once generation completes.
+        //
+        // Para acciones que generan o reemplazan el texto completo de una
+        // escena, normalizamos el texto plano del modelo a párrafos HTML. Sin
+        // esto, los saltos de línea literales quedan dentro de un único nodo y
+        // se pierden al guardar/recuperar la escena.
+        const normalizesWholeScene = kind === 'write' || kind === 'expand' || kind === 'tension';
+        if (normalizesWholeScene) {
+          editor.commands.setContent(proseToHtml(full), { emitUpdate: false });
+        }
         if (kind === 'dialogue') {
           // Preserve the trailing newline the non-streaming path appended.
           // Insert at the cursor (already right after the last streamed chunk)
