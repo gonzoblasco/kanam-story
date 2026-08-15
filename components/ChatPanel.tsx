@@ -5,6 +5,7 @@ import { useApp } from '@/lib/store';
 import { buildAgentContext, buildAgentPrompt } from '@/lib/agentPrompts';
 import { parseAgentReply, filterValidActions } from '@/lib/agentReply';
 import { ollamaChatStream } from '@/lib/ollama';
+import { getActionsTarget } from '@/lib/actionTargets';
 import type { ContentAction } from '@/types';
 
 export default function ChatPanel() {
@@ -25,6 +26,9 @@ export default function ChatPanel() {
     beats,
     storyBible,
     applyContentActions,
+    announce,
+    setView,
+    setActiveStorySection,
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -34,12 +38,21 @@ export default function ChatPanel() {
   const [lastUndo, setLastUndo] = useState<(() => Promise<void>) | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [lastAssistantMessage, setLastAssistantMessage] = useState('');
+  const assistantMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingText]);
+
+  useEffect(() => {
+    return () => {
+      if (assistantMsgTimer.current) clearTimeout(assistantMsgTimer.current);
+    };
+  }, []);
 
   const startConversation = useCallback(async () => {
     if (!currentProject) return;
@@ -125,8 +138,16 @@ export default function ChatPanel() {
         actions,
       });
 
+      // Live region: anuncia la respuesta del co-writer (se reinicia tras 6s).
+      if (assistantMsgTimer.current) clearTimeout(assistantMsgTimer.current);
+      setLastAssistantMessage(reply);
+      assistantMsgTimer.current = setTimeout(() => setLastAssistantMessage(''), 6000);
+
       if (actions.length > 0) {
         setPendingActions(actions);
+        announce(
+          `El co-writer propone ${actions.length} cambio${actions.length > 1 ? 's' : ''}. Usá los botones Aceptar o Descartar.`,
+        );
       }
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
@@ -136,27 +157,52 @@ export default function ChatPanel() {
         content: `⚠️ Error: ${e instanceof Error ? e.message : 'La petición a la IA falló'}`,
         actions: [],
       });
+      announce('Ocurrió un error al pedir la respuesta al co-writer.');
     } finally {
       setBusy(false);
       setStreamingText('');
       abortRef.current = null;
+      // Foco gestionado: al terminar de enviar, el foco vuelve al input para
+      // continuar escribiendo sin tener que volver a tabular hasta él.
+      inputRef.current?.focus();
     }
   }
 
   async function acceptActions() {
+    // U7 — inserción contextual: navegar a la sección donde el cambio se aplica
+    // (personaje → Personajes, beat → Outline, mundo → Mundo, etc.) para que el
+    // usuario vea el resultado "en contexto" tras aceptar la propuesta.
+    const target = getActionsTarget(pendingActions);
     const undo = await applyContentActions(pendingActions);
     setLastUndo(() => undo);
     setPendingActions([]);
+    if (target) {
+      if (target.view === 'story' && target.section) {
+        setActiveStorySection(target.section);
+        setView('story');
+        announce(`Cambios aplicados en ${target.label}.`);
+      } else if (target.view === 'outline') {
+        setView('outline');
+        announce('Cambios aplicados en el outline.');
+      } else {
+        setView('editor');
+        announce('Cambios aplicados en el editor.');
+      }
+    } else {
+      announce('Cambios aplicados.');
+    }
   }
 
   async function undoLast() {
     if (!lastUndo) return;
     await lastUndo();
     setLastUndo(null);
+    announce('Cambios deshechos.');
   }
 
   function rejectActions() {
     setPendingActions([]);
+    announce('Propuesta descartada.');
   }
 
   function describeAction(a: ContentAction): string {
@@ -238,6 +284,12 @@ export default function ChatPanel() {
       ) : null}
 
       <div className="chat-messages" ref={scrollRef}>
+        {/* U7 — live region de mensajes: anuncia la llegada de una respuesta
+            del co-writer. El texto se reinicia tras un timeout para que el AT
+            vuelva a anunciar respuestas consecutivas con el mismo contenido. */}
+        <div role="log" aria-live="polite" className="visually-hidden">
+          {lastAssistantMessage}
+        </div>
         {messages.length === 0 && !streamingText ? (
           <div className="empty-state">
             <div>
@@ -304,10 +356,16 @@ export default function ChatPanel() {
       </div>
 
       <div className="chat-input">
+        <label htmlFor="chat-input" className="visually-hidden">
+          Mensaje al co-writer
+        </label>
         <textarea
+          id="chat-input"
+          ref={inputRef}
           className="form-control"
           rows={2}
           placeholder="Escribí tu idea, pregunta o pedido…"
+          aria-label="Escribí tu idea, pregunta o pedido para el co-writer"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

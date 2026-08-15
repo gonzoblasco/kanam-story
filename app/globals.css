@@ -765,11 +765,15 @@ a {
 
 /* --- Chat (el corazón) --- */
 
+/* U7 — el panel de chat es una card de altura fija con scroll interno de
+   mensajes, y el input queda anclado al fondo (no en medio del scroll de las
+   secciones apiladas). El usuario escribe al co-writer sin hacer scroll hasta
+   el final de la sección. */
 .chat-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: min(58vh, 520px);
+  min-height: 320px;
 }
 
 .chat-conv-list {
@@ -924,6 +928,14 @@ a {
 .chat-input {
   border-top: 1px solid var(--sl-border);
   padding: 0.75rem;
+  /* U7 — input sticky al fondo de la sección Co-writer: queda fijo al fondo
+     del área de scroll (la vista Historia) en vez de quedar en medio del
+     scroll de las secciones apiladas. El usuario escribe al co-writer sin
+     tener que hacer scroll hasta el final. */
+  position: sticky;
+  bottom: 0;
+  background: var(--sl-surface);
+  z-index: 5;
 }
 
 .chat-input textarea {
