@@ -67,6 +67,7 @@ export default function Editor() {
   const [indicatorPos, setIndicatorPos] = useState<{ top: number; left: number } | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sceneIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // B7: while streaming, suppress the debounced autosave so partial AI text is
   // never persisted mid-generation.
@@ -98,6 +99,31 @@ export default function Editor() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [scene?.id, scene?.title, scene?.summary]);
 
+  // Keep a ref in sync with the current scene id so the debounced autosave
+  // always writes to the scene that was active when the edit happened, even if
+  // the user switches scenes before the timeout fires.
+  useEffect(() => {
+    sceneIdRef.current = scene?.id ?? null;
+  }, [scene?.id]);
+
+  // Keep the TipTap editor in sync with the selected scene. Without this,
+  // switching scenes leaves the previous scene's content on screen and the
+  // next autosave overwrites the newly-selected scene.
+  useEffect(() => {
+    if (!editor || !scene) return;
+    // Flush pending edits to the previous scene before switching.
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      const previousSceneId = sceneIdRef.current;
+      if (previousSceneId) {
+        updateScene(previousSceneId, { content: editor.getHTML() });
+      }
+    }
+    editor.commands.setContent(scene.content ?? '', { emitUpdate: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, scene?.id, updateScene]);
+
   // U4: tomar el foco cuando `requestEditorFocus()` lo pide (p.ej. tras generar
   // una escena desde el outline), colocando el caret al final del contenido.
   useEffect(() => {
@@ -108,10 +134,11 @@ export default function Editor() {
 
   const saveContent = useCallback(
     (html: string) => {
-      if (!scene) return;
-      updateScene(scene.id, { content: html });
+      const sceneId = sceneIdRef.current;
+      if (!sceneId) return;
+      updateScene(sceneId, { content: html });
     },
-    [scene, updateScene],
+    [updateScene],
   );
 
   const handleEditorUpdate = useCallback(() => {
