@@ -1,10 +1,10 @@
 # Kanam Story
 
-> **Status:** `0.2.0` — editable Story Bible. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
+> **Status:** `0.9.0` — accessible navigation redesign. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
 
 Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 
-> **Roadmap:** slices 0-8 done (chat with hands, outline & beats, living bible, compass, export, editable story bible, rich character sheets, typed worldbuilding). Next: **Slice 9 — Match My Style** and **Slice 10 — outline filters + linking**. See `.knowledge/ROADMAP.md` for the full plan.
+> **Roadmap:** phases 0-4 done (chat with hands, outline & beats, living bible, compass, export, editable story bible, rich character sheets, typed worldbuilding, match my style, outline filters + linking, accessible navigation redesign). The project stays in the `0.x` line (pre-production) - as an open-source, non-production tool it may never reach `1.0.0`. See `.knowledge/ROADMAP.md` for the full plan.
 
 ## Stack
 
@@ -41,6 +41,16 @@ npm run test:watch # vitest in watch mode
 
 ## What works today
 
+### Accessible navigation (Phase 4)
+
+- **Stacked story sections.** The 7 story sections (Co-writer, Brainstorm, Characters, World, Bible, Settings, Compass) stack vertically in the main area instead of right-panel tabs. The sidebar navigates Writing / Outline / Story.
+- **Scrollspy + collapsible sections.** An `IntersectionObserver` highlights the active section in the sidebar as you scroll; each section is an accessible accordion.
+- **Generate scene from outline beat.** Each beat in the outline has a "Generate scene" button that creates the scene (and the chapter automatically if the beat has none - optional structures), links the beat and opens the editor with focus. Re-generating a beat that already has a scene reuses it.
+- **Genre-template onboarding.** Creating a project offers 4 optional starting points: blank outline, story bible, genre template (thriller/romance/sci-fi) or empty project.
+- **Contextual inline creation.** "＋" buttons in each view (brainstorm note, character, world entry, outline beat, orphan-scene link).
+- **Sticky chat input + contextual insertion.** The co-writer input stays anchored to the bottom of the chat card; accepting a proposal navigates to the section where the change applies.
+- **Accessibility integrated from the design (WCAG).** Skip link, landmarks, h1→h2→h3 heading hierarchy, global `:focus-visible`, WCAG AA contrast, live regions for chat and creation feedback, managed focus on accept/discard/undo.
+
 ### Co-writer chat (the heart)
 
 - **Chat panel** per project, persisted in IndexedDB. Converse with an agent that knows the manuscript, bible, outline and compass.
@@ -65,24 +75,25 @@ npm run test:watch # vitest in watch mode
 - **Outline view** in the main area (toggle Editor/Outline) — a map of beats per chapter/scene.
 - **Manual editing** — title, kind, status, description, notes; reorder, add, delete.
 - **"Suggest outline"** — the agent proposes beats from the bible/compass/what's written, with a preview (Add/Discard).
+- **Filters by POV/tense** and **orphan-scene linking**.
 
-### Right panel (tabs)
+### Story sections (stacked in the main area)
 
 - **Co-writer** — the chat with hands (see above).
 - **Brainstorm** — asks for ideas on a topic, saves notes, supports "append" to extend an existing note.
 - **Characters** — rich sheets: typed role (`type`), pronouns, groups, other names, traits, and a context toggle (`inContext`). AI-assisted generation (Generate / Surprise Me / preview).
 - **World** — typed entries (`kind`: place / organization / lore / key event / clue / magic system / item / rule / other), other names, traits, and a context toggle.
 - **Bible** — 5 auto-generated sections from the manuscript (Summary / Themes / Characters / World / Rules), with per-section manual override, stale tracking and a button to revert to auto content.
-- **Story Bible** — editable settings: braindump, genre tags, style (featured presets / custom), and an editable synopsis.
+- **Settings** — editable: braindump, genre tags, style (featured presets / custom / match my style), and an editable synopsis.
 - **Compass** — narrative orientation: premise, promise, theme, protagonist, POV.
-- Collapsible tabs on the right; `selectTab()` handles expand + switch.
 
 ### Project
 
-- Sidebar with chapter/scene tree, project switcher, create-project modal.
-- Settings modal with Ollama URL, model selector (auto-detects installed) and theme.
-- Dark theme by default via `data-bs-theme="dark"`.
-- **Export** the manuscript to Markdown (`.md`) or plain text (`.txt`) from the top bar.
+- Sidebar with chapter/scene tree, project switcher, create-project modal (with genre-template onboarding).
+- Settings modal with Ollama URL, model selector (auto-detects installed) and theme (dark/light).
+- **Export** the manuscript to Markdown (`.md`), plain text (`.txt`), PDF or DOCX from the top bar.
+- **Search across scenes** with find/replace and confirmation.
+- **Versioning / snapshots** of scenes with history, diff and restore.
 
 ### Model
 
@@ -94,7 +105,7 @@ npm run test:watch # vitest in watch mode
 ```
 kanam-story/
 ├── app/                 # App Router: layout, page, /api/ollama, /api/ollama/models
-├── components/          # UI (Editor, ChatPanel, OutlineView, CharactersPanel, WorldPanel, StoryBiblePanel, StoryBibleSettingsPanel, CompassPanel, ExportMenu, ...)
+├── components/          # UI (Editor, ChatPanel, OutlineView, StorySections, CharactersPanel, WorldPanel, StoryBiblePanel, CompassPanel, StarterPicker, ExportMenu, ...)
 ├── lib/
 │   ├── db.ts            # IndexedDB schema + per-entity helpers + migrations
 │   ├── store.tsx        # AppProvider + CRUD wrappers
@@ -106,8 +117,14 @@ kanam-story/
 │   ├── prompts.ts       # buildContext + per-command builders + bible prompts
 │   ├── bibleExtract.ts  # extract characters/world from bible markdown
 │   ├── bibleParse.ts    # parser for the 5 Bible sections
+│   ├── bibleSync.ts     # pure dedupe/merge for bible → characters/world sync
+│   ├── sceneFromBeat.ts # pure plan for generating a scene from an outline beat
+│   ├── actionTargets.ts # pure resolution of the destination section for accepted actions
+│   ├── projectTemplates.ts # pure genre-template data for onboarding
+│   ├── snapshots.ts     # scene versioning (dedupe + LCS diff)
+│   ├── search.ts        # find/replace across scenes
+│   ├── export.ts        # manuscript export (md/txt/pdf/docx)
 │   ├── labels.ts        # shared labels (POV, character type, world kind, style)
-│   ├── export.ts        # manuscript export (md/txt)
 │   └── *.test.ts        # vitest tests
 ├── types/               # Project, Chapter, Scene, Character, WorldEntity, Beat, StoryBible, Conversation, Message, ContentAction, ...
 └── vitest.config.ts
@@ -120,36 +137,22 @@ Key conventions (summary):
 - The chat uses streaming (`ollamaChatStream`); the editor's AI bar uses non-streaming `ollamaChat`.
 - Spanish in all UI and all Ollama prompts. Domain fields (`Project.pov`, `Character.type`, `WorldEntity.kind`) stay in English because they are serialized in IndexedDB.
 - Bible section labels are kept in sync across `BIBLE_SECTION_DEFAULTS`, `buildStoryBiblePrompt` and `StoryBiblePanel` (parsing). Changing one without the others breaks regeneration.
-- DB migrations bump `DB_VERSION` and map existing data (v2→v3 beats, v3→v4 style, v4→v5 character type, v5→v6 world kind).
+- DB migrations bump `DB_VERSION` and map existing data (v2→v3 beats, v3→v4 style, v4→v5 character type, v5→v6 world kind, v6→v7 tense, v7→v8 snapshots).
+- Pure, testable logic is extracted to `lib/*.ts` (no DB/DOM): `bibleSync.ts`, `sceneFromBeat.ts`, `actionTargets.ts`, `projectTemplates.ts`, `snapshots.ts`, `search.ts`.
 
 ## Testing
 
 - Runner: **Vitest 4** (`vitest@^4.1.9`).
-- Current coverage: **145 tests** on pure functions.
-  - `lib/prompts.test.ts` — `buildContext`, `buildExpandPrompt`, `buildStoryBiblePrompt`, `buildDialoguePrompt`, `buildTensionPrompt`, `buildBibleExtractPrompt`.
-  - `lib/bibleParse.test.ts` — `parseBibleSections`.
-  - `lib/bibleExtract.test.ts` — `parseCharacterEntries`, `parseWorldEntries`.
-  - `lib/agentReply.test.ts` — `parseAgentReply`, `isValidAction`, `filterValidActions`, `parseBeatList`, `parseSuggestedCharacterList`.
-  - `lib/agentPrompts.test.ts` — `buildAgentContext`, `buildAgentPrompt`, `buildSuggestBeatsPrompt`, `buildGenerateCharacterPrompt`.
-  - `lib/actions.test.ts` — `applyAction`, `applyActions`.
-  - `lib/ollamaStream.test.ts` — `createOllamaStreamParser`.
-  - `lib/export.test.ts` — `buildManuscriptMarkdown`, `markdownToPlainText`.
-  - `lib/labels.test.ts` — `mapRoleToType`, `characterTypeLabel`, `mapCategoryToKind`, `worldKindLabel`.
-  - `lib/outline.test.ts` — `moveBeatInList`.
-- Only pure code is tested; React components, `lib/db.ts` (IndexedDB) and API routes have no tests yet.
+- Current coverage: **282 tests** on pure functions and components.
+  - Pure logic: `prompts`, `bibleParse`, `bibleExtract`, `bibleSync`, `agentReply`, `agentPrompts`, `actions`, `ollamaStream`, `export`, `labels`, `outline`, `sceneFromBeat`, `actionTargets`, `projectTemplates`, `snapshots`, `search`, `db` (fake-indexeddb).
+  - Components (jsdom + `@testing-library/react`): `StoryBiblePanel`, `CharactersPanel`, `WorldPanel`, `StorySections` (accordion, scrollspy, section focus), `ChatPanel` (sticky input, live region, contextual insertion), `StarterPicker` (radio group).
 - Run: `npm test`.
 
 ## Known / TODO (not in the current release)
 
-- **Export PDF / DOCX.** Today only Markdown (`.md`) and plain text (`.txt`).
-- **Light theme.** Only dark today.
-- **Component tests.** No jsdom yet. For the more complex components (Editor, StoryBiblePanel) `@testing-library/react` + `jsdom` would be needed.
-- **IndexedDB tests.** No `fake-indexeddb`. Needed when store/db coverage is added.
-- **Manuscript search.** No find/replace across scenes.
-- **Versioning / snapshots.** No way to see previous versions of a scene.
-- **Streaming in the editor.** The chat uses SSE; the editor's AI bar still uses non-streaming `ollamaChat`.
 - **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user.
-- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + right panel. On mobile the grid does not adapt well.
+- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + stacked sections. On mobile the grid does not adapt well.
+- **Manual AT validation.** The live region of the chat and the onboarding radio group need final validation with VoiceOver/NVDA (the green tests do not cover the timing of the announcement).
 
 ## Decisions already made (not easily reverted)
 
