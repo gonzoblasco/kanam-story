@@ -71,17 +71,35 @@ export default function ProjectTree() {
     });
   }
 
-  function addScene(chapterId: string) {
+  function addScene(chapterId: string, focus = true) {
     if (!currentProject) return;
     const order = scenes.filter((s) => s.chapterId === chapterId).length;
-    createScene({
+    return createScene({
       projectId: currentProject.id,
       chapterId,
       title: `Escena ${order + 1}`,
       content: '',
       summary: '',
       order,
+    }).then((scene) => {
+      if (focus && scene?.id) openScene(scene.id);
+      return scene;
     });
+  }
+
+  function openScene(id: string) {
+    selectScene(id);
+    setView('editor');
+  }
+
+  function openChapterFirstScene(chapterId: string) {
+    const chapterScenes = scenes.filter((s) => s.chapterId === chapterId);
+    const scene = chapterScenes[0];
+    if (scene) {
+      openScene(scene.id);
+    } else {
+      void addScene(chapterId, true);
+    }
   }
 
   function renameChapter(c: Chapter) {
@@ -115,10 +133,7 @@ export default function ProjectTree() {
             key={c.id}
             className="tree-item justify-content-center"
             title={c.title}
-            onClick={() => {
-              const firstScene = scenes.find((s) => s.chapterId === c.id);
-              if (firstScene) selectScene(firstScene.id);
-            }}
+            onClick={() => openChapterFirstScene(c.id)}
           >
             <i className="bi bi-bookmark" />
           </div>
@@ -209,10 +224,17 @@ export default function ProjectTree() {
             <div key={c.id}>
               <div className="tree-item">
                 <i className="bi bi-bookmark" />
-                <span className="text-truncate" onClick={() => renameChapter(c)}>
+                <span className="text-truncate" onClick={() => openChapterFirstScene(c.id)}>
                   {c.title}
                 </span>
                 <div className="actions">
+                  <button
+                    className="icon-btn"
+                    title="Renombrar capítulo"
+                    onClick={(e) => { e.stopPropagation(); renameChapter(c); }}
+                  >
+                    <i className="bi bi-pencil" />
+                  </button>
                   <button
                     className="icon-btn"
                     title="Ver outline del capítulo"
@@ -244,13 +266,20 @@ export default function ProjectTree() {
                   <div
                     key={s.id}
                     className={`tree-item ${s.id === currentSceneId ? 'active' : ''}`}
-                    onClick={() => selectScene(s.id)}
+                    onClick={() => openScene(s.id)}
                   >
                     <i className="bi bi-file-earmark-text" />
-                    <span className="text-truncate" onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}>
+                    <span className="text-truncate">
                       {s.title || 'Escena sin título'}
                     </span>
                     <div className="actions">
+                      <button
+                        className="icon-btn"
+                        title="Renombrar escena"
+                        onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}
+                      >
+                        <i className="bi bi-pencil" />
+                      </button>
                       <button
                         className="icon-btn"
                         title="Eliminar escena"
