@@ -61,11 +61,11 @@ beforeEach(async () => {
   // Rebuild the module so lib/db's cached dbPromise points at a fresh singleton.
   vi.resetModules();
   db = await import('@/lib/db');
-  // Force lib/db to create the DB at v8 (with all stores) via its own upgrade,
-  // then clear every store. We deliberately do NOT drop the DB — deleteDatabase
-  // blocks on the singleton's open connection and hangs.
+  // Force lib/db to create the DB at the current version (with all stores)
+  // via its own upgrade, then clear every store. We deliberately do NOT drop
+  // the DB — deleteDatabase blocks on the singleton's open connection and hangs.
   await db.projectsDB.list();
-  const connection = await openDB(DB_NAME, 8);
+  const connection = await openDB(DB_NAME); // open at current version
   for (const store of ALL_STORES) {
     if (connection.objectStoreNames.contains(store)) await connection.clear(store);
   }

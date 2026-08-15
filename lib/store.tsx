@@ -493,13 +493,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // save. Dedupe identical snapshots (no noise when autosave fires without
       // real changes). The snapshot is taken from the DB (source of truth), not
       // the React snapshot, so concurrent saves capture the correct intermediate
-      // value.
-      const existing = await scenesDB.get(id);
-      if (existing) {
-        const last = await sceneSnapshotsDB.getLatest(id);
-        if (shouldSnapshot(existing, last)) {
-          await sceneSnapshotsDB.create(buildSnapshot(existing, Date.now()));
+      // value. If the sceneSnapshots store is unavailable (corrupted/interrupted
+      // upgrade), skip the snapshot and continue saving the scene.
+      try {
+        const existing = await scenesDB.get(id);
+        if (existing) {
+          const last = await sceneSnapshotsDB.getLatest(id);
+          if (shouldSnapshot(existing, last)) {
+            await sceneSnapshotsDB.create(buildSnapshot(existing, Date.now()));
+          }
         }
+      } catch (err) {
+        console.warn('Scene snapshot skipped (store unavailable):', err);
       }
       await scenesDB.update(id, data);
       if (currentProject) await loadProjectData(currentProject.id);

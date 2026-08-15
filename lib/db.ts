@@ -1,4 +1,4 @@
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB, type IDBPDatabase, type IDBPObjectStore } from 'idb';
 import type {
   Project,
   Chapter,
@@ -21,9 +21,20 @@ import {
 } from '@/lib/migrations';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
+
+function ensureIndex<StoreName extends string>(
+  store: IDBObjectStore | IDBPObjectStore<unknown, string[], StoreName, 'versionchange'>,
+  name: string,
+  keyPath: string | string[],
+  options?: IDBIndexParameters,
+) {
+  if (!store.indexNames.contains(name)) {
+    store.createIndex(name, keyPath, options);
+  }
+}
 
 function getDB() {
   if (typeof window === 'undefined') {
@@ -32,64 +43,98 @@ function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade: async (db, oldVersion, _newVersion, transaction) => {
+        // --- Base stores (new DB or partial upgrade) ---
         if (!db.objectStoreNames.contains('projects')) {
           db.createObjectStore('projects', { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains('chapters')) {
-          const store = db.createObjectStore('chapters', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
-          store.createIndex('by-project-order', ['projectId', 'order']);
+          db.createObjectStore('chapters', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('chapters')) {
+          const store = transaction.objectStore('chapters');
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-project-order', ['projectId', 'order']);
         }
         if (!db.objectStoreNames.contains('scenes')) {
-          const store = db.createObjectStore('scenes', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
-          store.createIndex('by-chapter', 'chapterId');
-          store.createIndex('by-chapter-order', ['chapterId', 'order']);
+          db.createObjectStore('scenes', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('scenes')) {
+          const store = transaction.objectStore('scenes');
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-chapter', 'chapterId');
+          ensureIndex(store, 'by-chapter-order', ['chapterId', 'order']);
         }
         if (!db.objectStoreNames.contains('characters')) {
-          const store = db.createObjectStore('characters', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
+          db.createObjectStore('characters', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('characters')) {
+          ensureIndex(transaction.objectStore('characters'), 'by-project', 'projectId');
         }
         if (!db.objectStoreNames.contains('world')) {
-          const store = db.createObjectStore('world', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
+          db.createObjectStore('world', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('world')) {
+          ensureIndex(transaction.objectStore('world'), 'by-project', 'projectId');
         }
         if (!db.objectStoreNames.contains('brainstorm')) {
-          const store = db.createObjectStore('brainstorm', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
+          db.createObjectStore('brainstorm', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('brainstorm')) {
+          ensureIndex(transaction.objectStore('brainstorm'), 'by-project', 'projectId');
         }
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings', { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains('storyBible')) {
-          const store = db.createObjectStore('storyBible', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
+          db.createObjectStore('storyBible', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('storyBible')) {
+          ensureIndex(transaction.objectStore('storyBible'), 'by-project', 'projectId');
         }
         if (!db.objectStoreNames.contains('conversations')) {
-          const store = db.createObjectStore('conversations', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
+          db.createObjectStore('conversations', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('conversations')) {
+          ensureIndex(transaction.objectStore('conversations'), 'by-project', 'projectId');
         }
         if (!db.objectStoreNames.contains('messages')) {
-          const store = db.createObjectStore('messages', { keyPath: 'id' });
-          store.createIndex('by-conversation', 'conversationId');
+          db.createObjectStore('messages', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('messages')) {
+          ensureIndex(transaction.objectStore('messages'), 'by-conversation', 'conversationId');
         }
         if (!db.objectStoreNames.contains('beats')) {
-          const store = db.createObjectStore('beats', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
-          store.createIndex('by-chapter', 'chapterId');
-          store.createIndex('by-scene', 'sceneId');
+          db.createObjectStore('beats', { keyPath: 'id' });
         }
+        if (db.objectStoreNames.contains('beats')) {
+          const store = transaction.objectStore('beats');
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-chapter', 'chapterId');
+          ensureIndex(store, 'by-scene', 'sceneId');
+        }
+
         // v7 → v8: B6 — scene versioning/snapshots.
         if (!db.objectStoreNames.contains('sceneSnapshots')) {
+          db.createObjectStore('sceneSnapshots', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('sceneSnapshots')) {
+          const store = transaction.objectStore('sceneSnapshots');
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-scene', 'sceneId');
+          ensureIndex(store, 'by-scene-created', ['sceneId', 'createdAt']);
+        }
+
+        // v8 → v9: defensive re-check of the sceneSnapshots store/indexes. Some
+        // local DBs reached version 8 without the store (interrupted upgrades).
+        // We bump to 9 so those browsers rerun onupgradeneeded and repair the schema.
+        if (oldVersion < 9 && !db.objectStoreNames.contains('sceneSnapshots')) {
           const store = db.createObjectStore('sceneSnapshots', { keyPath: 'id' });
-          store.createIndex('by-project', 'projectId');
-          store.createIndex('by-scene', 'sceneId');
-          store.createIndex('by-scene-created', ['sceneId', 'createdAt']);
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-scene', 'sceneId');
+          ensureIndex(store, 'by-scene-created', ['sceneId', 'createdAt']);
         }
 
         // v3 → v4: migrate `style` from string to ProjectStyle object.
-        // Use the versionchange `transaction` (not db.transaction(), which
-        // can throw InvalidStateError inside onupgradeneeded).
         if (oldVersion < 4 && db.objectStoreNames.contains('projects')) {
           const store = transaction.objectStore('projects');
           const projects = await store.getAll();
