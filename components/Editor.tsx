@@ -352,7 +352,10 @@ export default function Editor() {
         prompt = buildRewritePrompt(ctx, selection, rewriteStyle);
       } else if (kind === 'expand') {
         const chapter = chapters.find((c) => c.id === scene.chapterId);
-        prompt = buildExpandPrompt(ctx, scene, chapter, expandLength);
+        const previousScene = scenes
+          .filter((s) => s.chapterId === scene.chapterId && s.order < scene.order)
+          .sort((a, b) => b.order - a.order)[0];
+        prompt = buildExpandPrompt(ctx, scene, chapter, expandLength, previousScene);
         temperature = 0.8;
       } else if (kind === 'dialogue') {
         if (!selection) {

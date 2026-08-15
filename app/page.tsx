@@ -12,6 +12,7 @@ import ExportMenu from '@/components/ExportMenu';
 import ThemeToggle from '@/components/ThemeToggle';
 import SearchPanel from '@/components/SearchPanel';
 import VersionHistoryPanel from '@/components/VersionHistoryPanel';
+import ChapterReader from '@/components/ChapterReader';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
@@ -69,6 +70,7 @@ export default function HomePage() {
             className="btn btn-sm btn-outline-secondary"
             title="Alternar entre editor y outline"
             onClick={() => setView(view === 'outline' ? 'editor' : 'outline')}
+            disabled={view === 'chapter-reader'}
           >
             <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
             {view === 'outline' ? 'Editor' : 'Outline'}
@@ -114,7 +116,15 @@ export default function HomePage() {
       </aside>
 
       <main id="contenido-principal" className="main">
-        {view === 'outline' ? <OutlineView /> : view === 'story' ? <StorySections /> : <Editor />}
+        {view === 'outline' ? (
+          <OutlineView />
+        ) : view === 'story' ? (
+          <StorySections />
+        ) : view === 'chapter-reader' ? (
+          <ChapterReader />
+        ) : (
+          <Editor />
+        )}
       </main>
 
       <NewProjectModal

@@ -2,7 +2,7 @@
  * Component tests for ProjectTree scene/chapter selection flow.
  *
  * Verifies that clicking a scene opens it in the editor (selectScene + setView('editor')),
- * that clicking a chapter opens its first scene, and that rename/delete actions are
+ * that clicking a chapter opens the chapter reader, and that rename/delete actions are
  * triggered by explicit buttons rather than by the item title.
  */
 // @vitest-environment jsdom
@@ -20,6 +20,7 @@ const selectScene = vi.fn();
 const setView = vi.fn();
 const setActiveStorySection = vi.fn();
 const setCurrentOutlineChapterId = vi.fn();
+const setCurrentChapterId = vi.fn();
 const createScene = vi.fn(async (data: Omit<Scene, 'id' | 'createdAt' | 'updatedAt'>) => ({
   id: 'new-scene',
   ...data,
@@ -113,6 +114,7 @@ const mockApp = {
   activeStorySection: 'chat' as StorySectionKey,
   setActiveStorySection,
   setCurrentOutlineChapterId,
+  setCurrentChapterId,
 };
 
 vi.mock('@/lib/store', () => ({
@@ -143,23 +145,34 @@ describe('ProjectTree', () => {
     expect(setView).toHaveBeenCalledWith('editor');
   });
 
-  it('opens the first scene of a chapter when clicking the chapter title', async () => {
+  it('opens the chapter reader when clicking the chapter title', async () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
     const chapter1Item = screen.getByText('Capítulo 1');
     await user.click(chapter1Item);
 
+    expect(setCurrentChapterId).toHaveBeenCalledWith('c1');
+    expect(selectScene).not.toHaveBeenCalled();
+  });
+
+  it('opens the first scene via the chapter action button', async () => {
+    const user = userEvent.setup();
+    render(<ProjectTree />);
+
+    const openFirst = screen.getAllByTitle('Abrir primera escena')[0];
+    await user.click(openFirst);
+
     expect(selectScene).toHaveBeenCalledWith('s1');
     expect(setView).toHaveBeenCalledWith('editor');
   });
 
-  it('creates and opens a new scene when clicking a chapter with no scenes', async () => {
+  it('creates and opens a new scene when the chapter has no scenes', async () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const chapter2Item = screen.getByText('Capítulo 2');
-    await user.click(chapter2Item);
+    const openFirst = screen.getAllByTitle('Abrir primera escena')[1];
+    await user.click(openFirst);
 
     expect(createScene).toHaveBeenCalledWith(expect.objectContaining({ chapterId: 'c2' }));
     expect(selectScene).toHaveBeenCalledWith('new-scene');

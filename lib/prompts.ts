@@ -127,13 +127,21 @@ export function buildExpandPrompt(
   scene: Scene,
   chapter: Chapter | undefined,
   length: ExpandLength,
+  previousScene?: Scene,
 ): string {
   const wordTarget = length === 'short' ? 200 : length === 'medium' ? 500 : 1000;
   const beat = scene.summary?.trim() || scene.title;
   const existing = scene.content?.trim() || '';
   const chapterHint = chapter ? `\nCapítulo: ${chapter.title}` : '';
   const hasExisting = existing.length > 0;
-  return `${context}${chapterHint}
+  const previousText = previousScene?.content
+    ?.replace(/<[^>]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const previousHint = previousText
+    ? `\nEscena anterior (${previousScene?.title || 'anterior'}) para mantener continuidad:\n---\n${previousText.length > 800 ? previousText.slice(0, 800) + '…' : previousText}\n---`
+    : '';
+  return `${context}${chapterHint}${previousHint}
 
 ${
     hasExisting

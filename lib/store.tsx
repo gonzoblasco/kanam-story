@@ -75,13 +75,17 @@ interface AppState {
   currentConversationId: string | null;
   messages: Message[];
   beats: Beat[];
-  view: 'editor' | 'outline' | 'story';
+  view: 'editor' | 'outline' | 'story' | 'chapter-reader';
   /** Sección de Historia activa en la vista apilada (sidebar). */
   activeStorySection: StorySectionKey;
   currentOutlineChapterId: string | null;
 
   setSettings: (patch: Partial<Settings>) => Promise<void>;
-  setView: (view: 'editor' | 'outline' | 'story') => void;
+  setView: (view: 'editor' | 'outline' | 'story' | 'chapter-reader') => void;
+  /** Capítulo activo en la vista de lectura del capítulo completo. */
+  currentChapterId: string | null;
+  /** Abre o cierra la vista de lectura del capítulo completo. */
+  setCurrentChapterId: (id: string | null) => void;
   /** Nonce que el Editor observa para tomar el foco. */
   editorFocusNonce: number;
   /** Pide al editor tomar el foco (nonce observado por `Editor`). */
@@ -208,7 +212,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [beats, setBeats] = useState<Beat[]>([]);
-  const [view, setViewState] = useState<'editor' | 'outline' | 'story'>('editor');
+  const [view, setViewState] = useState<'editor' | 'outline' | 'story' | 'chapter-reader'>('editor');
+  const [currentChapterId, setCurrentChapterIdState] = useState<string | null>(null);
   const [activeStorySection, setActiveStorySectionState] = useState<StorySectionKey>('co-writer');
   const [currentOutlineChapterId, setCurrentOutlineChapterIdState] = useState<string | null>(null);
   // U4: nonce que pide al editor tomar el foco (p.ej. tras generar una escena
@@ -234,7 +239,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     announceTimer.current = setTimeout(() => setAnnouncement(''), 5000);
   }, []);
 
-  const setView = useCallback((v: 'editor' | 'outline' | 'story') => setViewState(v), []);
+  const setView = useCallback(
+    (v: 'editor' | 'outline' | 'story' | 'chapter-reader') => {
+      setViewState(v);
+      // Al salir de la vista de lectura de capítulo, limpiamos el capítulo activo
+      // para que no quede colgado si volvemos al editor/outline.
+      if (v !== 'chapter-reader') {
+        setCurrentChapterIdState(null);
+      }
+    },
+    [],
+  );
+  const setCurrentChapterId = useCallback((id: string | null) => {
+    setCurrentChapterIdState(id);
+    if (id) {
+      setViewState('chapter-reader');
+    } else if (view === 'chapter-reader') {
+      setViewState('editor');
+    }
+  }, [view]);
   const requestEditorFocus = useCallback(() => setEditorFocusNonce((n) => n + 1), []);
   const requestSectionFocus = useCallback((key: StorySectionKey) => {
     setSectionFocusTarget(key);
@@ -1241,6 +1264,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     view,
     activeStorySection,
     currentOutlineChapterId,
+    currentChapterId,
     setSettings,
     setView,
     editorFocusNonce,
@@ -1252,6 +1276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     announce,
     setActiveStorySection,
     setCurrentOutlineChapterId,
+    setCurrentChapterId,
     refreshProjects,
     selectProject,
     createProject,

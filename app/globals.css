@@ -1382,3 +1382,60 @@ a {
   font-size: 0.82rem;
   color: var(--sl-text-muted);
 }
+
+/* Chapter reader */
+.chapter-reader {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  overflow-y: auto;
+  height: 100%;
+}
+.chapter-reader-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.chapter-reader-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+}
+.chapter-reader-scene {
+  margin-bottom: 1.5rem;
+}
+.chapter-reader-scene-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.chapter-reader-scene-title .btn {
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--sl-accent);
+}
+.chapter-reader-summary {
+  font-size: 0.9rem;
+  color: var(--sl-text-muted);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+.chapter-reader-content {
+  line-height: 1.75;
+}
+.chapter-reader-content p {
+  margin-bottom: 1rem;
+}
+.chapter-reader-divider {
+  border: 0;
+  border-top: 2px solid var(--sl-border);
+  margin: 2.5rem 0;
+}
+
+@media (max-width: 900px) {
+  .chapter-reader {
+    padding: 1rem;
+  }
+}

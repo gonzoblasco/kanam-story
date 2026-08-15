@@ -25,6 +25,7 @@ export default function ProjectTree() {
     activeStorySection,
     setActiveStorySection,
     setCurrentOutlineChapterId,
+    setCurrentChapterId,
   } = useApp();
 
   const collapsed = settings.sidebarCollapsed;
@@ -92,6 +93,10 @@ export default function ProjectTree() {
     setView('editor');
   }
 
+  function openChapter(chapterId: string) {
+    setCurrentChapterId(chapterId);
+  }
+
   function openChapterFirstScene(chapterId: string) {
     const chapterScenes = scenes.filter((s) => s.chapterId === chapterId);
     const scene = chapterScenes[0];
@@ -133,7 +138,7 @@ export default function ProjectTree() {
             key={c.id}
             className="tree-item justify-content-center"
             title={c.title}
-            onClick={() => openChapterFirstScene(c.id)}
+            onClick={() => openChapter(c.id)}
           >
             <i className="bi bi-bookmark" />
           </div>
@@ -224,7 +229,7 @@ export default function ProjectTree() {
             <div key={c.id}>
               <div className="tree-item">
                 <i className="bi bi-bookmark" />
-                <span className="text-truncate" onClick={() => openChapterFirstScene(c.id)}>
+                <span className="text-truncate" onClick={() => openChapter(c.id)}>
                   {c.title}
                 </span>
                 <div className="actions">
@@ -244,6 +249,20 @@ export default function ProjectTree() {
                     }}
                   >
                     <i className="bi bi-list-nested" />
+                  </button>
+                  <button
+                    className="icon-btn"
+                    title="Ver capítulo completo"
+                    onClick={() => openChapter(c.id)}
+                  >
+                    <i className="bi bi-book" />
+                  </button>
+                  <button
+                    className="icon-btn"
+                    title="Abrir primera escena"
+                    onClick={() => openChapterFirstScene(c.id)}
+                  >
+                    <i className="bi bi-file-earmark-text" />
                   </button>
                   <button
                     className="icon-btn"
