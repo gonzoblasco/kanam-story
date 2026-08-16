@@ -417,6 +417,10 @@ a {
   background: rgba(255, 107, 107, 0.1);
 }
 
+.chapter-toggle {
+  flex-shrink: 0;
+}
+
 .editor-shell {
   background: var(--sl-surface);
   border-radius: 14px;

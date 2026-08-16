@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import { STORY_SECTIONS } from '@/lib/storySections';
 import ActionMenu from '@/components/ActionMenu';
 import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const {
     projects,
     currentProject,
@@ -28,6 +30,16 @@ export default function ProjectTree() {
     setCurrentOutlineChapterId,
     setCurrentChapterId,
   } = useApp();
+
+  useEffect(() => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      for (const c of chapters) {
+        if (!next.has(c.id)) next.add(c.id);
+      }
+      return next;
+    });
+  }, [chapters]);
 
   const collapsed = settings.sidebarCollapsed;
 
@@ -226,34 +238,39 @@ export default function ProjectTree() {
         ) : null}
         {chapters.map((c) => {
           const chapterScenes = scenes.filter((s) => s.chapterId === c.id);
+          const isExpanded = expanded.has(c.id);
+          const chapterLabelId = `chapter-${c.id}-label`;
+          const sceneListId = `chapter-${c.id}-scenes`;
+          const toggle = () =>
+            setExpanded((prev) => {
+              const next = new Set(prev);
+              if (next.has(c.id)) next.delete(c.id);
+              else next.add(c.id);
+              return next;
+            });
           return (
             <div key={c.id}>
               <div className="tree-item">
-                <i className="bi bi-bookmark" />
-                <span className="text-truncate" onClick={() => openChapter(c.id)}>
+                <button
+                  type="button"
+                  className="icon-btn chapter-toggle"
+                  onClick={toggle}
+                  aria-expanded={isExpanded}
+                  aria-controls={sceneListId}
+                  aria-labelledby={chapterLabelId}
+                  title={isExpanded ? 'Colapsar capítulo' : 'Expandir capítulo'}
+                >
+                  <i className={`bi ${isExpanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`} aria-hidden="true" />
+                </button>
+                <span
+                  id={chapterLabelId}
+                  className="text-truncate"
+                  onClick={toggle}
+                >
                   {c.title}
                 </span>
                 <div className="actions">
                   <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${c.title}`}>
-                    <button
-                      type="button"
-                      className="action-menu-item"
-                      role="menuitem"
-                      onClick={() => renameChapter(c)}
-                    >
-                      <i className="bi bi-pencil" /> Renombrar capítulo
-                    </button>
-                    <button
-                      type="button"
-                      className="action-menu-item"
-                      role="menuitem"
-                      onClick={() => {
-                        setCurrentOutlineChapterId(c.id);
-                        setView('outline');
-                      }}
-                    >
-                      <i className="bi bi-list-nested" /> Ver outline
-                    </button>
                     <button
                       type="button"
                       className="action-menu-item"
@@ -274,6 +291,25 @@ export default function ProjectTree() {
                       type="button"
                       className="action-menu-item"
                       role="menuitem"
+                      onClick={() => {
+                        setCurrentOutlineChapterId(c.id);
+                        setView('outline');
+                      }}
+                    >
+                      <i className="bi bi-list-nested" /> Ver outline
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => renameChapter(c)}
+                    >
+                      <i className="bi bi-pencil" /> Renombrar capítulo
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
                       onClick={() => addScene(c.id)}
                     >
                       <i className="bi bi-plus-lg" /> Agregar escena
@@ -289,40 +325,43 @@ export default function ProjectTree() {
                   </ActionMenu>
                 </div>
               </div>
-              <div className="tree-children">
-                {chapterScenes.map((s) => (
-                  <div
-                    key={s.id}
-                    className={`tree-item ${s.id === currentSceneId ? 'active' : ''}`}
-                    onClick={() => openScene(s.id)}
-                  >
-                    <i className="bi bi-file-earmark-text" />
-                    <span className="text-truncate">
-                      {s.title || 'Escena sin título'}
-                    </span>
-                    <div className="actions">
-                      <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${s.title || 'Escena sin título'}`}>
-                        <button
-                          type="button"
-                          className="action-menu-item"
-                          role="menuitem"
-                          onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}
+              {isExpanded ? (
+                <div id={sceneListId} className="tree-children">
+                  {chapterScenes.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`tree-item ${s.id === currentSceneId ? 'active' : ''}`}
+                      onClick={() => openScene(s.id)}
+                    >
+                      <i className="bi bi-file-earmark-text" />
+                      <span className="text-truncate">
+                        {s.title || 'Escena sin título'}
+                      </span>
+                      <div className="actions">
+                        <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${s.title || 'Escena sin título'}`}
                         >
-                          <i className="bi bi-pencil" /> Renombrar escena
-                        </button>
-                        <button
-                          type="button"
-                          className="action-menu-item action-menu-item-danger"
-                          role="menuitem"
-                          onClick={(e) => { e.stopPropagation(); removeScene(s.id, s.title); }}
-                        >
-                          <i className="bi bi-trash" /> Eliminar escena
-                        </button>
-                      </ActionMenu>
+                          <button
+                            type="button"
+                            className="action-menu-item"
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}
+                          >
+                            <i className="bi bi-pencil" /> Renombrar escena
+                          </button>
+                          <button
+                            type="button"
+                            className="action-menu-item action-menu-item-danger"
+                            role="menuitem"
+                            onClick={(e) => { e.stopPropagation(); removeScene(s.id, s.title); }}
+                          >
+                            <i className="bi bi-trash" /> Eliminar escena
+                          </button>
+                        </ActionMenu>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           );
         })}

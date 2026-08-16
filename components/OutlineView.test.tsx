@@ -5,6 +5,7 @@ import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Project, Chapter, Scene, Beat, StorySectionKey, Character, WorldEntity, Settings } from '@/types';
+import type { SuggestedChapter } from '@/lib/outlineGeneration';
 import OutlineView from './OutlineView';
 
 const createBeat = vi.fn(async (data: Omit<Beat, 'id' | 'createdAt' | 'updatedAt'>) => ({
@@ -29,7 +30,7 @@ const reorderChapters = vi.fn(async () => {});
 const setCurrentOutlineChapterId = vi.fn();
 const announce = vi.fn();
 
-const suggestGlobalOutline = vi.fn(async () => []);
+const suggestGlobalOutline = vi.fn(async (): Promise<SuggestedChapter[]> => []);
 const applyGlobalOutline = vi.fn(async () => {});
 
 const mockProject: Project = {

@@ -145,12 +145,25 @@ describe('ProjectTree', () => {
     expect(setView).toHaveBeenCalledWith('editor');
   });
 
-  it('opens the chapter reader when clicking the chapter title', async () => {
+  it('toggles chapter expansion when clicking the chapter title', async () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const chapter1Item = screen.getByText('Capítulo 1');
-    await user.click(chapter1Item);
+    expect(screen.getByText('Escena 1')).toBeInTheDocument();
+    const chapterTitle = screen.getByText('Capítulo 1');
+    await user.click(chapterTitle);
+
+    expect(screen.queryByText('Escena 1')).not.toBeInTheDocument();
+    await user.click(chapterTitle);
+    expect(screen.getByText('Escena 1')).toBeInTheDocument();
+  });
+
+  it('opens the chapter reader from the chapter action menu', async () => {
+    const user = userEvent.setup();
+    render(<ProjectTree />);
+
+    await user.click(screen.getByTitle('Acciones de Capítulo 1'));
+    await user.click(within(screen.getByLabelText('Acciones de Capítulo 1')).getByRole('menuitem', { name: /Ver capítulo/i }));
 
     expect(setCurrentChapterId).toHaveBeenCalledWith('c1');
     expect(selectScene).not.toHaveBeenCalled();
