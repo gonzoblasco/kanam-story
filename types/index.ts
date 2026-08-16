@@ -211,7 +211,21 @@ export type ContentAction =
   | { type: 'add_character'; character: Character; summary: string }
   | { type: 'update_world'; entityId: string; changes: Partial<WorldEntity>; summary: string }
   | { type: 'update_bible'; section: StoryBibleSection['key']; value: string; summary: string }
-  | { type: 'append_scene'; chapterId: string; content: string; summary: string };
+  | { type: 'append_scene'; chapterId: string; content: string; summary: string }
+  | {
+      type: 'replace_outline';
+      summary: string;
+      chapters: { title: string; order?: number }[];
+      beats: {
+        title: string;
+        kind: BeatKind;
+        description: string;
+        notes: string;
+        chapterIndex: number;
+        position: number;
+        status?: BeatStatus;
+      }[];
+    };
 
 export interface Message {
   id: string;
