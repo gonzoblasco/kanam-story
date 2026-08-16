@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Project, Chapter, Scene, StorySectionKey } from '@/types';
 import ProjectTree from './ProjectTree';
@@ -156,12 +156,12 @@ describe('ProjectTree', () => {
     expect(selectScene).not.toHaveBeenCalled();
   });
 
-  it('opens the first scene via the chapter action button', async () => {
+  it('opens the first scene via the chapter action menu', async () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const openFirst = screen.getAllByTitle('Abrir primera escena')[0];
-    await user.click(openFirst);
+    await user.click(screen.getByTitle('Acciones de Capítulo 1'));
+    await user.click(within(screen.getByLabelText('Acciones de Capítulo 1')).getByRole('menuitem', { name: /Abrir primera escena/i }));
 
     expect(selectScene).toHaveBeenCalledWith('s1');
     expect(setView).toHaveBeenCalledWith('editor');
@@ -171,22 +171,21 @@ describe('ProjectTree', () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const openFirst = screen.getAllByTitle('Abrir primera escena')[1];
-    await user.click(openFirst);
+    await user.click(screen.getByTitle('Acciones de Capítulo 2'));
+    await user.click(within(screen.getByLabelText('Acciones de Capítulo 2')).getByRole('menuitem', { name: /Abrir primera escena/i }));
 
     expect(createScene).toHaveBeenCalledWith(expect.objectContaining({ chapterId: 'c2' }));
     expect(selectScene).toHaveBeenCalledWith('new-scene');
     expect(setView).toHaveBeenCalledWith('editor');
   });
 
-  it('renames a scene via an explicit edit button without selecting it', async () => {
+  it('renames a scene via the scene action menu without selecting it', async () => {
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('Nuevo título');
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const editButtons = screen.getAllByTitle('Renombrar escena');
-    expect(editButtons.length).toBeGreaterThan(0);
-    await user.click(editButtons[1]);
+    await user.click(screen.getByTitle('Acciones de Escena 2'));
+    await user.click(within(screen.getByLabelText('Acciones de Escena 2')).getByRole('menuitem', { name: /Renombrar escena/i }));
 
     expect(updateScene).toHaveBeenCalledWith('s2', { title: 'Nuevo título' });
     expect(selectScene).not.toHaveBeenCalled();
@@ -195,13 +194,13 @@ describe('ProjectTree', () => {
     promptSpy.mockRestore();
   });
 
-  it('deletes a scene via an explicit delete button without selecting it', async () => {
+  it('deletes a scene via the scene action menu without selecting it', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
     const user = userEvent.setup();
     render(<ProjectTree />);
 
-    const deleteButtons = screen.getAllByTitle('Eliminar escena');
-    await user.click(deleteButtons[1]);
+    await user.click(screen.getByTitle('Acciones de Escena 2'));
+    await user.click(within(screen.getByLabelText('Acciones de Escena 2')).getByRole('menuitem', { name: /Eliminar escena/i }));
 
     expect(deleteScene).toHaveBeenCalledWith('s2');
     expect(selectScene).not.toHaveBeenCalled();

@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store';
 import { STORY_SECTIONS } from '@/lib/storySections';
+import ActionMenu from '@/components/ActionMenu';
 import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
@@ -233,51 +234,59 @@ export default function ProjectTree() {
                   {c.title}
                 </span>
                 <div className="actions">
-                  <button
-                    className="icon-btn"
-                    title="Renombrar capítulo"
-                    onClick={(e) => { e.stopPropagation(); renameChapter(c); }}
-                  >
-                    <i className="bi bi-pencil" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    title="Ver outline del capítulo"
-                    onClick={() => {
-                      setCurrentOutlineChapterId(c.id);
-                      setView('outline');
-                    }}
-                  >
-                    <i className="bi bi-list-nested" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    title="Ver capítulo completo"
-                    onClick={() => openChapter(c.id)}
-                  >
-                    <i className="bi bi-book" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    title="Abrir primera escena"
-                    onClick={() => openChapterFirstScene(c.id)}
-                  >
-                    <i className="bi bi-file-earmark-text" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    title="Agregar escena"
-                    onClick={() => addScene(c.id)}
-                  >
-                    <i className="bi bi-plus-lg" />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    title="Eliminar capítulo"
-                    onClick={() => removeChapter(c)}
-                  >
-                    <i className="bi bi-trash" />
-                  </button>
+                  <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${c.title}`}>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => renameChapter(c)}
+                    >
+                      <i className="bi bi-pencil" /> Renombrar capítulo
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setCurrentOutlineChapterId(c.id);
+                        setView('outline');
+                      }}
+                    >
+                      <i className="bi bi-list-nested" /> Ver outline
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => openChapter(c.id)}
+                    >
+                      <i className="bi bi-book" /> Ver capítulo
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => openChapterFirstScene(c.id)}
+                    >
+                      <i className="bi bi-file-earmark-text" /> Abrir primera escena
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item"
+                      role="menuitem"
+                      onClick={() => addScene(c.id)}
+                    >
+                      <i className="bi bi-plus-lg" /> Agregar escena
+                    </button>
+                    <button
+                      type="button"
+                      className="action-menu-item action-menu-item-danger"
+                      role="menuitem"
+                      onClick={() => removeChapter(c)}
+                    >
+                      <i className="bi bi-trash" /> Eliminar capítulo
+                    </button>
+                  </ActionMenu>
                 </div>
               </div>
               <div className="tree-children">
@@ -292,20 +301,24 @@ export default function ProjectTree() {
                       {s.title || 'Escena sin título'}
                     </span>
                     <div className="actions">
-                      <button
-                        className="icon-btn"
-                        title="Renombrar escena"
-                        onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}
-                      >
-                        <i className="bi bi-pencil" />
-                      </button>
-                      <button
-                        className="icon-btn"
-                        title="Eliminar escena"
-                        onClick={(e) => { e.stopPropagation(); removeScene(s.id, s.title); }}
-                      >
-                        <i className="bi bi-trash" />
-                      </button>
+                      <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${s.title || 'Escena sin título'}`}>
+                        <button
+                          type="button"
+                          className="action-menu-item"
+                          role="menuitem"
+                          onClick={(e) => { e.stopPropagation(); renameScene(s.id, s.title); }}
+                        >
+                          <i className="bi bi-pencil" /> Renombrar escena
+                        </button>
+                        <button
+                          type="button"
+                          className="action-menu-item action-menu-item-danger"
+                          role="menuitem"
+                          onClick={(e) => { e.stopPropagation(); removeScene(s.id, s.title); }}
+                        >
+                          <i className="bi bi-trash" /> Eliminar escena
+                        </button>
+                      </ActionMenu>
                     </div>
                   </div>
                 ))}

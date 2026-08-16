@@ -361,6 +361,62 @@ a {
   color: var(--sl-text);
 }
 
+.action-menu {
+  position: relative;
+  list-style: none;
+}
+.action-menu summary::-webkit-details-marker {
+  display: none;
+}
+.action-menu-trigger {
+  display: grid;
+  place-items: center;
+}
+.action-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 180px;
+  background: var(--sl-surface);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 0.4rem;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.action-menu[open] .action-menu-panel {
+  display: flex;
+}
+.action-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--sl-text);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.action-menu-item:hover,
+.action-menu-item:focus {
+  background: var(--sl-surface-2);
+  outline: none;
+}
+.action-menu-item-danger {
+  color: var(--sl-danger, #ff6b6b);
+}
+.action-menu-item-danger:hover,
+.action-menu-item-danger:focus {
+  background: rgba(255, 107, 107, 0.1);
+}
+
 .editor-shell {
   background: var(--sl-surface);
   border-radius: 14px;
