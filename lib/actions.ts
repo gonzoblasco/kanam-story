@@ -1,4 +1,4 @@
-import type { ContentAction, Scene, Beat, Character, WorldEntity, StoryBible } from '@/types';
+import type { ContentAction, Scene, Beat, Character, WorldEntity, StoryBible, Chapter } from '@/types';
 
 /**
  * Immutable snapshot of the story state that actions are applied to.
@@ -10,6 +10,7 @@ export interface StoryState {
   characters: Character[];
   world: WorldEntity[];
   bible: StoryBible | null;
+  chapters: Chapter[];
 }
 
 export interface ApplyResult {
@@ -24,6 +25,13 @@ function updateScene(state: StoryState, sceneId: string, patch: Partial<Scene>):
   return {
     ...state,
     scenes: state.scenes.map((s) => (s.id === sceneId ? { ...s, ...patch, updatedAt: now() } : s)),
+  };
+}
+
+function updateChapter(state: StoryState, chapterId: string, patch: Partial<Chapter>): StoryState {
+  return {
+    ...state,
+    chapters: state.chapters.map((c) => (c.id === chapterId ? { ...c, ...patch, updatedAt: now() } : c)),
   };
 }
 
@@ -163,6 +171,47 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
       return {
         next,
         undo: (s) => ({ ...s, scenes: s.scenes.filter((x) => x.id !== scene.id) }),
+      };
+    }
+
+    case 'replace_outline': {
+      const oldChapters = [...state.chapters];
+      const oldBeats = [...state.beats];
+      const projectId =
+        state.chapters[0]?.projectId ??
+        state.beats[0]?.projectId ??
+        state.scenes[0]?.projectId ??
+        '';
+      const nextChapters: Chapter[] = action.chapters.map((c, index) => ({
+        id: crypto.randomUUID(),
+        projectId,
+        title: c.title,
+        order: c.order ?? index,
+        createdAt: now(),
+        updatedAt: now(),
+      }));
+      const nextBeats: Beat[] = action.beats.map((b) => {
+        const chapterId = nextChapters[b.chapterIndex]?.id;
+        return {
+          id: crypto.randomUUID(),
+          projectId,
+          chapterId,
+          kind: b.kind,
+          title: b.title,
+          description: b.description,
+          notes: b.notes,
+          characters: [],
+          position: b.position,
+          status: b.status ?? 'draft',
+          source: 'ai',
+          createdAt: now(),
+          updatedAt: now(),
+        };
+      });
+      const next = { ...state, chapters: nextChapters, beats: nextBeats };
+      return {
+        next,
+        undo: (s) => ({ ...s, chapters: oldChapters, beats: oldBeats }),
       };
     }
 

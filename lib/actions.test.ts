@@ -71,6 +71,7 @@ function makeState(overrides: Partial<StoryState> = {}): StoryState {
     characters: [character],
     world: [world],
     bible,
+    chapters: [],
     ...overrides,
   };
 }
@@ -232,6 +233,32 @@ describe('applyAction', () => {
     });
     expect(next.scenes).toHaveLength(1);
     expect(next.scenes[0].projectId).toBe('p1');
+  });
+
+  it('replace_outline reemplaza capítulos y beats y revierte', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'old-ch1', projectId: 'p1', title: 'Capítulo viejo', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'replace_outline',
+      summary: 'nueva estructura',
+      chapters: [{ title: 'Nuevo capítulo', order: 0 }],
+      beats: [{ title: 'Nuevo beat', kind: 'inciting', description: 'desc', notes: 'notas', chapterIndex: 0, position: 0 }],
+    });
+    expect(next.chapters).toHaveLength(1);
+    expect(next.chapters[0].title).toBe('Nuevo capítulo');
+    expect(next.beats).toHaveLength(1);
+    expect(next.beats[0].title).toBe('Nuevo beat');
+    expect(next.beats[0].characters).toEqual([]);
+
+    const reverted = undo(next);
+    expect(reverted.chapters).toHaveLength(1);
+    expect(reverted.chapters[0].id).toBe('old-ch1');
+    expect(reverted.chapters[0].title).toBe('Capítulo viejo');
+    expect(reverted.beats).toHaveLength(1);
+    expect(reverted.beats[0].title).toBe('La invitación');
   });
 
   it('acciones con IDs inexistentes no cambian nada', () => {
