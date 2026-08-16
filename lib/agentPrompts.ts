@@ -170,6 +170,7 @@ Reglas:
   - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}
   - {"type":"replace_outline","summary":"...","chapters":[{"title":"Capítulo 1","order":0}],"beats":[{"title":"...","kind":"inciting|rising|climax|falling|resolution|custom","description":"...","notes":"...","chapterIndex":0,"position":0,"status":"draft"}]}
 - "replace_outline" reemplaza TODO el outline actual por una nueva estructura de capítulos y beats. "chapterIndex" es el índice (0-based) del capítulo dentro de "chapters". Usala solo cuando el autor pida reorganizar el outline global. No combines "replace_outline" con otras acciones en la misma respuesta.
+- Para "kind" de beats usá EXACTAMENTE uno de estos valores en inglés: "inciting", "rising", "climax", "falling", "resolution", "custom". No uses sinónimos como "giro", "setup" o "desenlace"; mapeá esos conceptos al kind oficial más cercano.
 - Si no proponés cambios, usá "actions": [].
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.
 - Respondé SOLO con el JSON. Sin prosa fuera del JSON, sin fences markdown, sin comentarios.`;

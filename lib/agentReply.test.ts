@@ -147,6 +147,51 @@ describe('isValidAction', () => {
       }),
     ).toBe(false);
   });
+  it('normaliza alias en español para kind (ascenso -> rising)', () => {
+    const parsed = parseAgentReply(
+      JSON.stringify({
+        reply: 'ok',
+        actions: [
+          {
+            type: 'replace_outline',
+            summary: 'x',
+            chapters: [{ title: 'C1' }],
+            beats: [
+              { title: 'B1', kind: 'ascenso', description: '', notes: '', chapterIndex: 0, position: 0 },
+              { title: 'B2', kind: 'clímax', description: '', notes: '', chapterIndex: 0, position: 1 },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(parsed).not.toBeNull();
+    const action = parsed!.actions[0];
+    expect(action.type).toBe('replace_outline');
+    if (action.type !== 'replace_outline') return;
+    expect(action.beats[0].kind).toBe('rising');
+    expect(action.beats[1].kind).toBe('climax');
+    expect(isValidAction(action)).toBe(true);
+  });
+  it('normaliza kind desconocido a custom', () => {
+    const parsed = parseAgentReply(
+      JSON.stringify({
+        reply: 'ok',
+        actions: [
+          {
+            type: 'replace_outline',
+            summary: 'x',
+            chapters: [{ title: 'C1' }],
+            beats: [{ title: 'B1', kind: 'giro', description: '', notes: '', chapterIndex: 0, position: 0 }],
+          },
+        ],
+      }),
+    );
+    expect(parsed).not.toBeNull();
+    const action = parsed!.actions[0];
+    if (action.type !== 'replace_outline') return;
+    expect(action.beats[0].kind).toBe('custom');
+    expect(isValidAction(action)).toBe(true);
+  });
 });
 
 describe('filterValidActions', () => {

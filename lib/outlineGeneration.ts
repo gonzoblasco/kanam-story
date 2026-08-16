@@ -16,7 +16,7 @@ export interface SuggestedBeat {
 
 const VALID_KINDS: BeatKind[] = ['inciting', 'rising', 'climax', 'falling', 'resolution', 'custom'];
 
-const KIND_ALIASES: Record<string, BeatKind> = {
+export const KIND_ALIASES: Record<string, BeatKind> = {
   inciting: 'inciting',
   incitante: 'inciting',
   rising: 'rising',
@@ -33,7 +33,7 @@ const KIND_ALIASES: Record<string, BeatKind> = {
   personalizado: 'custom',
 };
 
-function normalizeKind(raw: string): BeatKind {
+export function normalizeKind(raw: string): BeatKind {
   const key = raw.toLowerCase().trim().replace(/[:*]/g, '');
   return KIND_ALIASES[key] || 'custom';
 }

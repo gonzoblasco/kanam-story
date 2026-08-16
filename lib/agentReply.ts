@@ -1,4 +1,5 @@
 import type { ContentAction, BeatKind, BeatStatus, CharacterType, StyleProfile } from '@/types';
+import { normalizeKind } from '@/lib/outlineGeneration';
 
 /**
  * Structured agent response.
@@ -38,12 +39,42 @@ export function parseAgentReply(raw: string): AgentReply | null {
       if (typeof parsed !== 'object' || parsed === null) return null;
       const reply = typeof parsed.reply === 'string' ? parsed.reply : '';
       const actions = Array.isArray(parsed.actions) ? parsed.actions : [];
-      return { reply, actions };
+      return { reply, actions: normalizeActionKinds(actions) };
     } catch {
       lastBrace = text.lastIndexOf('}', lastBrace - 1);
     }
   }
   return null;
+}
+
+function normalizeActionKinds(actions: unknown[]): ContentAction[] {
+  return actions.map((a) => {
+    if (typeof a !== 'object' || a === null) return a;
+    const action = a as Record<string, unknown>;
+    if (action.type === 'replace_outline' && Array.isArray(action.beats)) {
+      action.beats = action.beats.map((b) => {
+        if (typeof b !== 'object' || b === null) return b;
+        const beat = b as Record<string, unknown>;
+        if (typeof beat.kind === 'string') {
+          beat.kind = normalizeKind(beat.kind);
+        }
+        return beat;
+      });
+    }
+    if ((action.type === 'add_beat' || action.type === 'update_beat') && typeof action.beat === 'object' && action.beat !== null) {
+      const beat = action.beat as Record<string, unknown>;
+      if (typeof beat.kind === 'string') {
+        beat.kind = normalizeKind(beat.kind);
+      }
+    }
+    if (action.type === 'update_beat' && typeof action.changes === 'object' && action.changes !== null) {
+      const changes = action.changes as Record<string, unknown>;
+      if (typeof changes.kind === 'string') {
+        changes.kind = normalizeKind(changes.kind);
+      }
+    }
+    return a;
+  }) as ContentAction[];
 }
 
 /** Valid StoryBible section keys (used to validate `update_bible` actions). */
@@ -76,8 +107,19 @@ export function isValidAction(action: unknown): action is ContentAction {
     case 'add_beat': {
       if (typeof a.chapterId !== 'string' || typeof a.beat !== 'object' || a.beat === null) return false;
       const b = a.beat as Record<string, unknown>;
-      return typeof b.title === 'string';
+      if (typeof b.title !== 'string') return false;
+      if (b.kind !== undefined && !(BEAT_KINDS as string[]).includes(normalizeKind(b.kind as string))) return false;
+      return true;
     }
+    case 'update_beat': {
+      if (typeof a.beatId !== 'string' || typeof a.changes !== 'object' || a.changes === null) return false;
+      const ch = a.changes as Record<string, unknown>;
+      if (ch.kind !== undefined && typeof ch.kind === 'string' && !(BEAT_KINDS as string[]).includes(normalizeKind(ch.kind))) {
+        return false;
+      }
+      return true;
+    }
+
     case 'update_character': {
       if (typeof a.characterId !== 'string' || typeof a.changes !== 'object' || a.changes === null) {
         return false;
@@ -116,7 +158,7 @@ export function isValidAction(action: unknown): action is ContentAction {
       for (const b of a.beats) {
         const beat = b as Record<string, unknown>;
         if (typeof beat.title !== 'string' || beat.title.length === 0) return false;
-        if (typeof beat.kind !== 'string' || !(BEAT_KINDS as string[]).includes(beat.kind)) return false;
+        if (typeof beat.kind !== 'string' || !(BEAT_KINDS as string[]).includes(normalizeKind(beat.kind))) return false;
         if (typeof beat.description !== 'string') return false;
         if (typeof beat.notes !== 'string') return false;
         if (typeof beat.chapterIndex !== 'number' || beat.chapterIndex < 0 || beat.chapterIndex >= chapterCount) {
