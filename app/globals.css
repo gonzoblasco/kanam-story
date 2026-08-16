@@ -421,6 +421,22 @@ a {
   flex-shrink: 0;
 }
 
+.tree-item-label {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-item-label:hover,
+.tree-item-label:focus-visible {
+  color: var(--sl-accent);
+  outline: none;
+}
+
 .editor-shell {
   background: var(--sl-surface);
   border-radius: 14px;

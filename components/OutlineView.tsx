@@ -5,409 +5,10 @@ import { useApp } from '@/lib/store';
 import { moveBeatInList } from '@/lib/outline';
 import { planGenerateScene } from '@/lib/sceneFromBeat';
 import { generateSceneContent } from '@/lib/generateSceneContent';
-import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
-import type { Beat, BeatKind, BeatStatus, Chapter, Scene } from '@/types';
+import ChapterSection from '@/components/ChapterSection';
+import SuggestedOutlinePreview from '@/components/SuggestedOutlinePreview';
 import type { SuggestedChapter } from '@/lib/outlineGeneration';
-
-const KIND_LABELS: Record<BeatKind, string> = {
-  inciting: 'Incitante',
-  rising: 'Ascenso',
-  climax: 'Clímax',
-  falling: 'Caída',
-  resolution: 'Resolución',
-  custom: 'Personalizado',
-};
-
-const STATUS_LABELS: Record<BeatStatus, string> = {
-  draft: 'Borrador',
-  done: 'Hecho',
-  revising: 'Revisando',
-};
-
-function BeatCard({
-  beat,
-  chapters,
-  onUpdate,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
-  onGenerateScene,
-  onMoveToChapter,
-  generating,
-  chapterGenerating,
-  canUp,
-  canDown,
-  showChapterMove,
-}: {
-  beat: Beat;
-  chapters: Chapter[];
-  onUpdate: (id: string, patch: Partial<Beat>) => void;
-  onDelete: (id: string) => void;
-  onMoveUp: (id: string) => void;
-  onMoveDown: (id: string) => void;
-  onGenerateScene: (id: string) => void;
-  onMoveToChapter?: (beatId: string, chapterId: string) => void;
-  generating: boolean;
-  chapterGenerating: boolean;
-  canUp: boolean;
-  canDown: boolean;
-  showChapterMove?: boolean;
-}) {
-  const [draft, setDraft] = useState({
-    title: beat.title,
-    kind: beat.kind,
-    status: beat.status,
-    description: beat.description,
-    notes: beat.notes,
-  });
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived state from a prop
-    setDraft({
-      title: beat.title,
-      kind: beat.kind,
-      status: beat.status,
-      description: beat.description,
-      notes: beat.notes,
-    });
-  }, [beat.id, beat.title, beat.kind, beat.status, beat.description, beat.notes]);
-
-  const commit = () => onUpdate(beat.id, draft);
-  const currentChapterId = beat.chapterId ?? '';
-
-  return (
-    <div className="outline-beat">
-      <div className="outline-beat-head">
-        <span className={`outline-kind outline-kind-${draft.kind}`}>{KIND_LABELS[draft.kind]}</span>
-        <input
-          className="form-control form-control-sm outline-beat-title"
-          value={draft.title}
-          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-          onBlur={commit}
-          aria-label="Título del beat"
-        />
-        <select
-          className="form-select form-select-sm outline-beat-status"
-          value={draft.status}
-          onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as BeatStatus }))}
-          onBlur={commit}
-          aria-label="Estado del beat"
-        >
-          {Object.entries(STATUS_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-        <div className="outline-beat-actions">
-          <button
-            className="icon-btn"
-            title="Subir"
-            disabled={!canUp}
-            onClick={() => onMoveUp(beat.id)}
-            aria-label="Subir beat"
-          >
-            <i className="bi bi-arrow-up" aria-hidden="true" />
-          </button>
-          <button
-            className="icon-btn"
-            title="Bajar"
-            disabled={!canDown}
-            onClick={() => onMoveDown(beat.id)}
-            aria-label="Bajar beat"
-          >
-            <i className="bi bi-arrow-down" aria-hidden="true" />
-          </button>
-          <button
-            className="icon-btn"
-            title="Eliminar beat"
-            onClick={() => onDelete(beat.id)}
-            aria-label="Eliminar beat"
-          >
-            <i className="bi bi-trash" aria-hidden="true" />
-          </button>
-        </div>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary outline-generate"
-          onClick={() => onGenerateScene(beat.id)}
-          disabled={generating || chapterGenerating}
-          aria-label={`Generar escena para "${draft.title || 'sin título'}"`}
-        >
-          {generating ? (
-            <span className="spinner-inline me-1" aria-hidden="true" />
-          ) : (
-            <i className="bi bi-file-earmark-plus me-1" aria-hidden="true" />
-          )}
-          Generar escena
-        </button>
-      </div>
-      <div className="outline-beat-body">
-        <select
-          className="form-select form-select-sm"
-          value={draft.kind}
-          onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value as BeatKind }))}
-          onBlur={commit}
-          aria-label="Tipo de beat"
-        >
-          {Object.entries(KIND_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-        <textarea
-          className="form-control form-control-sm"
-          rows={2}
-          placeholder="Qué pasa en este beat"
-          value={draft.description}
-          onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-          onBlur={commit}
-          aria-label="Descripción del beat"
-        />
-        <textarea
-          className="form-control form-control-sm"
-          rows={2}
-          placeholder="Notas: intención, tono, elementos a cuidar"
-          value={draft.notes}
-          onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-          onBlur={commit}
-          aria-label="Notas del beat"
-        />
-        {showChapterMove && onMoveToChapter ? (
-          <div className="d-flex align-items-center gap-2 mt-1">
-            <label htmlFor={`move-beat-${beat.id}`} className="small text-muted mb-0">
-              Mover a capítulo:
-            </label>
-            <select
-              id={`move-beat-${beat.id}`}
-              className="form-select form-select-sm"
-              style={{ width: 'auto' }}
-              value={currentChapterId}
-              onChange={(e) => onMoveToChapter(beat.id, e.target.value)}
-              aria-label="Mover beat a otro capítulo"
-            >
-              {chapters.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function ChapterSection({
-  chapter,
-  chapters,
-  beats,
-  scenes,
-  isGlobal,
-  canMoveUp,
-  canMoveDown,
-  onUpdateChapter,
-  onMoveChapter,
-  onDeleteChapter,
-  onAddBeat,
-  onAddSceneBeat,
-  onUpdateBeat,
-  onDeleteBeat,
-  onMoveBeat,
-  onMoveBeatToChapter,
-  onGenerateScene,
-  onGenerateChapter,
-  onLinkOrphan,
-  generatingBeatId,
-  chapterGeneration,
-}: {
-  chapter: Chapter;
-  chapters: Chapter[];
-  beats: Beat[];
-  scenes: Scene[];
-  isGlobal: boolean;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  onUpdateChapter: (id: string, data: Partial<Chapter>) => void;
-  onMoveChapter: (id: string, dir: -1 | 1) => void;
-  onDeleteChapter: (id: string) => void;
-  onAddBeat: (chapterId: string) => void;
-  onAddSceneBeat: (chapterId: string, sceneId: string) => void;
-  onUpdateBeat: (id: string, data: Partial<Beat>) => void;
-  onDeleteBeat: (id: string) => void;
-  onMoveBeat: (id: string, dir: -1 | 1) => void;
-  onMoveBeatToChapter: (beatId: string, chapterId: string) => void;
-  onGenerateScene: (id: string) => void;
-  onGenerateChapter?: (chapterId: string) => void;
-  onLinkOrphan: (chapterId: string, sceneId: string) => void;
-  generatingBeatId: string | null;
-  chapterGeneration: { running: boolean; done: number; total: number } | null;
-}) {
-  const chapterScenes = useMemo(
-    () => scenes.filter((s) => s.chapterId === chapter.id).sort((a, b) => a.order - b.order),
-    [scenes, chapter.id],
-  );
-
-  const chapterBeats = useMemo(
-    () =>
-      beats
-        .filter((b) => b.chapterId === chapter.id && !b.sceneId)
-        .sort((a, b) => a.position - b.position),
-    [beats, chapter.id],
-  );
-
-  const sceneBeats = useMemo(() => {
-    const map: Record<string, Beat[]> = {};
-    for (const s of chapterScenes) {
-      map[s.id] = beats.filter((b) => b.sceneId === s.id).sort((a, b) => a.position - b.position);
-    }
-    return map;
-  }, [beats, chapterScenes]);
-
-  const orphanScenes = useMemo(
-    () => chapterScenes.filter((s) => (sceneBeats[s.id] ?? []).length === 0),
-    [chapterScenes, sceneBeats],
-  );
-
-  const isGeneratingChapter = chapterGeneration?.running && onGenerateChapter !== undefined;
-
-  const renderBeatList = (list: Beat[], sceneId?: string) => (
-    <div className="outline-beat-list">
-      {list.map((b, i) => (
-        <BeatCard
-          key={b.id}
-          beat={b}
-          chapters={chapters}
-          onUpdate={onUpdateBeat}
-          onDelete={onDeleteBeat}
-          onMoveUp={(id) => onMoveBeat(id, -1)}
-          onMoveDown={(id) => onMoveBeat(id, 1)}
-          onGenerateScene={onGenerateScene}
-          onMoveToChapter={isGlobal ? onMoveBeatToChapter : undefined}
-          generating={generatingBeatId === b.id}
-          chapterGenerating={chapterGeneration?.running ?? false}
-          canUp={i > 0}
-          canDown={i < list.length - 1}
-          showChapterMove={isGlobal}
-        />
-      ))}
-      <button
-        className="btn btn-sm btn-outline-primary"
-        onClick={() => (sceneId ? onAddSceneBeat(chapter.id, sceneId) : onAddBeat(chapter.id))}
-        aria-label={`Agregar beat a ${sceneId ? 'escena' : 'capítulo'}`}
-      >
-        <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Beat
-      </button>
-    </div>
-  );
-
-  return (
-    <section className="outline-chapter" aria-labelledby={`chapter-title-${chapter.id}`}>
-      <div className="d-flex align-items-center gap-2 flex-wrap">
-        {isGlobal ? (
-          <input
-            className="form-control form-control-sm flex-grow-1"
-            style={{ maxWidth: '420px' }}
-            value={chapter.title}
-            onChange={(e) => onUpdateChapter(chapter.id, { title: e.target.value })}
-            aria-label={`Título de ${chapter.title}`}
-          />
-        ) : (
-          <h2 id={`chapter-title-${chapter.id}`} className="outline-chapter-title">
-            <i className="bi bi-bookmark me-1" aria-hidden="true" /> {chapter.title}
-          </h2>
-        )}
-        {isGlobal ? (
-          <>
-            <button
-              className="icon-btn"
-              title="Subir capítulo"
-              disabled={!canMoveUp}
-              onClick={() => onMoveChapter(chapter.id, -1)}
-              aria-label="Subir capítulo"
-            >
-              <i className="bi bi-arrow-up" aria-hidden="true" />
-            </button>
-            <button
-              className="icon-btn"
-              title="Bajar capítulo"
-              disabled={!canMoveDown}
-              onClick={() => onMoveChapter(chapter.id, 1)}
-              aria-label="Bajar capítulo"
-            >
-              <i className="bi bi-arrow-down" aria-hidden="true" />
-            </button>
-            <button
-              className="icon-btn"
-              title="Eliminar capítulo"
-              onClick={() => onDeleteChapter(chapter.id)}
-              aria-label="Eliminar capítulo"
-            >
-              <i className="bi bi-trash" aria-hidden="true" />
-            </button>
-            {onGenerateChapter ? (
-              isGeneratingChapter ? (
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => {}}
-                  disabled
-                  aria-label="Cancelar generación del capítulo"
-                >
-                  <span className="spinner-inline me-1" aria-hidden="true" />
-                  {chapterGeneration!.done}/{chapterGeneration!.total} · Cancelar
-                </button>
-              ) : (
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={() => onGenerateChapter(chapter.id)}
-                  aria-label="Generar todas las escenas del capítulo"
-                >
-                  <i className="bi bi-magic me-1" aria-hidden="true" />
-                  Generar capítulo
-                </button>
-              )
-            ) : null}
-          </>
-        ) : null}
-      </div>
-
-      {renderBeatList(chapterBeats)}
-
-      {chapterScenes.map((s) => (
-        <div key={s.id} className="outline-scene">
-          <h3 className="outline-scene-title">
-            <i className="bi bi-file-text me-1" aria-hidden="true" /> {s.title}
-          </h3>
-          {renderBeatList(sceneBeats[s.id] ?? [], s.id)}
-        </div>
-      ))}
-
-      {orphanScenes.length > 0 ? (
-        <div className="outline-orphans mt-3">
-          <div className="small text-muted mb-1">
-            <i className="bi bi-link me-1" aria-hidden="true" />
-            Escenas sin vincular al outline ({orphanScenes.length}):
-          </div>
-          {orphanScenes.map((s) => (
-            <div key={s.id} className="d-flex align-items-center gap-1 mb-1">
-              <span className="small flex-grow-1">{s.title}</span>
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                title="Crear un beat para esta escena"
-                onClick={() => onLinkOrphan(chapter.id, s.id)}
-                aria-label={`Vincular escena "${s.title}" al outline`}
-              >
-                <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Vincular
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
-}
+import type { Beat, Scene } from '@/types';
 
 export default function OutlineView() {
   const {
@@ -452,10 +53,6 @@ export default function OutlineView() {
   } | null>(null);
   const chapterAbortRef = useRef<AbortController | null>(null);
 
-  // Slice 10: outline filters (POV and tense).
-  const [filterPov, setFilterPov] = useState<string>('all');
-  const [filterTense, setFilterTense] = useState<string>('all');
-
   const chapter = chapters.find((c) => c.id === currentOutlineChapterId) ?? chapters[0] ?? null;
 
   useEffect(() => {
@@ -468,16 +65,6 @@ export default function OutlineView() {
     () => [...chapters].sort((a, b) => a.order - b.order),
     [chapters],
   );
-
-  const hasProjectFilters = Boolean(currentProject?.pov) || Boolean(currentProject?.tense);
-  const filterActive = filterPov !== 'all' || filterTense !== 'all';
-
-  const chapterVisible = (c: Chapter) => {
-    if (!filterActive) return true;
-    const povMatch = filterPov === 'all' || currentProject?.pov === filterPov;
-    const tenseMatch = filterTense === 'all' || currentProject?.tense === filterTense;
-    return povMatch && tenseMatch;
-  };
 
   const addBeat = async (chapterId: string, sceneId?: string) => {
     if (!currentProject) return;
@@ -801,155 +388,52 @@ export default function OutlineView() {
         )}
       </div>
 
-      {hasProjectFilters ? (
-        <div className="outline-filters d-flex gap-1 align-items-center mb-2">
-          <span className="small text-muted">Filtrar:</span>
-          <select
-            className="form-select form-select-sm"
-            style={{ width: 'auto' }}
-            value={filterPov}
-            onChange={(e) => setFilterPov(e.target.value)}
-            aria-label="Filtrar por punto de vista"
-          >
-            <option value="all">Todo POV</option>
-            {Object.entries(POV_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-          <select
-            className="form-select form-select-sm"
-            style={{ width: 'auto' }}
-            value={filterTense}
-            onChange={(e) => setFilterTense(e.target.value)}
-            aria-label="Filtrar por tiempo verbal"
-          >
-            <option value="all">Todo tiempo</option>
-            {Object.entries(TENSE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
-
       {suggested ? (
-        <div className="outline-suggested">
-          <div className="outline-suggested-title">
-            <i className="bi bi-magic me-1" aria-hidden="true" /> Outline sugerido por el co-writer
-          </div>
-          {suggestError ? (
-            <div className="alert alert-danger py-1 small mb-2">
-              <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
-              {suggestError}
-            </div>
-          ) : suggested.length === 0 ? (
-            <div className="small text-muted">No se pudieron generar beats. Probá de nuevo.</div>
-          ) : (
-            <ul className="outline-suggested-list">
-              {suggested.map((b, i) => (
-                <li key={i}>
-                  <span className={`outline-kind outline-kind-${b.kind}`}>{KIND_LABELS[b.kind]}</span>
-                  <strong>{b.title}</strong>
-                  {b.description ? <span className="text-muted"> — {b.description}</span> : null}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="d-flex gap-2 mt-2">
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={acceptSuggested}
-              disabled={suggested.length === 0}
-            >
-              <i className="bi bi-check-lg me-1" aria-hidden="true" /> Agregar
-            </button>
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => setSuggested(null)}>
-              Descartar
-            </button>
-          </div>
-        </div>
+        <SuggestedOutlinePreview
+          variant="chapter"
+          error={suggestError}
+          items={suggested}
+          onAccept={acceptSuggested}
+          onDiscard={() => setSuggested(null)}
+          acceptLabel="Agregar"
+        />
       ) : null}
 
       {globalSuggested ? (
-        <div className="outline-suggested">
-          <div className="outline-suggested-title">
-            <i className="bi bi-magic me-1" aria-hidden="true" /> Estructura global sugerida
-          </div>
-          {suggestError ? (
-            <div className="alert alert-danger py-1 small mb-2">
-              <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
-              {suggestError}
-            </div>
-          ) : globalSuggested.length === 0 ? (
-            <div className="small text-muted">No se pudo generar una estructura. Probá de nuevo.</div>
-          ) : (
-            <div className="d-flex flex-column gap-3">
-              {globalSuggested.map((c, ci) => (
-                <div key={ci}>
-                  <strong className="d-block mb-1">{c.title}</strong>
-                  <ul className="outline-suggested-list">
-                    {c.beats.map((b, bi) => (
-                      <li key={bi}>
-                        <span className={`outline-kind outline-kind-${b.kind}`}>{KIND_LABELS[b.kind]}</span>
-                        <strong>{b.title}</strong>
-                        {b.description ? <span className="text-muted"> — {b.description}</span> : null}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="d-flex gap-2 mt-2">
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={acceptGlobalSuggested}
-              disabled={globalSuggested.length === 0}
-            >
-              <i className="bi bi-check-lg me-1" aria-hidden="true" /> Aplicar
-            </button>
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => setGlobalSuggested(null)}>
-              Descartar
-            </button>
-          </div>
-        </div>
+        <SuggestedOutlinePreview
+          variant="global"
+          error={suggestError}
+          items={globalSuggested}
+          onAccept={acceptGlobalSuggested}
+          onDiscard={() => setGlobalSuggested(null)}
+          acceptLabel="Aplicar"
+        />
       ) : null}
 
       {mode === 'chapter' ? (
-        chapterVisible(chapter!) ? (
-          <ChapterSection
-            key={chapter!.id}
-            chapter={chapter!}
-            chapters={chapters}
-            beats={beats}
-            scenes={scenes}
-            isGlobal={false}
-            canMoveUp={false}
-            canMoveDown={false}
-            onUpdateChapter={updateChapter}
-            onMoveChapter={() => {}}
-            onDeleteChapter={deleteChapter}
-            onAddBeat={addBeat}
-            onAddSceneBeat={addBeat}
-            onUpdateBeat={updateBeat}
-            onDeleteBeat={deleteBeat}
-            onMoveBeat={moveBeat}
-            onMoveBeatToChapter={handleMoveBeatToChapter}
-            onGenerateScene={generateScene}
-            onGenerateChapter={generateChapter}
-            onLinkOrphan={addBeat}
-            generatingBeatId={generatingBeatId}
-            chapterGeneration={chapterGeneration}
-          />
-        ) : (
-          <div className="small text-muted mb-2">
-            <i className="bi bi-funnel me-1" aria-hidden="true" />
-            Este capítulo no coincide con el filtro (POV/tiempo del proyecto).
-          </div>
-        )
+        <ChapterSection
+          key={chapter!.id}
+          chapter={chapter!}
+          chapters={chapters}
+          beats={beats}
+          scenes={scenes}
+          isGlobal={false}
+          canMoveUp={false}
+          canMoveDown={false}
+          onUpdateChapter={updateChapter}
+          onMoveChapter={() => {}}
+          onDeleteChapter={deleteChapter}
+          onAddBeat={addBeat}
+          onUpdateBeat={updateBeat}
+          onDeleteBeat={deleteBeat}
+          onMoveBeat={moveBeat}
+          onMoveBeatToChapter={handleMoveBeatToChapter}
+          onGenerateScene={generateScene}
+          onGenerateChapter={generateChapter}
+          onLinkOrphan={addBeat}
+          generatingBeatId={generatingBeatId}
+          chapterGeneration={chapterGeneration}
+        />
       ) : (
         <div className="d-flex flex-column gap-4">
           {sortedChapters.map((c, i) => (
@@ -966,7 +450,6 @@ export default function OutlineView() {
               onMoveChapter={reorderChapters}
               onDeleteChapter={deleteChapter}
               onAddBeat={addBeat}
-              onAddSceneBeat={addBeat}
               onUpdateBeat={updateBeat}
               onDeleteBeat={deleteBeat}
               onMoveBeat={moveBeat}

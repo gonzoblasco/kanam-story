@@ -18,7 +18,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 const mockApp = {
   settings: { theme: 'dark' as 'dark' | 'light' },
   setSettings: vi.fn(),
-  setSettings: vi.fn(),
 };
 
 beforeEach(() => {

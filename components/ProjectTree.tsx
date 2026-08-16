@@ -288,13 +288,15 @@ export default function ProjectTree() {
                 >
                   <i className={`bi ${isExpanded ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`} aria-hidden="true" />
                 </button>
-                <span
+                <button
+                  type="button"
                   id={chapterLabelId}
-                  className="text-truncate"
+                  className="tree-item-label text-truncate"
                   onClick={toggle}
+                  aria-expanded={isExpanded}
                 >
                   {c.title}
-                </span>
+                </button>
                 <div className="actions">
                   <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${c.title}`}>
                     <button
@@ -356,8 +358,16 @@ export default function ProjectTree() {
                   {chapterScenes.map((s) => (
                     <div
                       key={s.id}
+                      role="button"
+                      tabIndex={0}
                       className={`tree-item ${s.id === currentSceneId ? 'active' : ''}`}
                       onClick={() => openScene(s.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openScene(s.id);
+                        }
+                      }}
                     >
                       <i className="bi bi-file-earmark-text" />
                       <span className="text-truncate">
