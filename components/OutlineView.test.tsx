@@ -29,6 +29,9 @@ const reorderChapters = vi.fn(async () => {});
 const setCurrentOutlineChapterId = vi.fn();
 const announce = vi.fn();
 
+const suggestGlobalOutline = vi.fn(async () => []);
+const applyGlobalOutline = vi.fn(async () => {});
+
 const mockProject: Project = {
   id: 'p1',
   name: 'Proyecto',
@@ -102,6 +105,8 @@ const mockApp = {
   setView: vi.fn(),
   requestEditorFocus: vi.fn(),
   announce,
+  suggestGlobalOutline,
+  applyGlobalOutline,
 };
 
 vi.mock('@/lib/store', () => ({
@@ -152,5 +157,26 @@ describe('OutlineView', () => {
     await user.selectOptions(moveSelect, 'c2');
 
     expect(moveBeatToChapter).toHaveBeenCalledWith('b1', 'c2');
+  });
+
+  it('suggests and applies a global outline in global mode', async () => {
+    suggestGlobalOutline.mockResolvedValueOnce([
+      {
+        title: 'Capítulo nuevo',
+        beats: [{ title: 'Beat nuevo', kind: 'inciting' as const, description: 'Descripción' }],
+      },
+    ]);
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Global/i }));
+    await user.click(screen.getByRole('button', { name: /Sugerir estructura/i }));
+
+    expect(suggestGlobalOutline).toHaveBeenCalled();
+    expect(await screen.findByText('Estructura global sugerida')).toBeInTheDocument();
+    expect(screen.getByText('Capítulo nuevo')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Aplicar/i }));
+    expect(applyGlobalOutline).toHaveBeenCalled();
   });
 });

@@ -52,6 +52,7 @@ import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
 import { GENRE_TEMPLATES, type ProjectTemplate } from '@/lib/projectTemplates';
 import { reorderChapters, moveBeatToChapter } from '@/lib/outline';
+import { suggestGlobalOutline, type SuggestedChapter } from '@/lib/outlineGeneration';
 
 /** U5 — Punto de partida al crear un proyecto (nunca obligatorio). */
 export type StarterStructure =
@@ -187,6 +188,10 @@ interface AppState {
   reorderChapters: (chapterId: string, dir: -1 | 1) => Promise<void>;
   /** Asks the agent to propose a beat map for a chapter (tool suggest_beats). */
   suggestBeats: (chapterId: string) => Promise<Beat[]>;
+  /** U2: suggests a full global outline (chapters + beats) from project context. */
+  suggestGlobalOutline: () => Promise<SuggestedChapter[]>;
+  /** U2: applies a suggested global outline, replacing chapters and beats. */
+  applyGlobalOutline: (suggestions: SuggestedChapter[]) => Promise<void>;
 
   /** Applies agent actions to the real state (persists to IndexedDB) and returns an undo function. */
   applyContentActions: (actions: ContentAction[]) => Promise<() => Promise<void>>;
@@ -1167,6 +1172,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject, chapters, characters, world, scenes, beats, storyBible, settings.ollamaUrl, settings.ollamaModel],
   );
 
+  const suggestGlobalOutlineAction = useCallback(async (): Promise<SuggestedChapter[]> => {
+    if (!currentProject) return [];
+    return suggestGlobalOutline({
+      project: currentProject,
+      characters,
+      world,
+      chapters,
+      beats,
+      settings,
+    });
+  }, [currentProject, characters, world, chapters, beats, settings]);
+
+  const applyGlobalOutline = useCallback(
+    async (suggestions: SuggestedChapter[]) => {
+      if (!currentProject) return;
+      const projectBeats = beats.filter((b) => b.projectId === currentProject.id);
+      const projectChapters = chapters.filter((c) => c.projectId === currentProject.id);
+      for (const b of projectBeats) {
+        await beatsDB.delete(b.id);
+      }
+      for (const c of projectChapters) {
+        await chaptersDB.delete(c.id);
+      }
+      const createdChapters: Chapter[] = [];
+      for (let i = 0; i < suggestions.length; i++) {
+        const created = await chaptersDB.create({
+          projectId: currentProject.id,
+          title: suggestions[i].title,
+          order: i,
+        });
+        createdChapters.push(created);
+      }
+      for (let i = 0; i < suggestions.length; i++) {
+        const chapter = createdChapters[i];
+        for (let j = 0; j < suggestions[i].beats.length; j++) {
+          const b = suggestions[i].beats[j];
+          await beatsDB.create({
+            projectId: currentProject.id,
+            chapterId: chapter.id,
+            kind: b.kind,
+            title: b.title,
+            description: b.description ?? '',
+            notes: b.notes ?? '',
+            characters: [],
+            status: 'draft',
+            source: 'ai',
+            position: j,
+          });
+        }
+      }
+      await loadProjectData(currentProject.id);
+      setCurrentOutlineChapterId(createdChapters[0]?.id ?? null);
+    },
+    [currentProject, beats, chapters, loadProjectData],
+  );
+
   const applyContentActions = useCallback(
     async (actions: ContentAction[]): Promise<() => Promise<void>> => {
       if (!currentProject) return async () => {};
@@ -1361,6 +1422,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     moveBeatToChapter: moveBeatToChapterAction,
     reorderChapters: reorderChaptersAction,
     suggestBeats,
+    suggestGlobalOutline: suggestGlobalOutlineAction,
+    applyGlobalOutline,
     applyContentActions,
   };
 

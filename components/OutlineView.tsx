@@ -7,6 +7,7 @@ import { planGenerateScene } from '@/lib/sceneFromBeat';
 import { generateSceneContent } from '@/lib/generateSceneContent';
 import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
 import type { Beat, BeatKind, BeatStatus, Chapter, Scene } from '@/types';
+import type { SuggestedChapter } from '@/lib/outlineGeneration';
 
 const KIND_LABELS: Record<BeatKind, string> = {
   inciting: 'Incitante',
@@ -434,11 +435,14 @@ export default function OutlineView() {
     setView,
     requestEditorFocus,
     announce,
+    suggestGlobalOutline,
+    applyGlobalOutline,
   } = useApp();
 
   const [mode, setMode] = useState<'chapter' | 'global'>('chapter');
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<Beat[] | null>(null);
+  const [globalSuggested, setGlobalSuggested] = useState<SuggestedChapter[] | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [generatingBeatId, setGeneratingBeatId] = useState<string | null>(null);
   const [chapterGeneration, setChapterGeneration] = useState<{
@@ -456,6 +460,7 @@ export default function OutlineView() {
 
   useEffect(() => {
     setSuggested(null);
+    setGlobalSuggested(null);
     setSuggestError(null);
   }, [currentOutlineChapterId, mode]);
 
@@ -522,6 +527,28 @@ export default function OutlineView() {
   const handleMoveBeatToChapter = async (beatId: string, targetChapterId: string) => {
     await moveBeatToChapter(beatId, targetChapterId);
     announce('Beat movido de capítulo.');
+  };
+
+  const suggestGlobal = async () => {
+    if (!currentProject) return;
+    setSuggesting(true);
+    setGlobalSuggested(null);
+    setSuggestError(null);
+    try {
+      setGlobalSuggested(await suggestGlobalOutline());
+    } catch (e) {
+      setSuggestError(e instanceof Error ? e.message : 'No se pudo generar la estructura');
+      setGlobalSuggested([]);
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const acceptGlobalSuggested = async () => {
+    if (!globalSuggested) return;
+    await applyGlobalOutline(globalSuggested);
+    setGlobalSuggested(null);
+    announce('Estructura global aplicada.');
   };
 
   const suggest = async () => {
@@ -762,9 +789,15 @@ export default function OutlineView() {
             )}
           </>
         ) : (
-          <button className="btn btn-sm btn-outline-primary" onClick={addChapter}>
-            <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Nuevo capítulo
-          </button>
+          <>
+            <button className="btn btn-sm btn-outline-primary" onClick={addChapter}>
+              <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Nuevo capítulo
+            </button>
+            <button className="btn btn-sm btn-ai" onClick={suggestGlobal} disabled={suggesting}>
+              <i className="bi bi-magic me-1" aria-hidden="true" />
+              {suggesting ? 'Sugiriendo…' : 'Sugerir estructura'}
+            </button>
+          </>
         )}
       </div>
 
@@ -834,6 +867,51 @@ export default function OutlineView() {
               <i className="bi bi-check-lg me-1" aria-hidden="true" /> Agregar
             </button>
             <button className="btn btn-sm btn-outline-secondary" onClick={() => setSuggested(null)}>
+              Descartar
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {globalSuggested ? (
+        <div className="outline-suggested">
+          <div className="outline-suggested-title">
+            <i className="bi bi-magic me-1" aria-hidden="true" /> Estructura global sugerida
+          </div>
+          {suggestError ? (
+            <div className="alert alert-danger py-1 small mb-2">
+              <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
+              {suggestError}
+            </div>
+          ) : globalSuggested.length === 0 ? (
+            <div className="small text-muted">No se pudo generar una estructura. Probá de nuevo.</div>
+          ) : (
+            <div className="d-flex flex-column gap-3">
+              {globalSuggested.map((c, ci) => (
+                <div key={ci}>
+                  <strong className="d-block mb-1">{c.title}</strong>
+                  <ul className="outline-suggested-list">
+                    {c.beats.map((b, bi) => (
+                      <li key={bi}>
+                        <span className={`outline-kind outline-kind-${b.kind}`}>{KIND_LABELS[b.kind]}</span>
+                        <strong>{b.title}</strong>
+                        {b.description ? <span className="text-muted"> — {b.description}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="d-flex gap-2 mt-2">
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={acceptGlobalSuggested}
+              disabled={globalSuggested.length === 0}
+            >
+              <i className="bi bi-check-lg me-1" aria-hidden="true" /> Aplicar
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={() => setGlobalSuggested(null)}>
               Descartar
             </button>
           </div>
