@@ -51,6 +51,7 @@ import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
 import { GENRE_TEMPLATES, type ProjectTemplate } from '@/lib/projectTemplates';
+import { reorderChapters, moveBeatToChapter } from '@/lib/outline';
 
 /** U5 — Punto de partida al crear un proyecto (nunca obligatorio). */
 export type StarterStructure =
@@ -180,6 +181,10 @@ interface AppState {
   createBeat: (data: Omit<Beat, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Beat>;
   updateBeat: (id: string, data: Partial<Beat>) => Promise<void>;
   deleteBeat: (id: string) => Promise<void>;
+  /** Move a beat to a different chapter (global outline view). */
+  moveBeatToChapter: (beatId: string, targetChapterId: string) => Promise<void>;
+  /** Reorder chapters up/down (global outline view). */
+  reorderChapters: (chapterId: string, dir: -1 | 1) => Promise<void>;
   /** Asks the agent to propose a beat map for a chapter (tool suggest_beats). */
   suggestBeats: (chapterId: string) => Promise<Beat[]>;
 
@@ -1091,6 +1096,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject],
   );
 
+  /** U1 — global outline: move a beat to a different chapter. */
+  const moveBeatToChapterAction = useCallback(
+    async (beatId: string, targetChapterId: string) => {
+      if (!currentProject) return;
+      const update = moveBeatToChapter(beats, chapters, beatId, targetChapterId);
+      if (!update) return;
+      await updateBeat(update.id, {
+        chapterId: update.chapterId,
+        position: update.position,
+      });
+    },
+    [currentProject, beats, chapters, updateBeat],
+  );
+
+  /** U1 — global outline: reorder chapters up/down. */
+  const reorderChaptersAction = useCallback(
+    async (chapterId: string, dir: -1 | 1) => {
+      if (!currentProject) return;
+      const swaps = reorderChapters(chapters, chapterId, dir);
+      if (!swaps) return;
+      for (const s of swaps) {
+        await chaptersDB.update(s.id, { order: s.order });
+      }
+      await loadProjectData(currentProject.id);
+    },
+    [currentProject, chapters, loadProjectData],
+  );
+
   const suggestBeats = useCallback(
     async (chapterId: string): Promise<Beat[]> => {
       if (!currentProject) return [];
@@ -1325,6 +1358,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createBeat,
     updateBeat,
     deleteBeat,
+    moveBeatToChapter: moveBeatToChapterAction,
+    reorderChapters: reorderChaptersAction,
     suggestBeats,
     applyContentActions,
   };
