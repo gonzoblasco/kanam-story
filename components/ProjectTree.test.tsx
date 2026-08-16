@@ -94,6 +94,10 @@ const scene2: Scene = {
   updatedAt: 0,
 };
 
+const setSettings = vi.fn((patch: Partial<typeof mockApp.settings>) => {
+  mockApp.settings = { ...mockApp.settings, ...patch };
+});
+
 const mockApp = {
   projects: [mockProject],
   currentProject: mockProject,
@@ -108,8 +112,8 @@ const mockApp = {
   scenes: [scene1, scene2],
   currentSceneId: 's1',
   selectScene,
-  settings: { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark' },
-  setSettings: vi.fn(),
+  settings: { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark', collapsedChapterIds: [] as string[] },
+  setSettings,
   view: 'story' as const,
   setView,
   activeStorySection: 'chat' as StorySectionKey,
@@ -119,7 +123,12 @@ const mockApp = {
 };
 
 vi.mock('@/lib/store', () => ({
-  useApp: () => mockApp,
+  useApp: () => {
+    const [settings, setSettingsState] = React.useState(mockApp.settings);
+    mockApp.settings = settings;
+    mockApp.setSettings = (patch: Partial<typeof mockApp.settings>) => setSettingsState((s) => ({ ...s, ...patch }));
+    return mockApp;
+  },
 }));
 
 vi.mock('@/lib/storySections', () => ({
@@ -133,6 +142,7 @@ vi.mock('@/lib/storySections', () => ({
 describe('ProjectTree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockApp.settings = { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark', collapsedChapterIds: [] };
   });
 
   it('opens the selected scene in the editor when clicking a scene item', async () => {

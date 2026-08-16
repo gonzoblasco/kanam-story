@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import { moveBeatInList } from '@/lib/outline';
 import { planGenerateScene } from '@/lib/sceneFromBeat';
@@ -55,11 +55,19 @@ export default function OutlineView() {
 
   const chapter = chapters.find((c) => c.id === currentOutlineChapterId) ?? chapters[0] ?? null;
 
-  useEffect(() => {
+  const setOutlineChapter = (id: string) => {
+    setCurrentOutlineChapterId(id);
     setSuggested(null);
     setGlobalSuggested(null);
     setSuggestError(null);
-  }, [currentOutlineChapterId, mode]);
+  };
+
+  const setOutlineMode = (next: 'chapter' | 'global') => {
+    setMode(next);
+    setSuggested(null);
+    setGlobalSuggested(null);
+    setSuggestError(null);
+  };
 
   const sortedChapters = useMemo(
     () => [...chapters].sort((a, b) => a.order - b.order),
@@ -94,7 +102,7 @@ export default function OutlineView() {
       title: `Capítulo ${chapters.length + 1}`,
       order: chapters.length,
     });
-    setCurrentOutlineChapterId(c.id);
+    setOutlineChapter(c.id);
     announce(`Capítulo "${c.title}" creado.`);
   };
 
@@ -321,7 +329,7 @@ export default function OutlineView() {
           <select
             className="form-select form-select-sm"
             value={chapter?.id ?? ''}
-            onChange={(e) => setCurrentOutlineChapterId(e.target.value)}
+            onChange={(e) => setOutlineChapter(e.target.value)}
             aria-label="Capítulo activo"
           >
             {sortedChapters.map((c) => (
@@ -335,14 +343,14 @@ export default function OutlineView() {
         <div className="btn-group" role="group" aria-label="Vista del outline">
           <button
             className={`btn btn-sm ${mode === 'chapter' ? 'btn-primary' : 'btn-outline-primary'}`}
-            onClick={() => setMode('chapter')}
+            onClick={() => setOutlineMode('chapter')}
             aria-pressed={mode === 'chapter'}
           >
             Capítulo
           </button>
           <button
             className={`btn btn-sm ${mode === 'global' ? 'btn-primary' : 'btn-outline-primary'}`}
-            onClick={() => setMode('global')}
+            onClick={() => setOutlineMode('global')}
             aria-pressed={mode === 'global'}
           >
             Global

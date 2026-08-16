@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { useApp } from '@/lib/store';
 import { STORY_SECTIONS } from '@/lib/storySections';
 import ActionMenu from '@/components/ActionMenu';
 import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const seenChapterIds = useRef<Set<string>>(new Set());
   const {
     projects,
     currentProject,
@@ -33,36 +31,21 @@ export default function ProjectTree() {
     setSettings,
   } = useApp();
 
-  useEffect(() => {
-    setExpanded((prev) => {
-      if (prev.size > 0) return prev;
-      const collapsed = new Set(settings.collapsedChapterIds ?? []);
-      const initial = new Set(chapters.filter((c) => !collapsed.has(c.id)).map((c) => c.id));
-      // Si no hay persistencia, expandir el capítulo de la escena activa.
-      if (initial.size === 0 && currentSceneId) {
-        const chapterId = scenes.find((s) => s.id === currentSceneId)?.chapterId;
-        if (chapterId) initial.add(chapterId);
-      }
-      return initial;
-    });
-  }, []);
+  const collapsedIds = useMemo(
+    () => new Set(settings.collapsedChapterIds ?? []),
+    [settings.collapsedChapterIds],
+  );
 
-  useEffect(() => {
-    setExpanded((prev) => {
-      let changed = false;
-      const next = new Set(prev);
-      for (const c of chapters) {
-        if (!seenChapterIds.current.has(c.id)) {
-          seenChapterIds.current.add(c.id);
-          if (!next.has(c.id)) {
-            next.add(c.id);
-            changed = true;
-          }
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [chapters]);
+  const expanded = useMemo(() => {
+    const next = new Set(chapters.map((c) => c.id));
+    for (const id of collapsedIds) next.delete(id);
+    // Auto-expand the active scene chapter if no chapter is expanded.
+    if (next.size === 0 && currentSceneId) {
+      const chapterId = scenes.find((s) => s.id === currentSceneId)?.chapterId;
+      if (chapterId) next.add(chapterId);
+    }
+    return next;
+  }, [chapters, collapsedIds, currentSceneId, scenes]);
 
   const collapsed = settings.sidebarCollapsed;
 
@@ -265,13 +248,11 @@ export default function ProjectTree() {
           const chapterLabelId = `chapter-${c.id}-label`;
           const sceneListId = `chapter-${c.id}-scenes`;
           const toggle = () => {
-            setExpanded((prev) => {
-              const next = new Set(prev);
-              if (next.has(c.id)) next.delete(c.id);
-              else next.add(c.id);
-              const collapsed = chapters.map((ch) => ch.id).filter((id) => !next.has(id));
-              void setSettings({ collapsedChapterIds: collapsed });
-              return next;
+            const isExpanded = expanded.has(c.id);
+            void setSettings({
+              collapsedChapterIds: isExpanded
+                ? [...(settings.collapsedChapterIds ?? []), c.id]
+                : (settings.collapsedChapterIds ?? []).filter((id) => id !== c.id),
             });
           };
           return (

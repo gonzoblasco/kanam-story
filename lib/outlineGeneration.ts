@@ -14,8 +14,6 @@ export interface SuggestedBeat {
   notes?: string;
 }
 
-const VALID_KINDS: BeatKind[] = ['inciting', 'rising', 'climax', 'falling', 'resolution', 'custom'];
-
 export const KIND_ALIASES: Record<string, BeatKind> = {
   inciting: 'inciting',
   incitante: 'inciting',

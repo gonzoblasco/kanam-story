@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Project, Chapter, Scene, Beat, StorySectionKey, Character, WorldEntity, Settings } from '@/types';
+import type { Project, Chapter, Scene, Beat, Character, WorldEntity, Settings } from '@/types';
 import type { SuggestedChapter } from '@/lib/outlineGeneration';
 import OutlineView from './OutlineView';
 

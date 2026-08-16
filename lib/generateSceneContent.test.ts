@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateSceneContent } from './generateSceneContent';
 import * as ollama from './ollama';
-import type { Beat, Chapter, Character, Project, Scene, Settings, WorldEntity } from '@/types';
+import type { Beat, Chapter, Project, Scene, Settings } from '@/types';
 
 vi.mock('./ollama', () => ({
   ollamaChatStream: vi.fn(),
@@ -139,7 +139,7 @@ describe('generateSceneContent', () => {
 
   it('respects the abort signal', async () => {
     const controller = new AbortController();
-    vi.mocked(ollama.ollamaChatStream).mockImplementation(async (_opts, _onChunk) => {
+    vi.mocked(ollama.ollamaChatStream).mockImplementation(async () => {
       controller.abort();
       throw new Error('AbortError');
     });

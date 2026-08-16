@@ -28,13 +28,6 @@ function updateScene(state: StoryState, sceneId: string, patch: Partial<Scene>):
   };
 }
 
-function updateChapter(state: StoryState, chapterId: string, patch: Partial<Chapter>): StoryState {
-  return {
-    ...state,
-    chapters: state.chapters.map((c) => (c.id === chapterId ? { ...c, ...patch, updatedAt: now() } : c)),
-  };
-}
-
 function updateBeat(state: StoryState, beatId: string, patch: Partial<Beat>): StoryState {
   return {
     ...state,

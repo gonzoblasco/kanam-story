@@ -1242,7 +1242,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await loadProjectData(currentProject.id);
       setCurrentOutlineChapterId(createdChapters[0]?.id ?? null);
     },
-    [currentProject, beats, chapters, loadProjectData],
+    [currentProject, beats, chapters, loadProjectData, setCurrentOutlineChapterId],
   );
 
   const applyContentActions = useCallback(
@@ -1430,7 +1430,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
     },
-    [currentProject, storyBible, scenes, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
+    [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
   );
 
   const value: AppState = {
