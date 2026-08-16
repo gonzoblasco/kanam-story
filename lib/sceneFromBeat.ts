@@ -54,8 +54,9 @@ export function planGenerateScene(input: {
   projectId: string;
   chapters: Chapter[];
   scenes: Scene[];
+  nextOrder?: number;
 }): GenerateScenePlan {
-  const { beat, projectId, chapters, scenes } = input;
+  const { beat, projectId, chapters, scenes, nextOrder } = input;
 
   // Reutiliza la escena a la que el beat ya pertenece (si sigue existiendo).
   const existingSceneId = beat.sceneId
@@ -72,7 +73,7 @@ export function planGenerateScene(input: {
 
   if (existingChapter) {
     chapterId = existingChapter.id;
-    sceneOrder = scenes.filter((s) => s.chapterId === existingChapter.id).length;
+    sceneOrder = nextOrder ?? scenes.filter((s) => s.chapterId === existingChapter.id).length;
   } else {
     createChapter = {
       projectId,
@@ -80,7 +81,7 @@ export function planGenerateScene(input: {
       order: chapters.length,
     };
     chapterId = null; // se resuelve tras crear el capítulo
-    sceneOrder = 0;
+    sceneOrder = nextOrder ?? 0;
   }
 
   return {

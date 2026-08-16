@@ -74,6 +74,14 @@ describe('planGenerateScene', () => {
     expect(plan.scene.order).toBe(2);
   });
 
+  it('respeta el nextOrder provisto para generación secuencial de un capítulo', () => {
+    const scenes: Scene[] = [
+      { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'A', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+    ];
+    const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes, nextOrder: 5 });
+    expect(plan.scene.order).toBe(5);
+  });
+
   it('reutiliza la escena existente del beat en lugar de crear otra (clicks repetidos)', () => {
     const scenes: Scene[] = [
       { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'El primer encuentro', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },

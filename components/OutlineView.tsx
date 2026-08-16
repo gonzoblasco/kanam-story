@@ -555,7 +555,7 @@ export default function OutlineView() {
     setSuggested(null);
   };
 
-  const runGenerateScene = async (beatId: string): Promise<Scene | null> => {
+  const runGenerateScene = async (beatId: string, nextOrder?: number): Promise<Scene | null> => {
     const beat = beats.find((b) => b.id === beatId);
     if (!beat || !currentProject) return null;
     try {
@@ -564,6 +564,7 @@ export default function OutlineView() {
         projectId: currentProject.id,
         chapters,
         scenes,
+        nextOrder,
       });
 
       if (plan.existingSceneId) {
@@ -621,6 +622,7 @@ export default function OutlineView() {
       announce('Todas las escenas del capítulo ya están generadas.');
       return;
     }
+    const baseSceneOrder = scenes.filter((s) => s.chapterId === targetChapter.id).length;
     chapterAbortRef.current = new AbortController();
     setChapterGeneration({ running: true, done: 0, total: targetBeats.length });
     let completed = 0;
@@ -629,7 +631,7 @@ export default function OutlineView() {
       for (let i = 0; i < targetBeats.length; i++) {
         const beat = targetBeats[i];
         setChapterGeneration((prev) => (prev ? { ...prev, done: completed } : prev));
-        const scene = await runGenerateScene(beat.id);
+        const scene = await runGenerateScene(beat.id, baseSceneOrder + i);
         if (!scene) {
           failed++;
           continue;
