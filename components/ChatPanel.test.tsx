@@ -77,8 +77,10 @@ const characterAction: ContentAction = {
   summary: 'Agregar personaje Ana',
 };
 
+let mockReplyActions: ContentAction[] = [characterAction];
+
 vi.mock('@/lib/agentReply', () => ({
-  parseAgentReply: vi.fn(() => ({ reply: 'Respuesta del co-writer', actions: [characterAction] })),
+  parseAgentReply: vi.fn(() => ({ reply: 'Respuesta del co-writer', actions: mockReplyActions })),
   filterValidActions: vi.fn((a: ContentAction[]) => a),
 }));
 
@@ -89,6 +91,7 @@ beforeEach(() => {
   mockApp.conversations = [];
   mockApp.currentConversationId = 'conv1';
   mockApp.messages = [];
+  mockReplyActions = [characterAction];
 });
 
 describe('ChatPanel: input accesible + live region (U7)', () => {
@@ -148,5 +151,31 @@ describe('ChatPanel: inserción contextual (U7)', () => {
 
     expect(mockApp.announce).toHaveBeenCalledWith('Propuesta descartada.');
     expect(input).toHaveFocus();
+  });
+
+  it('aceptar una propuesta de outline global navega al outline', async () => {
+    mockReplyActions = [
+      {
+        type: 'replace_outline',
+        summary: 'Reorganizar en 3 actos',
+        chapters: [{ title: 'Acto I', order: 0 }],
+        beats: [
+          { title: 'El gatillo', kind: 'inciting', description: 'x', notes: '', chapterIndex: 0, position: 0 },
+        ],
+      },
+    ];
+    const user = userEvent.setup();
+    render(<ChatPanel />);
+    const input = screen.getByRole('textbox', { name: /escribí tu idea/i });
+    await user.type(input, 'Reorganizá la historia en 3 actos');
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    const accept = await screen.findByRole('button', { name: /aceptar/i });
+    await user.click(accept);
+
+    expect(mockApp.applyContentActions).toHaveBeenCalledTimes(1);
+    expect(mockApp.applyContentActions).toHaveBeenCalledWith(mockReplyActions);
+    expect(mockApp.setView).toHaveBeenCalledWith('outline');
+    expect(mockApp.announce).toHaveBeenCalledWith('Cambios aplicados en el outline.');
   });
 });

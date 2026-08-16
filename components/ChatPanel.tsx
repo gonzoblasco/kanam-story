@@ -6,6 +6,7 @@ import { buildAgentContext, buildAgentPrompt } from '@/lib/agentPrompts';
 import { parseAgentReply, filterValidActions } from '@/lib/agentReply';
 import { ollamaChatStream } from '@/lib/ollama';
 import { getActionsTarget } from '@/lib/actionTargets';
+import OutlineProposal from '@/components/OutlineProposal';
 import type { ContentAction } from '@/types';
 
 export default function ChatPanel() {
@@ -234,6 +235,11 @@ export default function ChatPanel() {
         return `Actualizar biblia (${a.section}): ${a.summary}`;
       case 'append_scene':
         return `Agregar escena: ${a.summary || a.chapterId}`;
+      case 'replace_outline': {
+        const chapterCount = a.chapters.length;
+        const beatCount = a.beats.length;
+        return `Reemplazar outline global (${chapterCount} capítulo${chapterCount > 1 ? 's' : ''}, ${beatCount} beat${beatCount > 1 ? 's' : ''})`;
+      }
     }
   }
 
@@ -340,11 +346,15 @@ export default function ChatPanel() {
               <i className="bi bi-magic me-1" />
               El co-writer propone cambios
             </div>
-            <ul className="chat-pending-list">
-              {pendingActions.map((a, i) => (
-                <li key={i}>{describeAction(a)}</li>
-              ))}
-            </ul>
+            {pendingActions.length === 1 && pendingActions[0].type === 'replace_outline' ? (
+              <OutlineProposal action={pendingActions[0]} />
+            ) : (
+              <ul className="chat-pending-list">
+                {pendingActions.map((a, i) => (
+                  <li key={i}>{describeAction(a)}</li>
+                ))}
+              </ul>
+            )}
             <div className="d-flex gap-2 mt-2">
               <button className="btn btn-sm btn-primary" onClick={acceptActions}>
                 <i className="bi bi-check-lg me-1" /> Aceptar

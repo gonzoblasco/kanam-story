@@ -14,3 +14,7 @@ export const STATUS_LABELS: Record<BeatStatus, string> = {
   done: 'Hecho',
   revising: 'Revisando',
 };
+
+export function beatKindLabel(kind: BeatKind): string {
+  return KIND_LABELS[kind] ?? kind;
+}
