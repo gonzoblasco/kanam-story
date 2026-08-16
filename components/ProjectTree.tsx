@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import { STORY_SECTIONS } from '@/lib/storySections';
 import ActionMenu from '@/components/ActionMenu';
@@ -8,6 +8,7 @@ import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const seenChapterIds = useRef<Set<string>>(new Set());
   const {
     projects,
     currentProject,
@@ -33,11 +34,30 @@ export default function ProjectTree() {
 
   useEffect(() => {
     setExpanded((prev) => {
+      if (prev.size > 0) return prev;
+      const initial = new Set<string>();
+      if (currentSceneId) {
+        const chapterId = scenes.find((s) => s.id === currentSceneId)?.chapterId;
+        if (chapterId) initial.add(chapterId);
+      }
+      return initial;
+    });
+  }, []);
+
+  useEffect(() => {
+    setExpanded((prev) => {
+      let changed = false;
       const next = new Set(prev);
       for (const c of chapters) {
-        if (!next.has(c.id)) next.add(c.id);
+        if (!seenChapterIds.current.has(c.id)) {
+          seenChapterIds.current.add(c.id);
+          if (!next.has(c.id)) {
+            next.add(c.id);
+            changed = true;
+          }
+        }
       }
-      return next;
+      return changed ? next : prev;
     });
   }, [chapters]);
 
