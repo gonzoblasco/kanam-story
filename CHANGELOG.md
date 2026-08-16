@@ -2,6 +2,11 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.10.1] - 2026-08-16
+
+### Fixed
+- **Beat kind aliases in chat-assisted outline.** The model sometimes emitted non-official kind values like `"giro"` for `replace_outline`. `parseAgentReply` now normalizes known Spanish aliases (`ascenso`, `clímax`, `caída`, `resolución`, `personalizado`, etc.) and unknown values to `"custom"`. `buildAgentPrompt` explicitly forbids synonyms and requires the official English kinds.
+
 ## [0.10.0] - 2026-08-16
 
 Post-v0.9.0 feature block: global outline, automatic structure generation, and chat-assisted outline redesign. Also hardens the chapter-generation flow and makes the manuscript tree state survive reloads.
