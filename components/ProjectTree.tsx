@@ -30,13 +30,16 @@ export default function ProjectTree() {
     setActiveStorySection,
     setCurrentOutlineChapterId,
     setCurrentChapterId,
+    setSettings,
   } = useApp();
 
   useEffect(() => {
     setExpanded((prev) => {
       if (prev.size > 0) return prev;
-      const initial = new Set<string>();
-      if (currentSceneId) {
+      const collapsed = new Set(settings.collapsedChapterIds ?? []);
+      const initial = new Set(chapters.filter((c) => !collapsed.has(c.id)).map((c) => c.id));
+      // Si no hay persistencia, expandir el capítulo de la escena activa.
+      if (initial.size === 0 && currentSceneId) {
         const chapterId = scenes.find((s) => s.id === currentSceneId)?.chapterId;
         if (chapterId) initial.add(chapterId);
       }
@@ -261,13 +264,16 @@ export default function ProjectTree() {
           const isExpanded = expanded.has(c.id);
           const chapterLabelId = `chapter-${c.id}-label`;
           const sceneListId = `chapter-${c.id}-scenes`;
-          const toggle = () =>
+          const toggle = () => {
             setExpanded((prev) => {
               const next = new Set(prev);
               if (next.has(c.id)) next.delete(c.id);
               else next.add(c.id);
+              const collapsed = chapters.map((ch) => ch.id).filter((id) => !next.has(id));
+              void setSettings({ collapsedChapterIds: collapsed });
               return next;
             });
+          };
           return (
             <div key={c.id}>
               <div className="tree-item">

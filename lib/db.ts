@@ -467,6 +467,7 @@ const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
   sidebarCollapsed: false,
   rightPanelCollapsed: false,
+  collapsedChapterIds: [],
 };
 
 export const BIBLE_SECTION_DEFAULTS: Array<{

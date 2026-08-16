@@ -26,6 +26,7 @@ const mockApp = {
   deleteConversation: vi.fn(async () => {}),
   createMessage: vi.fn(async () => ({})),
   settings: { ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3' },
+  setSettings: vi.fn(),
   characters: [],
   world: [],
   chapters: [],

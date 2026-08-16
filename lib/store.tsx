@@ -334,9 +334,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentConversationId(null);
       setMessages([]);
       await loadProjectData(id);
-      setCurrentSceneId(null);
+      const projectScenes = await scenesDB.listByProject(id);
+      const sceneId = settings.lastSceneId;
+      if (sceneId && projectScenes.some((s) => s.id === sceneId)) {
+        setCurrentSceneId(sceneId);
+      } else {
+        setCurrentSceneId(null);
+      }
     },
-    [loadProjectData],
+    [loadProjectData, settings.lastSceneId],
   );
 
   useEffect(() => {
@@ -368,12 +374,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSettingsState(s);
       const list = await projectsDB.list();
       setProjects(list);
-      if (list.length > 0) {
-        await selectProject(list[0].id);
-      }
+      const startId = s.lastProjectId && list.some((p) => p.id === s.lastProjectId)
+        ? s.lastProjectId
+        : list[0]?.id ?? null;
+      if (startId) await selectProject(startId);
       setReady(true);
     })();
   }, [selectProject]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const patch: Partial<Settings> = {};
+    if (currentProject?.id) patch.lastProjectId = currentProject.id;
+    if (currentSceneId) patch.lastSceneId = currentSceneId;
+    if (Object.keys(patch).length > 0) {
+      void settingsDB.update(patch);
+    }
+  }, [currentProject?.id, currentSceneId, ready]);
 
   useEffect(() => {
     // Gate on `ready`: before IndexedDB loads the real settings, `settings.theme`

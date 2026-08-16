@@ -106,8 +106,10 @@ const mockApp = {
   setView: vi.fn(),
   requestEditorFocus: vi.fn(),
   announce,
+  settings,
   suggestGlobalOutline,
   applyGlobalOutline,
+  setSettings: vi.fn(),
 };
 
 vi.mock('@/lib/store', () => ({

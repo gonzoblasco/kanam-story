@@ -42,6 +42,7 @@ const mockApp = {
   currentProject: { id: 'p1', name: 'Proyecto' },
   storyBible: defaultBible,
   settings: { theme: 'dark' },
+  setSettings: vi.fn(),
   regenerateStoryBible: vi.fn(),
   regenerateBibleSection: vi.fn(),
   ensureStoryBible: vi.fn(),

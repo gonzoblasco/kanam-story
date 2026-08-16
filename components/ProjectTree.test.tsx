@@ -109,6 +109,7 @@ const mockApp = {
   currentSceneId: 's1',
   selectScene,
   settings: { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark' },
+  setSettings: vi.fn(),
   view: 'story' as const,
   setView,
   activeStorySection: 'chat' as StorySectionKey,

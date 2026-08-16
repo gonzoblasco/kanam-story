@@ -177,6 +177,12 @@ export interface Settings {
   theme: 'light' | 'dark';
   sidebarCollapsed: boolean;
   rightPanelCollapsed: boolean;
+  /** Last selected project, restored on app startup. */
+  lastProjectId?: string;
+  /** Last selected scene, restored when loading its project. */
+  lastSceneId?: string;
+  /** Chapter ids that should stay collapsed in the manuscript tree. */
+  collapsedChapterIds?: string[];
 }
 
 export type AICommand = 'write' | 'describe' | 'rewrite' | 'brainstorm';
