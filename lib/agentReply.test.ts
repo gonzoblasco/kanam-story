@@ -104,6 +104,49 @@ describe('isValidAction', () => {
   it('rechaza update_character con type inválido', () => {
     expect(isValidAction({ type: 'update_character', characterId: 'c1', changes: { type: 'villano' }, summary: 'y' })).toBe(false);
   });
+  it('acepta replace_outline con capítulos y beats válidos', () => {
+    expect(
+      isValidAction({
+        type: 'replace_outline',
+        summary: 'nuevo outline',
+        chapters: [{ title: 'C1', order: 0 }],
+        beats: [
+          {
+            title: 'B1',
+            kind: 'inciting',
+            description: 'desc',
+            notes: '',
+            chapterIndex: 0,
+            position: 0,
+            status: 'draft',
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
+  it('rechaza replace_outline sin capítulos', () => {
+    expect(isValidAction({ type: 'replace_outline', summary: 'x', chapters: [], beats: [] })).toBe(false);
+  });
+  it('rechaza replace_outline con chapterIndex fuera de rango', () => {
+    expect(
+      isValidAction({
+        type: 'replace_outline',
+        summary: 'x',
+        chapters: [{ title: 'C1' }],
+        beats: [{ title: 'B1', kind: 'inciting', description: '', notes: '', chapterIndex: 1, position: 0 }],
+      }),
+    ).toBe(false);
+  });
+  it('rechaza replace_outline con beat sin título', () => {
+    expect(
+      isValidAction({
+        type: 'replace_outline',
+        summary: 'x',
+        chapters: [{ title: 'C1' }],
+        beats: [{ title: '', kind: 'inciting', description: '', notes: '', chapterIndex: 0, position: 0 }],
+      }),
+    ).toBe(false);
+  });
 });
 
 describe('filterValidActions', () => {

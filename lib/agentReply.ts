@@ -106,6 +106,26 @@ export function isValidAction(action: unknown): action is ContentAction {
       );
     case 'append_scene':
       return typeof a.chapterId === 'string' && typeof a.content === 'string';
+    case 'replace_outline': {
+      if (!Array.isArray(a.chapters) || a.chapters.length === 0) return false;
+      if (!Array.isArray(a.beats)) return false;
+      const chapterCount = a.chapters.length;
+      for (const ch of a.chapters) {
+        if (typeof (ch as Record<string, unknown>).title !== 'string') return false;
+      }
+      for (const b of a.beats) {
+        const beat = b as Record<string, unknown>;
+        if (typeof beat.title !== 'string' || beat.title.length === 0) return false;
+        if (typeof beat.kind !== 'string' || !(BEAT_KINDS as string[]).includes(beat.kind)) return false;
+        if (typeof beat.description !== 'string') return false;
+        if (typeof beat.notes !== 'string') return false;
+        if (typeof beat.chapterIndex !== 'number' || beat.chapterIndex < 0 || beat.chapterIndex >= chapterCount) {
+          return false;
+        }
+        if (typeof beat.position !== 'number') return false;
+      }
+      return true;
+    }
     default:
       return false;
   }
