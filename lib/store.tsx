@@ -1343,6 +1343,83 @@ export function AppProvider({ children }: { children: ReactNode }) {
             undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
             break;
           }
+          case 'replace_outline': {
+            // Snapshot current outline (chapters + beats) and the chapter each
+            // scene belongs to, so we can fully restore on undo.
+            const projectId = currentProject.id;
+            const oldChapters = [...chapters];
+            const oldBeats = [...beats];
+            const projectScenes = await scenesDB.listByProject(projectId);
+            const sceneChapterMap = new Map(projectScenes.map((s) => [s.id, s.chapterId]));
+
+            // Move existing scenes to orphaned state so they survive chapter deletion.
+            for (const scene of projectScenes) {
+              await scenesDB.update(scene.id, { chapterId: '' });
+            }
+
+            // Delete current beats and chapters.
+            for (const b of oldBeats) {
+              await beatsDB.delete(b.id);
+            }
+            for (const c of oldChapters) {
+              await chaptersDB.delete(c.id);
+            }
+
+            // Create new chapters in order.
+            const createdChapters: Chapter[] = [];
+            for (const [index, ch] of action.chapters.entries()) {
+              const created = await chaptersDB.create({
+                projectId,
+                title: ch.title,
+                order: ch.order ?? index,
+              });
+              createdChapters.push(created);
+            }
+
+            // Create new beats assigned to the corresponding new chapter.
+            const createdBeats: Beat[] = [];
+            for (const b of action.beats) {
+              const chapterId = createdChapters[b.chapterIndex]?.id;
+              const created = await beatsDB.create({
+                projectId,
+                chapterId,
+                kind: b.kind,
+                title: b.title,
+                description: b.description,
+                notes: b.notes,
+                characters: [],
+                position: b.position,
+                status: b.status ?? 'draft',
+                source: 'ai',
+              });
+              createdBeats.push(created);
+            }
+
+            await loadProjectData(projectId);
+
+            undos.push(async () => {
+              // Delete new outline.
+              for (const b of createdBeats) {
+                await beatsDB.delete(b.id);
+              }
+              for (const c of createdChapters) {
+                await chaptersDB.delete(c.id);
+              }
+              // Restore previous chapters and beats preserving original ids.
+              for (const c of oldChapters) {
+                await chaptersDB.put(c);
+              }
+              for (const b of oldBeats) {
+                await beatsDB.put(b);
+              }
+              // Restore scene chapter assignments.
+              for (const [sceneId, chapterId] of sceneChapterMap.entries()) {
+                await scenesDB.update(sceneId, { chapterId });
+              }
+              await loadProjectData(projectId);
+            });
+            break;
+          }
         }
       }
 

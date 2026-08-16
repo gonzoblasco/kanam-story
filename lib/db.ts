@@ -266,6 +266,12 @@ export const chaptersDB = {
     await db.put('chapters', updated);
     return updated;
   },
+  /** Put a chapter with a specific id (used to restore snapshots during undo). */
+  async put(chapter: Chapter): Promise<Chapter> {
+    const db = await getDB();
+    await db.put('chapters', { ...chapter, updatedAt: now() });
+    return chapter;
+  },
   async delete(id: string): Promise<void> {
     const db = await getDB();
     const tx = db.transaction(['chapters', 'scenes', 'beats'], 'readwrite');
@@ -660,6 +666,12 @@ export const beatsDB = {
     const updated: Beat = { ...existing, ...data, updatedAt: now() };
     await db.put('beats', updated);
     return updated;
+  },
+  /** Put a beat with a specific id (used to restore snapshots during undo). */
+  async put(beat: Beat): Promise<Beat> {
+    const db = await getDB();
+    await db.put('beats', { ...beat, updatedAt: now() });
+    return beat;
   },
   async delete(id: string): Promise<void> {
     const db = await getDB();
