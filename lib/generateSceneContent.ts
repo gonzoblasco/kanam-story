@@ -53,6 +53,8 @@ Reglas:
 - Mostrar en vez de decir; usar detalle sensorial cuando sume.
 - Personajes consistentes con sus fichas.
 - Continuidad con la escena anterior (si se incluye) sin repetirla.
+- NO expliques de nuevo el setup, la premisa, los personajes ni la trama global: asumí que el lector ya leyó la escena anterior.
+- Arrancá la escena in media res cuando sea posible, directamente en la acción o tensión del beat.
 - Respondé SOLO con prosa en español, sin título, sin notas, sin meta-comentarios.
 - Extensión: entre 300 y 600 palabras.`;
 }

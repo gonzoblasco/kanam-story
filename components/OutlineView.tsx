@@ -627,6 +627,7 @@ export default function OutlineView() {
     setChapterGeneration({ running: true, done: 0, total: targetBeats.length });
     let completed = 0;
     let failed = 0;
+    const generatedScenes: Scene[] = [];
     try {
       for (let i = 0; i < targetBeats.length; i++) {
         const beat = targetBeats[i];
@@ -636,7 +637,7 @@ export default function OutlineView() {
           failed++;
           continue;
         }
-        const previousScene = scenes
+        const previousScene = [...scenes, ...generatedScenes]
           .filter((s) => s.chapterId === targetChapter.id && s.order < scene.order)
           .sort((a, b) => b.order - a.order)[0];
         try {
@@ -652,6 +653,7 @@ export default function OutlineView() {
             signal: chapterAbortRef.current.signal,
           });
           await updateScene(scene.id, { content });
+          generatedScenes.push({ ...scene, content });
           completed++;
         } catch (genErr) {
           if ((genErr as Error).name === 'AbortError') {
