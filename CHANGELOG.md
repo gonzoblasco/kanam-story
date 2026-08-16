@@ -2,6 +2,30 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.10.0] - 2026-08-16
+
+Post-v0.9.0 feature block: global outline, automatic structure generation, and chat-assisted outline redesign. Also hardens the chapter-generation flow and makes the manuscript tree state survive reloads.
+
+### Added
+- **Global outline view (U1).** `OutlineView` switches between Chapter and Global modes. Global mode shows all chapters with their beats, lets you reorder chapters, move beats between chapters, add chapters, and generate a full chapter from the outline.
+- **Automatic global outline generation (U2).** `lib/outlineGeneration.ts` asks the model for a complete chapter+beat structure, parses aliases in Spanish, and presents a preview with Apply/Discard. Replacing the existing outline is explicit and reversible.
+- **Chat-assisted global outline generation (U3).** The co-writer can propose a full outline replacement via the `replace_outline` action, shown as a structured preview in the chat. Accepting it swaps the outline in IndexedDB with full undo support.
+- **Collapsible manuscript chapters.** Chapter rows in `ProjectTree` expand/collapse via the caret or title, hiding their scenes.
+- **Persisted session state.** Last selected project, last selected scene, and collapsed chapter ids are stored in IndexedDB settings and restored on reload.
+- **Action menus in the manuscript tree.** `ActionMenu.tsx` replaces inline chapter/scene action buttons with accessible `<details>`/`<summary>` dropdowns.
+
+### Changed
+- **Removed confusing POV/tense outline filters.** The filters compared against the project's own POV/tense, so any non-matching filter hid the whole outline. Removed until a useful filtering model is designed.
+- **Refactored `OutlineView`.** Split the ~960-line component into `BeatCard`, `ChapterSection`, and `SuggestedOutlinePreview` with shared labels in `lib/outlineLabels.ts`.
+- **Wider writing area.** Removed the `max-width: 820px` constraint from `.main-content` so the editor uses the available space.
+
+### Fixed
+- **Beat-specific chapter generation.** `generateSceneContent` now receives the explicit `Beat` and builds the prompt from its title, description, and notes, so generated scenes cover their own beat instead of repeating a generic premise.
+- **Sequential scene ordering during chapter generation.** New scenes from a generated chapter now receive increasing `order` values instead of all defaulting to `0`.
+- **Stale previous-scene reference during chapter generation.** `generateChapter` accumulates generated scenes and passes the latest one as `previousScene`, so each scene sees what came before it.
+- **Hydration warning on theme attribute.** Added `suppressHydrationWarning` to the `data-bs-theme` root in `app/layout.tsx`.
+- **Keyboard accessibility of tree rows.** Chapter titles are real `<button>` elements; scene items have `role="button"`, `tabIndex={0}`, and Enter/Space handlers.
+
 ## [0.9.0] - 2026-08-15
 
 Accessible navigation redesign (Phase 4). The story sections move from right-panel tabs to stacked sections in the main area, with accessibility integrated from the design (WCAG), not added as a final layer. Developed with the multi-agent chain pipeline + cross-review.
