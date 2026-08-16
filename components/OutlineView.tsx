@@ -418,6 +418,7 @@ export default function OutlineView() {
           const content = await generateSceneContent({
             project: currentProject,
             scene,
+            beat,
             chapter,
             previousScene,
             characters,
