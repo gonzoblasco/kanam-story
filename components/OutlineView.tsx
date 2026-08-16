@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '@/lib/store';
 import { moveBeatInList } from '@/lib/outline';
 import { planGenerateScene } from '@/lib/sceneFromBeat';
+import { generateSceneContent } from '@/lib/generateSceneContent';
 import { POV_LABELS, TENSE_LABELS } from '@/lib/labels';
-import type { Beat, BeatKind, BeatStatus } from '@/types';
+import type { Beat, BeatKind, BeatStatus, Scene } from '@/types';
 
 const KIND_LABELS: Record<BeatKind, string> = {
   inciting: 'Incitante',
@@ -156,6 +157,9 @@ export default function OutlineView() {
     chapters,
     scenes,
     beats,
+    characters,
+    world,
+    settings,
     currentOutlineChapterId,
     setCurrentOutlineChapterId,
     createBeat,
@@ -164,6 +168,7 @@ export default function OutlineView() {
     suggestBeats,
     createChapter,
     createScene,
+    updateScene,
     selectScene,
     setView,
     requestEditorFocus,
@@ -183,6 +188,8 @@ export default function OutlineView() {
     done: number;
     total: number;
   } | null>(null);
+  // U4+: abort controller para cancelar la generación masiva del capítulo.
+  const chapterAbortRef = useRef<AbortController | null>(null);
 
   // Slice 10: outline filters (POV and tense).
   const [filterPov, setFilterPov] = useState<string>('all');
@@ -324,7 +331,7 @@ export default function OutlineView() {
 
   // U4: crea la escena dedicada para un beat (y el capítulo si falta).
   // Devuelve la escena creada/reutilizada, o null si falló.
-  const runGenerateScene = async (beatId: string): Promise<{ id: string; title: string; isNew: boolean } | null> => {
+  const runGenerateScene = async (beatId: string): Promise<Scene | null> => {
     const beat = beats.find((b) => b.id === beatId);
     if (!beat || !currentProject) return null;
     try {
@@ -336,7 +343,7 @@ export default function OutlineView() {
       });
 
       if (plan.existingSceneId) {
-        return { id: plan.existingSceneId, title: beat.title.trim() || 'Escena', isNew: false };
+        return scenes.find((s) => s.id === plan.existingSceneId) ?? null;
       }
 
       let chapterId = plan.scene.chapterId;
@@ -351,7 +358,7 @@ export default function OutlineView() {
       if (beat.sceneId !== scene.id) {
         await updateBeat(beat.id, { sceneId: scene.id, chapterId: chapterId! });
       }
-      return { id: scene.id, title: scene.title, isNew: true };
+      return scene;
     } catch (e) {
       announce(e instanceof Error ? e.message : 'No se pudo generar la escena.');
       return null;
@@ -365,12 +372,12 @@ export default function OutlineView() {
     if (generatingBeatId || (chapterGeneration?.running ?? false)) return;
     setGeneratingBeatId(beatId);
     try {
-      const result = await runGenerateScene(beatId);
-      if (!result) return;
-      selectScene(result.id);
+      const scene = await runGenerateScene(beatId);
+      if (!scene) return;
+      selectScene(scene.id);
       setView('editor');
       requestEditorFocus();
-      announce(`Escena "${result.title.trim() || 'Escena nueva'}" ${result.isNew ? 'generada' : 'abierta'}.`);
+      announce(`Escena "${scene.title.trim() || 'Escena nueva'}" ${scene.content ? 'abierta' : 'generada'}.`);
     } catch (e) {
       announce(e instanceof Error ? e.message : 'No se pudo generar la escena.');
     } finally {
@@ -378,8 +385,12 @@ export default function OutlineView() {
     }
   };
 
-  // U4+: genera una escena por cada beat del capítulo que aún no tenga escena.
-  // Se queda en el outline para que el usuario elija cuál abrir.
+  // U4+: genera el texto de cada escena del capítulo a partir de sus beats,
+  // manteniendo continuidad con la escena anterior. Crea las escenas si no
+  // existen y las rellena con prosa generada por IA.
+  const cancelChapterGeneration = () => {
+    chapterAbortRef.current?.abort();
+  };
   const generateChapter = async () => {
     if (!chapter || generatingBeatId || (chapterGeneration?.running ?? false)) return;
     const targets = chapterBeats.filter((b) => !b.sceneId);
@@ -387,27 +398,53 @@ export default function OutlineView() {
       announce('Todas las escenas del capítulo ya están generadas.');
       return;
     }
+    chapterAbortRef.current = new AbortController();
     setChapterGeneration({ running: true, done: 0, total: targets.length });
     let completed = 0;
     let failed = 0;
     try {
-      for (const beat of targets) {
+      for (let i = 0; i < targets.length; i++) {
+        const beat = targets[i];
         setChapterGeneration((prev) => (prev ? { ...prev, done: completed } : prev));
-        const result = await runGenerateScene(beat.id);
-        if (result) {
-          completed++;
-        } else {
+        const scene = await runGenerateScene(beat.id);
+        if (!scene) {
           failed++;
+          continue;
+        }
+        const previousScene = scenes
+          .filter((s) => s.chapterId === chapter.id && s.order < scene.order)
+          .sort((a, b) => b.order - a.order)[0];
+        try {
+          const content = await generateSceneContent({
+            project: currentProject,
+            scene,
+            chapter,
+            previousScene,
+            characters,
+            world,
+            settings,
+            signal: chapterAbortRef.current.signal,
+          });
+          await updateScene(scene.id, { content });
+          completed++;
+        } catch (genErr) {
+          if ((genErr as Error).name === 'AbortError') {
+            announce('Generación del capítulo cancelada.');
+            return;
+          }
+          failed++;
+          announce(genErr instanceof Error ? genErr.message : 'No se pudo generar una escena.');
         }
       }
       if (failed === 0) {
-        announce(`Capítulo generado: ${completed} ${completed === 1 ? 'escena creada' : 'escenas creadas'}.`);
+        announce(`Capítulo generado: ${completed} ${completed === 1 ? 'escena escrita' : 'escenas escritas'}.`);
       } else {
-        announce(`Capítulo generado parcialmente: ${completed} escenas creadas, ${failed} fallos.`);
+        announce(`Capítulo generado parcialmente: ${completed} escenas escritas, ${failed} fallos.`);
       }
     } catch (e) {
       announce(e instanceof Error ? e.message : 'No se pudo generar el capítulo.');
     } finally {
+      chapterAbortRef.current = null;
       setChapterGeneration(null);
     }
   };
@@ -459,24 +496,25 @@ export default function OutlineView() {
           {suggesting ? 'Sugiriendo…' : 'Sugerir outline'}
         </button>
         {/* U4+: genera todas las escenas del capítulo a partir de sus beats. */}
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={generateChapter}
-          disabled={chapterGeneration?.running ?? false}
-          aria-label="Generar todas las escenas del capítulo"
-        >
-          {chapterGeneration?.running ? (
-            <>
-              <span className="spinner-inline me-1" aria-hidden="true" />
-              {chapterGeneration.done}/{chapterGeneration.total}
-            </>
-          ) : (
-            <>
-              <i className="bi bi-magic me-1" aria-hidden="true" />
-              Generar capítulo
-            </>
-          )}
-        </button>
+        {chapterGeneration?.running ? (
+          <button
+            className="btn btn-sm btn-outline-danger"
+            onClick={cancelChapterGeneration}
+            aria-label="Cancelar generación del capítulo"
+          >
+            <span className="spinner-inline me-1" aria-hidden="true" />
+            {chapterGeneration.done}/{chapterGeneration.total} · Cancelar
+          </button>
+        ) : (
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={generateChapter}
+            aria-label="Generar todas las escenas del capítulo"
+          >
+            <i className="bi bi-magic me-1" aria-hidden="true" />
+            Generar capítulo
+          </button>
+        )}
       </div>
 
       {/* Slice 10: outline filters */}
