@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" data-bs-theme="dark">
+    <html lang="es">
       <head>
         {/* Apply the persisted theme before first paint to avoid a flash of the
             wrong theme on reload. The store mirrors the choice to localStorage
