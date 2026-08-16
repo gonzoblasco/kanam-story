@@ -2,6 +2,11 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.10.2] - 2026-08-16
+
+### Fixed
+- **CI lint errors after v0.10.1.** Removed synchronous `setState` calls inside `useEffect` in `OutlineView` and `ProjectTree`, fixed missing `useCallback` dependencies in `store.tsx`, and cleaned up unused variables flagged by ESLint. All 316 tests pass and `npm run lint`, `npx biome check .`, TypeScript, and `npm run build` are green.
+
 ## [0.10.1] - 2026-08-16
 
 ### Fixed
