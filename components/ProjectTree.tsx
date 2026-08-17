@@ -11,6 +11,7 @@ export default function ProjectTree() {
     projects,
     currentProject,
     selectProject,
+    deleteProject,
     createChapter,
     createScene,
     updateChapter,
@@ -75,6 +76,20 @@ export default function ProjectTree() {
           >
             <i className="bi bi-folder2" />
             <span className="text-truncate">{p.name}</span>
+            <div className="actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={`Eliminar proyecto ${p.name}`}
+                aria-label={`Eliminar proyecto ${p.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeProject(p);
+                }}
+              >
+                <i className="bi bi-trash" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -137,6 +152,12 @@ export default function ProjectTree() {
     }
   }
 
+  function removeProject(p: { id: string; name: string }) {
+    if (window.confirm(`¿Eliminar el proyecto "${p.name}" y TODO su contenido? Esta acción no se puede deshacer.`)) {
+      void deleteProject(p.id);
+    }
+  }
+
   function renameScene(id: string, title: string) {
     const next = window.prompt('Título de la escena', title);
     if (next && next !== title) updateScene(id, { title: next });
@@ -183,6 +204,20 @@ export default function ProjectTree() {
           >
             <i className="bi bi-folder2-open" />
             <span className="text-truncate">{p.name}</span>
+            <div className="actions">
+              <button
+                type="button"
+                className="icon-btn"
+                title={`Eliminar proyecto ${p.name}`}
+                aria-label={`Eliminar proyecto ${p.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeProject(p);
+                }}
+              >
+                <i className="bi bi-trash" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         ))}
       </div>

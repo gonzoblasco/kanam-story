@@ -102,6 +102,7 @@ interface MockApp {
   projects: Project[];
   currentProject: Project | null;
   selectProject: () => void;
+  deleteProject: () => Promise<void>;
   createChapter: () => Promise<unknown>;
   createScene: (data: Omit<Scene, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Scene>;
   updateChapter: () => Promise<void>;
@@ -126,6 +127,7 @@ const mockApp: MockApp = {
   projects: [mockProject],
   currentProject: mockProject,
   selectProject: vi.fn(),
+  deleteProject: vi.fn(async () => {}),
   createChapter: vi.fn(async () => ({})),
   createScene,
   updateChapter,
@@ -256,6 +258,17 @@ describe('ProjectTree', () => {
     expect(deleteScene).toHaveBeenCalledWith('s2');
     expect(selectScene).not.toHaveBeenCalled();
 
+    confirmSpy.mockRestore();
+  });
+
+  it('elimina un proyecto tras confirmar', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<ProjectTree />);
+
+    await user.click(screen.getByTitle('Eliminar proyecto Proyecto'));
+
+    expect(mockApp.deleteProject).toHaveBeenCalledWith('p1');
     confirmSpy.mockRestore();
   });
 });

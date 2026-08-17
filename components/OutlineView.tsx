@@ -224,7 +224,13 @@ export default function OutlineView() {
       });
 
       if (plan.existingSceneId) {
-        return scenes.find((s) => s.id === plan.existingSceneId) ?? null;
+        const existing = scenes.find((s) => s.id === plan.existingSceneId);
+        // Si el beat no estaba vinculado a la escena (caso: capítulo con una sola
+        // escena), vincularlo ahora para que clicks repetidos reutilicen la misma.
+        if (existing && beat.sceneId !== existing.id) {
+          await updateBeat(beat.id, { sceneId: existing.id, chapterId: existing.chapterId });
+        }
+        return existing ?? null;
       }
 
       let chapterId = plan.scene.chapterId;

@@ -2,6 +2,17 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.14.0] - 2026-08-17
+
+### Fixed
+- **Generating a scene no longer creates a duplicate when the chapter has one scene.** If a beat has no linked scene but its chapter has exactly one scene, "generate scene" now writes that scene and links the beat to it, instead of creating a second scene. (Regression: starting a story, chapter 1 / scene 1, then "generate scene" produced a "scene 2".)
+
+### Added
+- **Delete project.** Projects can now be deleted from the sidebar (trash icon on each project row) with a confirmation dialog. The project and all its content (chapters, scenes, beats, characters, world, bible, conversations, messages, snapshots) are removed in a DB cascade, and if the deleted project was active, the app clears to the empty state and forgets it as the last-selected project.
+
+### Tests
+- 341 tests passing (added single-scene reuse and project deletion coverage).
+
 ## [0.13.1] - 2026-08-17
 
 ### Fixed

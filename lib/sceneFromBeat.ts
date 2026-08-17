@@ -67,6 +67,15 @@ export function planGenerateScene(input: {
     ? chapters.find((c) => c.id === beat.chapterId)
     : undefined;
 
+  // Si el beat no está vinculado a una escena pero el capítulo tiene EXACTAMENTE
+  // una escena, asumimos que el beat pertenece a ella: generar sobre esa escena
+  // en lugar de crear una nueva (fix: "generar la escena" creaba una segunda).
+  const chapterScenes = existingChapter
+    ? scenes.filter((s) => s.chapterId === existingChapter.id)
+    : [];
+  const singleChapterSceneId = !existingSceneId && chapterScenes.length === 1 ? chapterScenes[0].id : null;
+  const resolvedSceneId = existingSceneId ?? singleChapterSceneId;
+
   let createChapter: ChapterInput | null = null;
   let chapterId: string | null;
   let sceneOrder: number;
@@ -86,7 +95,7 @@ export function planGenerateScene(input: {
 
   return {
     beatId: beat.id,
-    existingSceneId,
+    existingSceneId: resolvedSceneId,
     createChapter,
     scene: {
       projectId,

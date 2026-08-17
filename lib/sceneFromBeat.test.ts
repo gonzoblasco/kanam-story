@@ -92,12 +92,34 @@ describe('planGenerateScene', () => {
     expect(plan.createChapter).toBeNull();
   });
 
-  it('no marca escena existente cuando el beat no tiene sceneId', () => {
+  it('no marca escena existente cuando el beat no tiene sceneId y el capítulo tiene varias escenas', () => {
     const scenes: Scene[] = [
       { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'A', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+      { id: 's2', projectId: 'p1', chapterId: 'ch1', title: 'B', content: '', summary: '', order: 1, createdAt: 0, updatedAt: 0 },
     ];
     const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes });
     expect(plan.existingSceneId).toBeNull();
+  });
+
+  it('reutiliza la única escena del capítulo cuando el beat no tiene sceneId', () => {
+    // Fix: "generar la escena" sobre un capítulo con una sola escena debe
+    // escribir ESA escena, no crear una segunda.
+    const scenes: Scene[] = [
+      { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'Escena 1', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+    ];
+    const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes });
+    expect(plan.existingSceneId).toBe('s1');
+    expect(plan.createChapter).toBeNull();
+  });
+
+  it('crea una escena nueva cuando el capítulo tiene varias escenas y el beat no está vinculado', () => {
+    const scenes: Scene[] = [
+      { id: 's1', projectId: 'p1', chapterId: 'ch1', title: 'A', content: '', summary: '', order: 0, createdAt: 0, updatedAt: 0 },
+      { id: 's2', projectId: 'p1', chapterId: 'ch1', title: 'B', content: '', summary: '', order: 1, createdAt: 0, updatedAt: 0 },
+    ];
+    const plan = planGenerateScene({ beat: makeBeat(), projectId: 'p1', chapters, scenes });
+    expect(plan.existingSceneId).toBeNull();
+    expect(plan.scene.order).toBe(2);
   });
 
   it('devuelve null en existingSceneId si la escena del beat ya no existe', () => {

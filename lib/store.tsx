@@ -107,6 +107,8 @@ interface AppState {
   setCurrentOutlineChapterId: (id: string | null) => void;
   refreshProjects: () => Promise<void>;
   selectProject: (id: string | null) => Promise<void>;
+  /** Borra un proyecto y todo su contenido (cascada) desde la DB. */
+  deleteProject: (id: string) => Promise<void>;
   createProject: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
   /** U5: crea un proyecto y opcionalmente su estructura inicial (capítulos/beats + biblia). */
   createProjectWithStructure: (
@@ -343,6 +345,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     [loadProjectData, settings.lastSceneId],
+  );
+
+  const deleteProject = useCallback(
+    async (id: string) => {
+      await projectsDB.delete(id);
+      // Si borramos el proyecto activo, limpiar el estado.
+      if (currentProject?.id === id) {
+        await selectProject(null);
+      } else {
+        const updated = await projectsDB.list();
+        setProjects(updated);
+      }
+      // Si el proyecto borrado era el último seleccionado, olvidarlo.
+      if (settings.lastProjectId === id) {
+        await settingsDB.update({ lastProjectId: undefined });
+      }
+    },
+    [currentProject, settings.lastProjectId, selectProject],
   );
 
   useEffect(() => {
@@ -1567,6 +1587,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentChapterId,
     refreshProjects,
     selectProject,
+    deleteProject,
     createProject,
     createProjectWithStructure,
     updateProject,
