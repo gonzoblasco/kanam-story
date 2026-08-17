@@ -1,6 +1,5 @@
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
 import type { Content } from 'pdfmake/interfaces';
-import { characterTypeLabel } from '@/lib/labels';
 
 /**
  * Converts editor HTML to plain text, preserving paragraph and list
@@ -44,7 +43,7 @@ export interface ExportSources {
  * scenes. Used for the MD export and as the base for DOCX/PDF.
  */
 export function buildManuscriptMarkdown(sources: ExportSources): string {
-  const { project, chapters, scenes, characters, world, beats } = sources;
+  const { project, chapters, scenes } = sources;
   const parts: string[] = [];
 
   parts.push(`# ${project.name}`);
@@ -54,20 +53,6 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
     if (meta) parts.push(`\n*${meta}*`);
   }
 
-  if (characters.length > 0) {
-    parts.push('\n## Personajes');
-    for (const c of characters) {
-      parts.push(`- **${c.name}**${c.type ? ` (${characterTypeLabel(c.type)})` : ''}${c.personality ? ` — ${c.personality}` : ''}`);
-    }
-  }
-
-  if (world.length > 0) {
-    parts.push('\n## Mundo');
-    for (const w of world) {
-      parts.push(`- **${w.name}**: ${w.description}`);
-    }
-  }
-
   const byChapter = new Map<string, Scene[]>();
   for (const s of scenes) {
     const arr = byChapter.get(s.chapterId) ?? [];
@@ -75,23 +60,19 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
     byChapter.set(s.chapterId, arr);
   }
 
-  for (const ch of [...chapters].sort((a, b) => a.order - b.order)) {
+  const sortedChapters = [...chapters].sort((a, b) => a.order - b.order);
+  for (const ch of sortedChapters) {
     parts.push(`\n## ${ch.title}`);
-    const chapterBeats = beats
-      .filter((b) => b.chapterId === ch.id && !b.sceneId)
-      .sort((a, b) => a.position - b.position);
-    if (chapterBeats.length > 0) {
-      parts.push('');
-      for (const b of chapterBeats) {
-        parts.push(`- **${b.title}**${b.description ? `: ${b.description}` : ''}`);
-      }
-    }
     const scs = (byChapter.get(ch.id) ?? []).sort((a, b) => a.order - b.order);
-    for (const s of scs) {
+    for (let i = 0; i < scs.length; i++) {
+      const s = scs[i];
       parts.push(`\n### ${s.title}`);
       if (s.summary) parts.push(`\n*${s.summary}*`);
       const text = stripHtml(s.content);
       if (text) parts.push(`\n${text}`);
+      // Separador visual entre escenas (no al final del manuscrito).
+      const isLast = ch === sortedChapters[sortedChapters.length - 1] && i === scs.length - 1;
+      if (!isLast) parts.push('\n---');
     }
   }
 
@@ -190,9 +171,16 @@ export function markdownToPdfmakeContent(md: string): Content[] {
     const h1 = line.match(/^# (.+)$/);
     const h2 = line.match(/^## (.+)$/);
     const h3 = line.match(/^### (.+)$/);
+    const hr = /^-{3,}$/.test(line.trim());
     const li = line.match(/^[-*] (.+)$/);
     const quote = line.match(/^> (.+)$/);
-    if (h1) {
+    if (hr) {
+      flushList();
+      content.push({
+        canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.8, lineColor: '#888888' }],
+        margin: [0, 8, 0, 8],
+      });
+    } else if (h1) {
       flushList();
       content.push({ text: h1[1], style: 'h1', margin: [0, 12, 0, 6] });
     } else if (h2) {
@@ -256,10 +244,16 @@ export async function exportManuscriptDocx(sources: ExportSources, filename: str
     const h1 = line.match(/^# (.+)$/);
     const h2 = line.match(/^## (.+)$/);
     const h3 = line.match(/^### (.+)$/);
+    const hr = /^-{3,}$/.test(line.trim());
     const li = line.match(/^[-*] (.+)$/);
     const quote = line.match(/^> (.+)$/);
     const bold = line.match(/^\*\*(.+)\*\*$/);
-    if (h1) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(h1[1])] }));
+    if (hr) {
+      // Separador de escena: puntos centrados (convención editorial).
+      paragraphs.push(
+        new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 160, after: 160 }, children: [new TextRun('· · ·')] }),
+      );
+    } else if (h1) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(h1[1])] }));
     else if (h2) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(h2[1])] }));
     else if (h3) paragraphs.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(h3[1])] }));
     else if (li) paragraphs.push(new Paragraph({ children: inlineToDocxRuns(li[1]), bullet: { level: 0 } }));

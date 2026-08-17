@@ -72,12 +72,13 @@ describe('buildManuscriptMarkdown', () => {
     expect(md).toContain('Un corazón que se pasa de portador.');
   });
 
-  it('lists characters and world', () => {
+  it('emite solo la historia, sin personajes ni mundo', () => {
     const md = buildManuscriptMarkdown({ project, chapters: [], scenes: [], characters: [character], world: [world], beats: [] });
-    expect(md).toContain('## Personajes');
-    expect(md).toContain('**Santiago** (Protagonista) — terco');
-    expect(md).toContain('## Mundo');
-    expect(md).toContain('**Club**: salón con olor a naftalina');
+    expect(md).toContain('# Último Turno');
+    expect(md).not.toContain('## Personajes');
+    expect(md).not.toContain('Santiago');
+    expect(md).not.toContain('## Mundo');
+    expect(md).not.toContain('naftalina');
   });
 
   it('groups scenes under chapters in order and strips HTML', () => {
@@ -89,9 +90,10 @@ describe('buildManuscriptMarkdown', () => {
     expect(md).not.toContain('<p>');
   });
 
-  it('includes chapter-level beats in the outline', () => {
+  it('no incluye beats de capítulo en el manuscrito (solo la historia)', () => {
     const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [], characters: [], world: [], beats: [beat] });
-    expect(md).toContain('- **La invitación**: recibe una carta');
+    expect(md).not.toContain('- **La invitación**');
+    expect(md).not.toContain('recibe una carta');
   });
 
   it('preserves paragraph breaks in scene content', () => {
@@ -101,6 +103,13 @@ describe('buildManuscriptMarkdown', () => {
     };
     const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [multiScene], characters: [], world: [], beats: [] });
     expect(md).toContain('Santiago abrió el bolso.\n\nAdentro había una carta.');
+  });
+
+  it('inserta un separador entre escenas', () => {
+    const scene2: Scene = { ...scene, id: 's2', title: 'La llegada' };
+    const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [scene, scene2], characters: [], world: [], beats: [] });
+    // Hay un separador '---' entre las dos escenas.
+    expect(md.match(/---/g)?.length).toBeGreaterThanOrEqual(1);
   });
 });
 

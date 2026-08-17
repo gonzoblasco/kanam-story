@@ -2,6 +2,15 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.15.2] - 2026-08-17
+
+### Changed
+- **Export includes only the story.** The manuscript export (PDF/DOCX/MD) no longer prepends the characters and world entities sections; it presents just the narrative (title, chapters, scenes). Chapter-level beats (outline structure) are also excluded from the export.
+- **Scene separators in exports.** A `---` horizontal rule (rendered as a horizontal line in PDF and centered `· · ·` in DOCX) now separates consecutive scenes, so the manuscript doesn't run scenes together.
+
+### Tests
+- 354 tests passing (updated export expectations + scene separator coverage).
+
 ## [0.15.1] - 2026-08-17
 
 ### Fixed
