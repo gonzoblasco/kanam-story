@@ -61,6 +61,23 @@ function normalizeActionKinds(actions: unknown[]): ContentAction[] {
         return beat;
       });
     }
+    if (action.type === 'update_outline' && Array.isArray(action.addBeats)) {
+      action.addBeats = action.addBeats.map((ab) => {
+        if (typeof ab !== 'object' || ab === null) return ab;
+        const entry = ab as Record<string, unknown>;
+        const beat = entry.beat as Record<string, unknown> | undefined;
+        if (beat && typeof beat.kind === 'string') {
+          beat.kind = normalizeKind(beat.kind);
+        }
+        return ab;
+      });
+      const changes = (action.updateBeat as Record<string, unknown> | undefined)?.changes as
+        | Record<string, unknown>
+        | undefined;
+      if (changes && typeof changes.kind === 'string') {
+        changes.kind = normalizeKind(changes.kind);
+      }
+    }
     if ((action.type === 'add_beat' || action.type === 'update_beat') && typeof action.beat === 'object' && action.beat !== null) {
       const beat = action.beat as Record<string, unknown>;
       if (typeof beat.kind === 'string') {
@@ -167,6 +184,60 @@ export function isValidAction(action: unknown): action is ContentAction {
         if (typeof beat.position !== 'number') return false;
       }
       return true;
+    }
+    case 'update_outline': {
+      // Requiere al menos una operación válida. Las operaciones son opcionales,
+      // pero el objeto debe existir y tener alguna forma reconocible.
+      if (a.renameChapter !== undefined) {
+        const rc = a.renameChapter as Record<string, unknown>;
+        if (typeof rc.chapterId !== 'string' || typeof rc.title !== 'string') return false;
+      }
+      if (a.deleteChapter !== undefined) {
+        const dc = a.deleteChapter as Record<string, unknown>;
+        if (typeof dc.chapterId !== 'string') return false;
+      }
+      if (a.deleteBeat !== undefined) {
+        const db = a.deleteBeat as Record<string, unknown>;
+        if (typeof db.beatId !== 'string') return false;
+      }
+      if (a.moveBeatToChapter !== undefined) {
+        const mb = a.moveBeatToChapter as Record<string, unknown>;
+        if (typeof mb.beatId !== 'string' || typeof mb.targetChapterId !== 'string') return false;
+      }
+      if (a.updateBeat !== undefined) {
+        const ub = a.updateBeat as Record<string, unknown>;
+        if (typeof ub.beatId !== 'string' || typeof ub.changes !== 'object' || ub.changes === null) {
+          return false;
+        }
+        const changes = ub.changes as Record<string, unknown>;
+        if (
+          changes.kind !== undefined &&
+          typeof changes.kind === 'string' &&
+          !(BEAT_KINDS as string[]).includes(normalizeKind(changes.kind))
+        ) {
+          return false;
+        }
+      }
+      if (a.addBeats !== undefined) {
+        if (!Array.isArray(a.addBeats)) return false;
+        for (const entry of a.addBeats) {
+          const ab = entry as Record<string, unknown>;
+          const beat = ab.beat as Record<string, unknown> | undefined;
+          if (!beat || typeof beat.title !== 'string' || beat.title.length === 0) return false;
+          if (typeof beat.kind !== 'string' || !(BEAT_KINDS as string[]).includes(normalizeKind(beat.kind))) {
+            return false;
+          }
+        }
+      }
+      // Debe haber al menos una operación presente para considerarse válida.
+      const hasAny =
+        a.renameChapter !== undefined ||
+        a.deleteChapter !== undefined ||
+        a.deleteBeat !== undefined ||
+        a.moveBeatToChapter !== undefined ||
+        a.updateBeat !== undefined ||
+        (Array.isArray(a.addBeats) && a.addBeats.length > 0);
+      return hasAny;
     }
     default:
       return false;

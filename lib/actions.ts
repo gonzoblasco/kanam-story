@@ -208,6 +208,109 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
       };
     }
 
+    case 'update_outline': {
+      const oldChapters = [...state.chapters];
+      const oldBeats = [...state.beats];
+      const projectId =
+        state.chapters[0]?.projectId ??
+        state.beats[0]?.projectId ??
+        state.scenes[0]?.projectId ??
+        '';
+      let next: StoryState = state;
+
+      // Renombrar capítulo
+      if (action.renameChapter) {
+        next = {
+          ...next,
+          chapters: next.chapters.map((c) =>
+            c.id === action.renameChapter!.chapterId
+              ? { ...c, title: action.renameChapter!.title, updatedAt: now() }
+              : c,
+          ),
+        };
+      }
+
+      // Borrar capítulo (sus escenas quedan huérfanas, sus beats se borran)
+      if (action.deleteChapter) {
+        next = {
+          ...next,
+          chapters: next.chapters.filter((c) => c.id !== action.deleteChapter!.chapterId),
+          beats: next.beats.filter((b) => b.chapterId !== action.deleteChapter!.chapterId),
+          scenes: next.scenes.map((s) =>
+            s.chapterId === action.deleteChapter!.chapterId ? { ...s, chapterId: '' } : s,
+          ),
+        };
+      }
+
+      // Agregar beats
+      if (action.addBeats && action.addBeats.length > 0) {
+        const added: Beat[] = action.addBeats.map((ab, i) => {
+          // Si el beat va a una escena, derivar su capítulo de la escena.
+          let chapterId = ab.chapterId;
+          if (!chapterId && ab.sceneId) {
+            chapterId = next.scenes.find((s) => s.id === ab.sceneId)?.chapterId;
+          }
+          const position =
+            ab.beat.position ??
+            next.beats.filter((b) =>
+              ab.sceneId
+                ? b.sceneId === ab.sceneId
+                : b.chapterId === chapterId && !b.sceneId,
+            ).length +
+              i;
+          return {
+            id: crypto.randomUUID(),
+            projectId,
+            chapterId,
+            sceneId: ab.sceneId,
+            kind: ab.beat.kind,
+            title: ab.beat.title,
+            description: ab.beat.description,
+            notes: ab.beat.notes,
+            characters: ab.beat.characters ?? [],
+            position,
+            status: ab.beat.status ?? 'draft',
+            source: 'ai',
+            createdAt: now(),
+            updatedAt: now(),
+          };
+        });
+        next = { ...next, beats: [...next.beats, ...added] };
+      }
+
+      // Borrar beat
+      if (action.deleteBeat) {
+        next = { ...next, beats: next.beats.filter((b) => b.id !== action.deleteBeat!.beatId) };
+      }
+
+      // Mover beat a otro capítulo
+      if (action.moveBeatToChapter) {
+        const { beatId, targetChapterId } = action.moveBeatToChapter;
+        next = {
+          ...next,
+          beats: next.beats.map((b) =>
+            b.id === beatId ? { ...b, chapterId: targetChapterId, sceneId: undefined, updatedAt: now() } : b,
+          ),
+        };
+      }
+
+      // Actualizar beat
+      if (action.updateBeat) {
+        const { beatId, changes } = action.updateBeat;
+        next = {
+          ...next,
+          beats: next.beats.map((b) =>
+            b.id === beatId ? { ...b, ...changes, updatedAt: now() } : b,
+          ),
+        };
+      }
+
+      return {
+        next,
+        undo: (s) => ({ ...s, chapters: oldChapters, beats: oldBeats, scenes: state.scenes }),
+      };
+    }
+
     default:
       return { next: state, undo: (s) => s };
   }

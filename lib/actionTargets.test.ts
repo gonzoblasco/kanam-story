@@ -12,6 +12,16 @@ describe('getActionTarget', () => {
     expect(target.view).toBe('outline');
     expect(target.label).toBe('Outline');
   });
+
+  it('update_outline apunta al outline', () => {
+    const target = getActionTarget({
+      type: 'update_outline',
+      summary: 'editar',
+      renameChapter: { chapterId: 'ch1', title: 'Nuevo' },
+    });
+    expect(target.view).toBe('outline');
+    expect(target.label).toBe('Outline');
+  });
 });
 
 describe('getActionsTarget', () => {

@@ -147,6 +147,36 @@ describe('isValidAction', () => {
       }),
     ).toBe(false);
   });
+  it('acepta update_outline con al menos una operación', () => {
+    expect(
+      isValidAction({
+        type: 'update_outline',
+        summary: 'renombrar',
+        renameChapter: { chapterId: 'ch1', title: 'Nuevo' },
+      }),
+    ).toBe(true);
+  });
+  it('rechaza update_outline sin operaciones', () => {
+    expect(isValidAction({ type: 'update_outline', summary: 'x' })).toBe(false);
+  });
+  it('rechaza update_outline con addBeats inválido', () => {
+    expect(
+      isValidAction({
+        type: 'update_outline',
+        summary: 'x',
+        addBeats: [{ chapterId: 'ch1', beat: { title: '', kind: 'inciting', description: '', notes: '' } }],
+      }),
+    ).toBe(false);
+  });
+  it('rechaza update_outline con moveBeatToChapter incompleto', () => {
+    expect(
+      isValidAction({
+        type: 'update_outline',
+        summary: 'x',
+        moveBeatToChapter: { beatId: 'b1' } as unknown as { beatId: string; targetChapterId: string },
+      }),
+    ).toBe(false);
+  });
   it('normaliza alias en español para kind (ascenso -> rising)', () => {
     const parsed = parseAgentReply(
       JSON.stringify({

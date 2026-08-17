@@ -1420,6 +1420,94 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
             break;
           }
+          case 'update_outline': {
+            const projectId = currentProject.id;
+            const oldChapters = [...chapters];
+            const oldBeats = [...beats];
+            const projectScenes = await scenesDB.listByProject(projectId);
+            const sceneChapterMap = new Map(projectScenes.map((s) => [s.id, s.chapterId]));
+
+            // Renombrar capítulo
+            if (action.renameChapter) {
+              const ch = chapters.find((c) => c.id === action.renameChapter!.chapterId);
+              if (ch) await chaptersDB.update(ch.id, { title: action.renameChapter.title });
+            }
+
+            // Borrar capítulo: sus escenas quedan huérfanas, sus beats se borran
+            if (action.deleteChapter) {
+              const delId = action.deleteChapter.chapterId;
+              for (const b of beats.filter((x) => x.chapterId === delId)) {
+                await beatsDB.delete(b.id);
+              }
+              for (const s of projectScenes.filter((x) => x.chapterId === delId)) {
+                await scenesDB.update(s.id, { chapterId: '' });
+              }
+              await chaptersDB.delete(delId);
+            }
+
+            // Agregar beats
+            if (action.addBeats && action.addBeats.length > 0) {
+              for (const ab of action.addBeats) {
+                let chapterId = ab.chapterId;
+                if (!chapterId && ab.sceneId) {
+                  chapterId = projectScenes.find((s) => s.id === ab.sceneId)?.chapterId;
+                }
+                const position =
+                  ab.beat.position ??
+                  beats.filter((b) =>
+                    ab.sceneId
+                      ? b.sceneId === ab.sceneId
+                      : b.chapterId === chapterId && !b.sceneId,
+                  ).length;
+                await beatsDB.create({
+                  projectId,
+                  chapterId,
+                  sceneId: ab.sceneId,
+                  kind: ab.beat.kind,
+                  title: ab.beat.title,
+                  description: ab.beat.description,
+                  notes: ab.beat.notes,
+                  characters: ab.beat.characters ?? [],
+                  position,
+                  status: ab.beat.status ?? 'draft',
+                  source: 'ai',
+                });
+              }
+            }
+
+            // Borrar beat
+            if (action.deleteBeat) {
+              await beatsDB.delete(action.deleteBeat.beatId);
+            }
+
+            // Mover beat a otro capítulo
+            if (action.moveBeatToChapter) {
+              const { beatId, targetChapterId } = action.moveBeatToChapter;
+              await beatsDB.update(beatId, { chapterId: targetChapterId, sceneId: undefined });
+            }
+
+            // Actualizar beat
+            if (action.updateBeat) {
+              await beatsDB.update(action.updateBeat.beatId, action.updateBeat.changes);
+            }
+
+            await loadProjectData(projectId);
+
+            undos.push(async () => {
+              // Restore chapters, beats and scene assignments preserving ids.
+              for (const c of oldChapters) {
+                await chaptersDB.put(c);
+              }
+              for (const b of oldBeats) {
+                await beatsDB.put(b);
+              }
+              for (const [sceneId, chapterId] of sceneChapterMap.entries()) {
+                await scenesDB.update(sceneId, { chapterId });
+              }
+              await loadProjectData(projectId);
+            });
+            break;
+          }
         }
       }
 

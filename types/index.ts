@@ -225,6 +225,29 @@ export type ContentAction =
         position: number;
         status?: BeatStatus;
       }[];
+    }
+  | {
+      type: 'update_outline';
+      summary: string;
+      /** Operaciones parciales; solo se aplican las presentes. */
+      renameChapter?: { chapterId: string; title: string };
+      deleteChapter?: { chapterId: string };
+      addBeats?: {
+        chapterId?: string;
+        sceneId?: string;
+        beat: {
+          title: string;
+          kind: BeatKind;
+          description: string;
+          notes: string;
+          characters?: string[];
+          status?: BeatStatus;
+          position?: number;
+        };
+      }[];
+      deleteBeat?: { beatId: string };
+      moveBeatToChapter?: { beatId: string; targetChapterId: string };
+      updateBeat?: { beatId: string; changes: Partial<Beat> };
     };
 
 export interface Message {

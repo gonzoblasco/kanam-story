@@ -35,6 +35,9 @@ export function getActionTarget(action: ContentAction): ActionTarget {
     case 'append_scene':
       return { view: 'editor', label: 'Editor' };
     case 'replace_outline':
+    case 'update_outline':
+      return { view: 'outline', label: 'Outline' };
+    default:
       return { view: 'outline', label: 'Outline' };
   }
 }

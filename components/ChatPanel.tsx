@@ -240,6 +240,8 @@ export default function ChatPanel() {
         const beatCount = a.beats.length;
         return `Reemplazar outline global (${chapterCount} capítulo${chapterCount > 1 ? 's' : ''}, ${beatCount} beat${beatCount > 1 ? 's' : ''})`;
       }
+      case 'update_outline':
+        return `Editar outline: ${a.summary || 'cambios parciales'}`;
     }
   }
 

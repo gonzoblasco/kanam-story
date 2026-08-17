@@ -2,6 +2,15 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.12.0] - 2026-08-16
+
+### Added
+- **`update_outline` partial action (U5).** The co-writer can now make targeted edits to the outline without replacing it wholesale. Supported operations: rename a chapter, delete a chapter (its scenes become orphans, its beats are removed), add beats to a chapter or scene, delete a beat, move a beat to another chapter, and update a beat's fields. Applied to IndexedDB with full undo that restores chapters, beats, and scene-chapter assignments.
+- **Validation and prompt support for `update_outline`.** `isValidAction` requires at least one operation and validates each present operation; `normalizeActionKinds` normalizes beat kinds inside `addBeats`/`updateBeat`; the agent prompt documents the partial-edit action and when to prefer it over `replace_outline`.
+
+### Tests
+- 330 tests passing (9 new: pure-state apply/undo, validation edge cases, action-target routing).
+
 ## [0.11.2] - 2026-08-16
 
 ### Fixed

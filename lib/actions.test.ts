@@ -272,6 +272,93 @@ describe('applyAction', () => {
     });
     expect(next).toBe(state);
   });
+
+  it('update_outline renombra un capítulo y revierte', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'update_outline',
+      summary: 'renombrar',
+      renameChapter: { chapterId: 'ch1', title: 'Capítulo nuevo' },
+    });
+    expect(next.chapters[0].title).toBe('Capítulo nuevo');
+    const reverted = undo(next);
+    expect(reverted.chapters[0].title).toBe('Capítulo 1');
+  });
+
+  it('update_outline borra un capítulo y deja sus escenas huérfanas', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'update_outline',
+      summary: 'borrar capítulo',
+      deleteChapter: { chapterId: 'ch1' },
+    });
+    expect(next.chapters).toHaveLength(0);
+    expect(next.beats).toHaveLength(0); // los beats del capítulo se borran
+    expect(next.scenes[0].chapterId).toBe(''); // la escena queda huérfana
+    const reverted = undo(next);
+    expect(reverted.chapters).toHaveLength(1);
+    expect(reverted.chapters[0].id).toBe('ch1');
+    expect(reverted.scenes[0].chapterId).toBe('ch1');
+    expect(reverted.beats).toHaveLength(1);
+  });
+
+  it('update_outline agrega beats a un capítulo', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'update_outline',
+      summary: 'agregar beat',
+      addBeats: [
+        {
+          chapterId: 'ch1',
+          beat: {
+            title: 'Beat nuevo',
+            kind: 'rising',
+            description: 'tensión',
+            notes: '',
+          },
+        },
+      ],
+    });
+    expect(next.beats).toHaveLength(2);
+    const added = next.beats.find((b) => b.title === 'Beat nuevo')!;
+    expect(added.chapterId).toBe('ch1');
+    expect(added.kind).toBe('rising');
+    const reverted = undo(next);
+    expect(reverted.beats).toHaveLength(1);
+  });
+
+  it('update_outline mueve un beat a otro capítulo y actualiza sus campos', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+        { id: 'ch2', projectId: 'p1', title: 'Capítulo 2', order: 1, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'update_outline',
+      summary: 'mover y editar',
+      moveBeatToChapter: { beatId: 'b1', targetChapterId: 'ch2' },
+      updateBeat: { beatId: 'b1', changes: { title: 'Beat editado' } },
+    });
+    expect(next.beats[0].chapterId).toBe('ch2');
+    expect(next.beats[0].sceneId).toBeUndefined();
+    expect(next.beats[0].title).toBe('Beat editado');
+    const reverted = undo(next);
+    expect(reverted.beats[0].chapterId).toBe('ch1');
+    expect(reverted.beats[0].title).toBe('La invitación');
+  });
 });
 
 describe('applyActions', () => {
