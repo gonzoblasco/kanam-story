@@ -2,6 +2,16 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.13.0] - 2026-08-16
+
+### Added
+- **Co-writer sidebar from the writing view.** A new expandable/collapsible sidebar (overlay that slides from the right) lets you chat with the agent directly from the editor, without switching views. It reuses the full `ChatPanel` (agent with hands: `rewrite_scene`, `update_bible`, `add_beat`, `update_character`, etc.) with accept/undo. The open/closed state persists in settings.
+- **Scene-scoped agent context.** The sidebar runs the agent in a `'scene'` scope: it sees only the active scene (full text) + bible + characters + world + outline of the current chapter. It can edit the current scene but not other scenes, matching the "no modifica otras escenas" requirement. Implemented as a pure `buildSceneContext` helper and tested.
+- **Accessibility.** The sidebar is an `aside` with `aria-label`, the toggle button exposes `aria-expanded`/`aria-controls`, focus moves to the close button on open, and Escape closes it.
+
+### Tests
+- 337 tests passing (added scene-context and sidebar behavior coverage).
+
 ## [0.12.1] - 2026-08-16
 
 ### Added

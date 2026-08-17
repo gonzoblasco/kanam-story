@@ -474,6 +474,7 @@ const DEFAULT_SETTINGS: Settings = {
   sidebarCollapsed: false,
   rightPanelCollapsed: false,
   collapsedChapterIds: [],
+  cowriterOpen: false,
 };
 
 export const BIBLE_SECTION_DEFAULTS: Array<{

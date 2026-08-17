@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildSceneContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
 
 const project: Project = {
@@ -145,6 +145,25 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('ESCENA ACTIVA');
     // La escena activa se incluye completa: el texto largo no se trunca con '…'.
     expect(ctx).toContain('Renzo miró el tablero. Renzo miró el tablero.');
+  });
+
+  it('buildSceneContext limita a la escena activa, su capítulo y sus beats', () => {
+    const otherChapter: Chapter = { id: 'ch2', projectId: 'p1', title: 'Capítulo 2', order: 1, createdAt: 0, updatedAt: 0 };
+    const otherScene: Scene = { ...scene, id: 's-otra', chapterId: 'ch2', title: 'Otra escena' };
+    const otherBeat: Beat = { ...beat, id: 'b-otro', chapterId: 'ch2', title: 'Otro beat' };
+    const scoped = buildSceneContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [chapter, otherChapter],
+      scenes: [scene, otherScene],
+      beats: [beat, otherBeat],
+      storyBible: bible,
+      activeSceneId: 's1',
+    });
+    expect(scoped.scenes.map((s) => s.id)).toEqual(['s1']);
+    expect(scoped.chapters.map((c) => c.id)).toEqual(['ch1']);
+    expect(scoped.beats.map((b) => b.id)).toEqual(['b1']);
   });
 
   it('limpia HTML del manuscrito', () => {

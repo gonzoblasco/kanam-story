@@ -13,6 +13,24 @@ export interface AgentSources {
   activeSceneId?: string;
 }
 
+/**
+ * Construye un contexto ACOTADO a la escena activa: incluye la escena actual
+ * (completa), su capítulo, los beats de ese capítulo, y toda la biblia,
+ * personajes y mundo. Excluye las demás escenas para que el agente solo pueda
+ * editar la escena en la que el autor está trabajando.
+ */
+export function buildSceneContext(sources: AgentSources): AgentSources {
+  const active = sources.scenes.find((s) => s.id === sources.activeSceneId);
+  if (!active) return sources;
+  const chapterId = active.chapterId;
+  return {
+    ...sources,
+    scenes: [active],
+    chapters: chapterId ? sources.chapters.filter((c) => c.id === chapterId) : [],
+    beats: chapterId ? sources.beats.filter((b) => b.chapterId === chapterId) : [],
+  };
+}
+
 function stripHtml(html: string): string {
   return (html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }

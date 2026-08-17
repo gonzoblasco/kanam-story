@@ -76,6 +76,7 @@ a {
 }
 
 .app-shell {
+  position: relative;
   display: grid;
   grid-template-columns: 280px 1fr;
   grid-template-rows: 56px 1fr;
@@ -84,6 +85,44 @@ a {
     'sidebar main';
   height: 100vh;
   overflow: hidden;
+}
+
+/* Sidebar de co-writer: overlay que se desliza desde la derecha sobre el main.
+   No comprime el área de escritura. Se controla con .cowriter-open. */
+.cowriter-overlay {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  max-width: 92vw;
+  background: var(--sl-surface);
+  border-left: 1px solid var(--sl-border);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  visibility: hidden;
+}
+.cowriter-overlay.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+.cowriter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--sl-border);
+  flex-shrink: 0;
+}
+.cowriter-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell.sidebar-collapsed {

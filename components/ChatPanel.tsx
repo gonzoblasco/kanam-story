@@ -2,14 +2,24 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '@/lib/store';
-import { buildAgentContext, buildAgentPrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildSceneContext, buildAgentPrompt } from '@/lib/agentPrompts';
 import { parseAgentReply, filterValidActions } from '@/lib/agentReply';
 import { ollamaChatStream } from '@/lib/ollama';
 import { getActionsTarget } from '@/lib/actionTargets';
 import OutlineProposal from '@/components/OutlineProposal';
 import type { ContentAction } from '@/types';
 
-export default function ChatPanel() {
+interface ChatPanelProps {
+  /**
+   * 'full' (default): el agente ve todo el manuscrito + biblia + personajes +
+   * mundo + outline, y puede editar cualquier escena.
+   * 'scene': el agente ve SOLO la escena activa + biblia + personajes + mundo +
+   * outline del capítulo actual. Puede editar la escena actual, no las demás.
+   */
+  contextScope?: 'full' | 'scene';
+}
+
+export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
   const {
     currentProject,
     conversations,
@@ -97,16 +107,29 @@ export default function ChatPanel() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const context = buildAgentContext({
-      project: currentProject,
-      characters,
-      world,
-      chapters,
-      scenes,
-      beats,
-      storyBible,
-      activeSceneId: currentSceneId ?? undefined,
-    });
+    const context = buildAgentContext(
+      contextScope === 'scene' && currentSceneId
+        ? buildSceneContext({
+            project: currentProject,
+            characters,
+            world,
+            chapters,
+            scenes,
+            beats,
+            storyBible,
+            activeSceneId: currentSceneId,
+          })
+        : {
+            project: currentProject,
+            characters,
+            world,
+            chapters,
+            scenes,
+            beats,
+            storyBible,
+            activeSceneId: currentSceneId ?? undefined,
+          },
+    );
     const prompt = buildAgentPrompt(context, text);
 
     // Conversation history (last 10 messages)

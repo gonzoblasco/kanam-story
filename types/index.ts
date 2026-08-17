@@ -183,6 +183,8 @@ export interface Settings {
   lastSceneId?: string;
   /** Chapter ids that should stay collapsed in the manuscript tree. */
   collapsedChapterIds?: string[];
+  /** Whether the co-writer sidebar is open from the writing view. */
+  cowriterOpen?: boolean;
 }
 
 export type AICommand = 'write' | 'describe' | 'rewrite' | 'brainstorm';

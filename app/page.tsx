@@ -13,6 +13,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SearchPanel from '@/components/SearchPanel';
 import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 import ChapterReader from '@/components/ChapterReader';
+import CoWriterSidebar from '@/components/CoWriterSidebar';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
@@ -74,6 +75,17 @@ export default function HomePage() {
           >
             <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
             {view === 'outline' ? 'Editor' : 'Outline'}
+          </button>
+          <button
+            className={`btn btn-sm ${settings.cowriterOpen ? 'btn-primary' : 'btn-outline-primary'}`}
+            title="Abrir/cerrar el co-writer de la escena actual"
+            onClick={() => setSettings({ cowriterOpen: !settings.cowriterOpen })}
+            aria-expanded={!!settings.cowriterOpen}
+            aria-controls="cowriter-sidebar"
+            aria-label="Abrir o cerrar el co-writer de la escena actual"
+          >
+            <i className="bi bi-chat-dots me-1" />
+            Co-writer
           </button>
           <button
             ref={newProjectTriggerRef}
@@ -141,6 +153,10 @@ export default function HomePage() {
       {showVersionHistory ? (
         <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} />
       ) : null}
+      <CoWriterSidebar
+        open={!!settings.cowriterOpen}
+        onClose={() => setSettings({ cowriterOpen: false })}
+      />
     </div>
   );
 }
