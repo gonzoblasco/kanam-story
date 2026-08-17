@@ -4,6 +4,9 @@ All notable changes to Kanam Story are documented here. The format follows [Keep
 
 ## [Unreleased]
 
+### Fixed
+- **Co-writer context audit fixes (2026-08-17).** The editor (`buildContext`) now receives the same enriched context as the chat (`buildAgentContext`): character/world IDs, the `inContext` filter for characters, the narrative compass, and the active scene's continuity notes. Previously the editor had a poorer context (no IDs, no character `inContext` filter, no compass, no continuity notes), which could make the agent drift from the promise or break coherence when generating text.
+
 ### Added
 - **Welcome screen (onboarding).** When no project exists, the main area shows a welcome screen explaining what Kanam Story is (co-writer, outline & beats, living bible, narrative compass) with a clear "Create your first project" button, instead of an empty editor.
 

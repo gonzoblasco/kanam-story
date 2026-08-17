@@ -261,7 +261,11 @@ export default function Editor() {
 
   function buildContextNow() {
     if (!currentProject) return '';
-    return buildContext(currentProject, characters, world);
+    // Auditoría 2026-08-17: el editor ahora recibe el mismo contexto enriquecido
+    // que el chat (IDs, inContext, brújula) + las notas de continuidad de la escena activa.
+    return buildContext(currentProject, characters, world, {
+      continuityNotes: scene?.continuityNotes,
+    });
   }
 
   async function runAI(kind: 'write' | 'describe' | 'rewrite' | 'expand' | 'dialogue' | 'tension') {

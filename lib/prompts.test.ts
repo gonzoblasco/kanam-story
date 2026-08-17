@@ -109,10 +109,10 @@ describe('buildContext', () => {
     ];
     const ctx = buildContext(baseProject, characters, []);
     expect(ctx).toContain('Personajes:');
-    expect(ctx).toContain('- Mara (Protagonista)');
+    expect(ctx).toContain('- Mara (id: c1) (Protagonista)');
     expect(ctx).toContain('Personalidad: fría, observadora');
     expect(ctx).toContain('Objetivos: encontrar a su hermana');
-    expect(ctx).toContain('- Iván');
+    expect(ctx).toContain('- Iván (id: c2)');
     expect(ctx).not.toContain('  Personalidad: \n');
   });
 
@@ -123,8 +123,8 @@ describe('buildContext', () => {
     ];
     const ctx = buildContext(baseProject, [], world);
     expect(ctx).toContain('Mundo:');
-    expect(ctx).toContain('- El faro [Lugar]: Torre abandonada');
-    expect(ctx).toContain('- La marea negra [Lore]:');
+    expect(ctx).toContain('- El faro (id: w1) [Lugar]: Torre abandonada');
+    expect(ctx).toContain('- La marea negra (id: w2) [Lore]:');
   });
 
   it('excluye entidades de mundo con inContext false', () => {
@@ -135,6 +135,43 @@ describe('buildContext', () => {
     const ctx = buildContext(baseProject, [], world);
     expect(ctx).toContain('Visible');
     expect(ctx).not.toContain('Oculto');
+  });
+
+  it('excluye personajes con inContext false (auditoría 2026-08-17)', () => {
+    const characters: Character[] = [
+      { id: 'c1', projectId: 'p1', name: 'Visible', type: 'protagonist', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', createdAt: 0, updatedAt: 0 },
+      { id: 'c2', projectId: 'p1', name: 'Oculto', type: 'supporting', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', inContext: false, createdAt: 0, updatedAt: 0 },
+    ];
+    const ctx = buildContext(baseProject, characters, []);
+    expect(ctx).toContain('Visible');
+    expect(ctx).not.toContain('Oculto');
+  });
+
+  it('incluye la brújula narrativa (auditoría 2026-08-17)', () => {
+    const project = {
+      ...baseProject,
+      premise: 'Una vigilante del faro contra su pasado',
+      promise: 'Promesa de redención',
+      theme: 'El precio de la verdad',
+      protagonist: 'c1',
+    };
+    const characters: Character[] = [
+      { id: 'c1', projectId: 'p1', name: 'Mara', type: 'protagonist', age: '', appearance: '', personality: '', voice: '', backstory: '', goals: '', createdAt: 0, updatedAt: 0 },
+    ];
+    const ctx = buildContext(project, characters, []);
+    expect(ctx).toContain('BRÚJULA NARRATIVA:');
+    expect(ctx).toContain('Premisa: Una vigilante del faro contra su pasado');
+    expect(ctx).toContain('Promesa al lector: Promesa de redención');
+    expect(ctx).toContain('Tema: El precio de la verdad');
+    expect(ctx).toContain('Protagonista: Mara');
+  });
+
+  it('incluye las notas de continuidad cuando se pasan (auditoría 2026-08-17)', () => {
+    const ctx = buildContext(baseProject, [], [], {
+      continuityNotes: 'El alfil blanco aparece por primera vez - objeto clave.',
+    });
+    expect(ctx).toContain('NOTAS DE CONTINUIDAD DE ESTA ESCENA');
+    expect(ctx).toContain('El alfil blanco aparece por primera vez');
   });
 });
 

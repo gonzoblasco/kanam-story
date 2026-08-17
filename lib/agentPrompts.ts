@@ -91,7 +91,7 @@ export function buildAgentContext(sources: AgentSources): string {
     for (const c of characters) {
       // Characters excluded from context (inContext === false) are skipped.
       if (c.inContext === false) continue;
-      parts.push(`- ${c.name}${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
+      parts.push(`- ${c.name} (id: ${c.id})${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
       if (c.pronouns) parts.push(`  Pronombres: ${c.pronouns}`);
       if (c.otherNames && c.otherNames.length > 0) parts.push(`  Otros nombres: ${c.otherNames.join(', ')}`);
       if (c.groups && c.groups.length > 0) parts.push(`  Grupos: ${c.groups.join(', ')}`);
@@ -108,7 +108,7 @@ export function buildAgentContext(sources: AgentSources): string {
     for (const w of world) {
       // Entities excluded from context (inContext === false) are skipped.
       if (w.inContext === false) continue;
-      parts.push(`- ${w.name} [${worldKindLabel(w.kind)}]: ${w.description}`);
+      parts.push(`- ${w.name} (id: ${w.id}) [${worldKindLabel(w.kind)}]: ${w.description}`);
       if (w.otherNames && w.otherNames.length > 0) parts.push(`  Otros nombres: ${w.otherNames.join(', ')}`);
       if (w.traits && w.traits.length > 0) parts.push(`  Rasgos: ${w.traits.join(', ')}`);
     }

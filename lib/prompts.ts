@@ -2,7 +2,12 @@ import type { Project, Character, WorldEntity, Scene, Chapter, StoryBible } from
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { povLabel, styleText, characterTypeLabel, worldKindLabel, tenseLabel } from '@/lib/labels';
 
-export function buildContext(project: Project, characters: Character[], world: WorldEntity[]): string {
+export function buildContext(
+  project: Project,
+  characters: Character[],
+  world: WorldEntity[],
+  opts?: { continuityNotes?: string },
+): string {
   const parts: string[] = [];
   parts.push(`Título: ${project.name}`);
   if (project.genre) parts.push(`Género: ${project.genre}`);
@@ -16,10 +21,24 @@ export function buildContext(project: Project, characters: Character[], world: W
   if (synopsis) parts.push(`Sinopsis: ${synopsis}`);
   if (project.braindump) parts.push(`\nBRAINDUMP (ideas del autor, contexto de bajo peso):\n${project.braindump}`);
 
+  // Brújula Narrativa: orientación que el agente debe respetar (auditoría 2026-08-17).
+  if (project.premise || project.promise || project.theme || project.protagonist) {
+    parts.push('\nBRÚJULA NARRATIVA:');
+    if (project.premise) parts.push(`Premisa: ${project.premise}`);
+    if (project.promise) parts.push(`Promesa al lector: ${project.promise}`);
+    if (project.theme) parts.push(`Tema: ${project.theme}`);
+    if (project.protagonist) {
+      const proto = characters.find((c) => c.id === project.protagonist);
+      parts.push(`Protagonista: ${proto?.name ?? project.protagonist}`);
+    }
+  }
+
   if (characters.length > 0) {
     parts.push('\nPersonajes:');
     for (const c of characters) {
-      parts.push(`- ${c.name}${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
+      // Characters excluded from context (inContext === false) are skipped (auditoría 2026-08-17).
+      if (c.inContext === false) continue;
+      parts.push(`- ${c.name} (id: ${c.id})${c.type ? ` (${characterTypeLabel(c.type)})` : ''}`);
       if (c.personality) parts.push(`  Personalidad: ${c.personality}`);
       if (c.voice) parts.push(`  Voz / forma de hablar: ${c.voice}`);
       if (c.goals) parts.push(`  Objetivos: ${c.goals}`);
@@ -30,8 +49,13 @@ export function buildContext(project: Project, characters: Character[], world: W
     parts.push('\nMundo:');
     for (const w of world) {
       if (w.inContext === false) continue;
-      parts.push(`- ${w.name} [${worldKindLabel(w.kind)}]: ${w.description}`);
+      parts.push(`- ${w.name} (id: ${w.id}) [${worldKindLabel(w.kind)}]: ${w.description}`);
     }
+  }
+
+  // Notas de continuidad de la escena activa (auditoría 2026-08-17).
+  if (opts?.continuityNotes?.trim()) {
+    parts.push(`\nNOTAS DE CONTINUIDAD DE ESTA ESCENA (respetalas y mantenelas coherentes):\n${opts.continuityNotes.trim()}`);
   }
 
   return parts.join('\n');
