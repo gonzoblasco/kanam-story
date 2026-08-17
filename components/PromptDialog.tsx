@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 /**
  * Diálogo de entrada de texto accesible (reemplaza window.prompt).
@@ -35,14 +35,11 @@ export default function PromptDialog({
   onCancel: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(initialValue);
-  const titleId = useRef(`prompt-title-${Math.random().toString(36).slice(2, 8)}`).current;
-  const inputId = useRef(`prompt-input-${Math.random().toString(36).slice(2, 8)}`).current;
-
-  // Sincronizar el valor cuando se abre con un initialValue nuevo.
-  useEffect(() => {
-    if (show) setValue(initialValue);
-  }, [show, initialValue]);
+  const titleId = useId();
+  const inputId = useId();
+  // Valor derivado del initialValue cuando el diálogo está visible.
+  // Se resetea al abrir para reflejar el valor pasado por el caller.
+  const value = show ? initialValue : '';
 
   // Foco en el input al abrir; restaurar al cerrar.
   useEffect(() => {
@@ -70,7 +67,9 @@ export default function PromptDialog({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    onConfirm(value);
+    const formData = new FormData(e.currentTarget);
+    const next = String(formData.get('prompt-value') || '');
+    onConfirm(next);
   }
 
   return (
@@ -99,10 +98,10 @@ export default function PromptDialog({
                 <input
                   ref={inputRef}
                   id={inputId}
+                  name="prompt-value"
                   className="form-control"
-                  value={value}
+                  defaultValue={value}
                   placeholder={placeholder}
-                  onChange={(e) => setValue(e.target.value)}
                 />
               </div>
               <div className="modal-footer">

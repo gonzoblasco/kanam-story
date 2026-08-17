@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 /**
  * Diálogo de confirmación accesible (reemplaza window.confirm).
@@ -32,7 +32,7 @@ export default function ConfirmDialog({
   onCancel: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const titleId = useRef(`confirm-title-${Math.random().toString(36).slice(2, 8)}`).current;
+  const titleId = useId();
 
   // Foco al confirmar al abrir; restaurar al cerrar.
   useEffect(() => {
