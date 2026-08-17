@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import NewProjectModal from '@/components/NewProjectModal';
 import SettingsModal from '@/components/SettingsModal';
@@ -22,6 +22,18 @@ export default function HomePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  // Drawer del sidebar en mobile (≤768px). En desktop no tiene efecto visual.
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Cerrar el drawer mobile con Escape (a11y).
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileSidebarOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileSidebarOpen]);
 
   if (!ready) {
     return (
@@ -52,7 +64,9 @@ export default function HomePage() {
         <button
           className="icon-btn"
           title="Mostrar/ocultar sidebar"
-          onClick={() => setSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
+          aria-expanded={mobileSidebarOpen}
+          aria-controls="app-sidebar"
+          onClick={() => setMobileSidebarOpen((v) => !v)}
         >
           <i className="bi bi-list" />
         </button>
@@ -74,7 +88,7 @@ export default function HomePage() {
             disabled={view === 'chapter-reader'}
           >
             <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
-            {view === 'outline' ? 'Editor' : 'Outline'}
+            <span className="btn-label">{view === 'outline' ? 'Editor' : 'Outline'}</span>
           </button>
           <button
             className={`btn btn-sm ${settings.cowriterOpen ? 'btn-primary' : 'btn-outline-primary'}`}
@@ -85,7 +99,7 @@ export default function HomePage() {
             aria-label="Abrir o cerrar el co-writer de la escena actual"
           >
             <i className="bi bi-chat-dots me-1" />
-            Co-writer
+            <span className="btn-label">Co-writer</span>
           </button>
           <button
             ref={newProjectTriggerRef}
@@ -93,7 +107,7 @@ export default function HomePage() {
             onClick={() => setShowNewProject(true)}
           >
             <i className="bi bi-plus-lg me-1" />
-            Nuevo proyecto
+            <span className="btn-label">Nuevo proyecto</span>
           </button>
           <button
             className="btn btn-sm btn-outline-secondary"
@@ -101,7 +115,7 @@ export default function HomePage() {
             onClick={() => setShowSearch(true)}
           >
             <i className="bi bi-search me-1" />
-            Buscar
+            <span className="btn-label">Buscar</span>
           </button>
           <button
             className="btn btn-sm btn-outline-secondary"
@@ -109,7 +123,7 @@ export default function HomePage() {
             onClick={() => setShowVersionHistory(true)}
           >
             <i className="bi bi-clock-history me-1" />
-            Versiones
+            <span className="btn-label">Versiones</span>
           </button>
           <ExportMenu />
           <button
@@ -123,9 +137,16 @@ export default function HomePage() {
         </div>
       </header>
 
-      <aside className="sidebar">
+      <aside id="app-sidebar" className={`sidebar ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
         <ProjectTree />
       </aside>
+      {mobileSidebarOpen ? (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      ) : null}
 
       <main id="contenido-principal" className="main">
         {view === 'outline' ? (
