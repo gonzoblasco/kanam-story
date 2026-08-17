@@ -1,8 +1,8 @@
 # Kanam Story
 
-> **Status:** `0.16.0` — chat-assisted global outline + automatic structure generation + orphan scene panel + accessible consistent buttons + partial outline edits (update_outline) + beats from the author's manuscript via chat + co-writer sidebar from the writing view + project management (delete) + enrich character/world profiles + story-only exports with scene separators + per-scene continuity notes. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
+> **Status:** `0.17.0` — specialized co-writer roles (Plot Doctor, Consistency Checker), PWA, mobile responsive, accessible dialogs, export polish, welcome screen onboarding. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
 
-Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
+Local-first fiction co-writer (BYOK → Ollama / any OpenAI-compatible endpoint) in Spanish. All AI runs on your machine; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 
 > **Roadmap:** phases 0-4 done (chat with hands, outline & beats, living bible, compass, export, editable story bible, rich character sheets, typed worldbuilding, match my style, outline filters + linking, accessible navigation redesign). The project stays in the `0.x` line (pre-production) - as an open-source, non-production tool it may never reach `1.0.0`. See `.knowledge/ROADMAP.md` for the full plan.
 
@@ -17,7 +17,16 @@ Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your 
 ## Requirements
 
 - Node.js ≥ 20
-- Ollama running at `http://localhost:11434` with at least one chat model installed. Tested on this machine: `qwen3:14b`, `qwen3.6:latest`, `gemma4:latest`. For fiction quality `qwen3:14b` is recommended; for speed, `gemma4:latest`.
+- A running LLM endpoint. By default Kanam Story talks to **Ollama** at `http://localhost:11434` with at least one chat model installed. Tested on this machine: `qwen3:14b`, `qwen3.6:latest`, `gemma4:latest`. For fiction quality `qwen3:14b` is recommended; for speed, `gemma4:latest`.
+
+## Bring Your Own Key (BYOK)
+
+Kanam Story is **local-first and BYOK**: you bring your own LLM, nothing leaves your machine. The AI endpoint is fully configurable from **Settings** (gear icon in the top bar):
+
+- **Ollama (default).** Point the URL at your local Ollama (`http://localhost:11434`) and pick an installed model. The app auto-detects the first installed model at boot.
+- **Any OpenAI-compatible endpoint.** The app talks to the Ollama chat API, which is OpenAI-compatible. You can point it at any server that exposes the same interface (a remote Ollama, a self-hosted OpenAI-compatible gateway, etc.) by changing the URL in Settings.
+
+> **Privacy:** because everything runs locally, your manuscript and your prompts never leave your machine. This is the core value of the open-source edition.
 
 ## Scripts
 
@@ -143,16 +152,14 @@ Key conventions (summary):
 ## Testing
 
 - Runner: **Vitest 4** (`vitest@^4.1.9`).
-- Current coverage: **282 tests** on pure functions and components.
+- Current coverage: **379 tests** on pure functions and components.
   - Pure logic: `prompts`, `bibleParse`, `bibleExtract`, `bibleSync`, `agentReply`, `agentPrompts`, `actions`, `ollamaStream`, `export`, `labels`, `outline`, `sceneFromBeat`, `actionTargets`, `projectTemplates`, `snapshots`, `search`, `db` (fake-indexeddb).
-  - Components (jsdom + `@testing-library/react`): `StoryBiblePanel`, `CharactersPanel`, `WorldPanel`, `StorySections` (accordion, scrollspy, section focus), `ChatPanel` (sticky input, live region, contextual insertion), `StarterPicker` (radio group).
+  - Components (jsdom + `@testing-library/react`): `StoryBiblePanel`, `CharactersPanel`, `WorldPanel`, `StorySections` (accordion, scrollspy, section focus), `ChatPanel` (sticky input, live region, contextual insertion), `StarterPicker` (radio group), `WelcomeScreen` (onboarding).
 - Run: `npm test`.
 
 ## Known / TODO (not in the current release)
 
-- **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user.
-- **Mobile / responsive.** The layout is optimized for desktop with the chapter sidebar + stacked sections. On mobile the grid does not adapt well.
-- **Manual AT validation.** The live region of the chat and the onboarding radio group need final validation with VoiceOver/NVDA (the green tests do not cover the timing of the announcement).
+- **Multi-user / sync.** No login, no cross-device sync. Strictly local and single-user. (Planned: an optional cloud-sync layer for a future SaaS edition.)
 
 ## Decisions already made (not easily reverted)
 
