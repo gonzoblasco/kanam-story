@@ -147,12 +147,20 @@ El agente SHALL excluir de su contexto los personajes/entidades con `inContext: 
 
 ## Notas de auditoría (2026-08-17)
 
-Este spec documenta el comportamiento **intencionado** del co-writer. Sirve como contrato para
-auditar si el comportamiento real coincide con la intención. Puntos a verificar:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/co-writer-2026-08-17.md`.
 
-- [ ] ¿El contexto del agente incluye SIEMPRE los IDs de escenas/personajes/entidades?
-- [ ] ¿El modelo de aceptación se respeta en TODAS las acciones?
-- [ ] ¿Las acciones destructivas solo se proponen cuando el autor lo pide?
-- [ ] ¿La navegación contextual lleva a la sección correcta para cada acción?
-- [ ] ¿El streaming se aborta correctamente y el contenido parcial se revierte?
-- [ ] ¿El filtro inContext se aplica en TODOS los prompts (chat + editor)?
+**Hallazgos (4):**
+- 🔴 **ALTO:** el contexto del chat NO incluye IDs de personajes/mundo (solo escenas/beats). El modelo adivina IDs → acciones `update_character`/`delete_character`/`update_world`/`delete_world` pueden fallar.
+- 🟠 **MEDIO:** el filtro `inContext` es inconsistente - personajes excluidos en el chat pero NO en el editor.
+- 🟠 **MEDIO:** la brújula NO se incluye en el editor (solo en el chat).
+- 🟠 **MEDIO:** las notas de continuidad NO se incluyen en el editor (solo en el chat).
+
+**Causa raíz:** `buildContext` (editor) es una versión empobrecida de `buildAgentContext` (chat).
+
+**Pendiente de verificar:**
+- [ ] ¿El contexto del agente incluye SIEMPRE los IDs de escenas/personajes/entidades? (❌ personajes/mundo NO)
+- [ ] ¿El modelo de aceptación se respeta en TODAS las acciones? (✅ chat; el editor aplica directo - aclarar en spec)
+- [ ] ¿Las acciones destructivas solo se proponen cuando el autor lo pide? (✅ prompt lo indica)
+- [ ] ¿La navegación contextual lleva a la sección correcta para cada acción? (✅ `actionTargets.ts`)
+- [ ] ¿El streaming se aborta correctamente y el contenido parcial se revierte? (✅ chat + editor)
+- [ ] ¿El filtro inContext se aplica en TODOS los prompts (chat + editor)? (❌ personajes en editor NO)
