@@ -42,8 +42,8 @@ import {
   buildStoryBiblePrompt,
   buildBibleSectionPrompt,
 } from '@/lib/prompts';
-import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
-import { parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
+import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildEnrichCharacterPrompt, buildEnrichWorldPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
+import { parseBeatList, parseSuggestedCharacterList, parseEnrichedCharacter, parseEnrichedWorld, parseStyleProfile } from '@/lib/agentReply';
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 import { buildCharacterSyncPlan, buildWorldSyncPlan } from '@/lib/bibleSync';
 import { shouldSnapshot, buildSnapshot } from '@/lib/snapshots';
@@ -137,6 +137,10 @@ interface AppState {
   deleteCharacter: (id: string) => Promise<void>;
   /** Asks the agent to propose one or more characters (Slice 7). */
   generateCharacter: (type?: string, instructions?: string) => Promise<Partial<Character>[]>;
+  /** Enriches an existing character's profile with depth, respecting the world. */
+  enrichCharacter: (id: string) => Promise<void>;
+  /** Enriches an existing world entity with depth, respecting the world. */
+  enrichWorld: (id: string) => Promise<void>;
   /** Extracts a style profile from a sample of the author's writing (Slice 9). */
   analyzeStyle: (sample: string) => Promise<StyleProfile | null>;
 
@@ -937,6 +941,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentProject, characters, world, chapters, scenes, beats, storyBible, settings.ollamaUrl, settings.ollamaModel],
   );
 
+  const enrichCharacter = useCallback(
+    async (id: string) => {
+      const character = characters.find((c) => c.id === id);
+      if (!currentProject || !character || !settings.ollamaModel) return;
+      const context = buildAgentContext({
+        project: currentProject,
+        characters,
+        world,
+        chapters,
+        scenes,
+        beats,
+        storyBible,
+      });
+      const prompt = buildEnrichCharacterPrompt(context, character);
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+      });
+      const enriched = parseEnrichedCharacter(text);
+      if (!enriched) return;
+      // Merge solo los campos que el modelo devolvió; preserva el id y source.
+      await updateCharacter(id, enriched);
+    },
+    [currentProject, characters, world, chapters, scenes, beats, storyBible, updateCharacter, settings.ollamaUrl, settings.ollamaModel],
+  );
+
+  const enrichWorld = useCallback(
+    async (id: string) => {
+      const entity = world.find((w) => w.id === id);
+      if (!currentProject || !entity || !settings.ollamaModel) return;
+      const context = buildAgentContext({
+        project: currentProject,
+        characters,
+        world,
+        chapters,
+        scenes,
+        beats,
+        storyBible,
+      });
+      const prompt = buildEnrichWorldPrompt(context, entity);
+      const text = await ollamaChat({
+        ollamaUrl: settings.ollamaUrl,
+        model: settings.ollamaModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6,
+      });
+      const enriched = parseEnrichedWorld(text);
+      if (!enriched) return;
+      await updateWorld(id, enriched);
+    },
+    [currentProject, characters, world, chapters, scenes, beats, storyBible, updateWorld, settings.ollamaUrl, settings.ollamaModel],
+  );
+
   const analyzeStyle = useCallback(
     async (sample: string): Promise<StyleProfile | null> => {
       if (!sample.trim() || !settings.ollamaModel) return null;
@@ -1604,6 +1663,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateCharacter,
     deleteCharacter,
     generateCharacter,
+    enrichCharacter,
+    enrichWorld,
     analyzeStyle,
     createWorld,
     updateWorld,

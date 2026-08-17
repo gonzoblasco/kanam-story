@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAgentContext, buildSceneContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildSceneContext, buildAgentPrompt, buildSuggestBeatsPrompt, buildGenerateCharacterPrompt, buildEnrichCharacterPrompt, buildEnrichWorldPrompt, buildStyleProfilePrompt } from '@/lib/agentPrompts';
 import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
 
 const project: Project = {
@@ -363,5 +363,28 @@ describe('buildSuggestBeatsPrompt', () => {
     expect(prompt).toContain('"description"');
     expect(prompt).toContain('"status"');
     expect(prompt).toContain('inciting');
+  });
+});
+
+describe('buildEnrichCharacterPrompt / buildEnrichWorldPrompt', () => {
+  it('incluye el perfil actual del personaje y la consigna de respetar el mundo', () => {
+    const ctx = buildAgentContext({
+      project, characters: [character], world: [world], chapters: [chapter], scenes: [scene], beats: [beat], storyBible: bible,
+    });
+    const prompt = buildEnrichCharacterPrompt(ctx, character);
+    expect(prompt).toContain('ENRIQUECER');
+    expect(prompt).toContain(character.name);
+    expect(prompt).toContain('sin contradecir lo ya establecido');
+    expect(prompt).toContain('Perfil ACTUAL');
+  });
+
+  it('incluye la descripción actual del mundo y la consigna de consistencia', () => {
+    const ctx = buildAgentContext({
+      project, characters: [character], world: [world], chapters: [chapter], scenes: [scene], beats: [beat], storyBible: bible,
+    });
+    const prompt = buildEnrichWorldPrompt(ctx, world);
+    expect(prompt).toContain('ENRIQUECER');
+    expect(prompt).toContain(world.name);
+    expect(prompt).toContain(world.description);
   });
 });

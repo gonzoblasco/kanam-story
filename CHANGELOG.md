@@ -2,6 +2,15 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.15.0] - 2026-08-17
+
+### Added
+- **Enrich character profiles.** Each character card now has an "Enriquecer" button that asks the co-writer to deepen the existing profile (personality, voice, goals, backstory, traits, etc.) while respecting the current literary world and without contradicting the bible, world, or manuscript. Implemented as `enrichCharacter` (store) + `buildEnrichCharacterPrompt` (agent prompt) + `parseEnrichedCharacter` (parser), merging the enriched fields back into the existing character.
+- **Enrich world entities.** Each world card (places, organizations, magic systems, events, items, etc.) has an "Enriquecer" button that deepens the description while respecting the world. Implemented as `enrichWorld` + `buildEnrichWorldPrompt` + `parseEnrichedWorld`.
+
+### Tests
+- 349 tests passing (added parser and prompt coverage).
+
 ## [0.14.0] - 2026-08-17
 
 ### Fixed

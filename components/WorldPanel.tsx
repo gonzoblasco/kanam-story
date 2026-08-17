@@ -94,12 +94,14 @@ export default function WorldPanel() {
     createWorld,
     updateWorld,
     deleteWorld,
+    enrichWorld,
     revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
     announce,
   } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
+  const [enriching, setEnriching] = useState<string | null>(null);
   const autoFillAttemptedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -139,6 +141,19 @@ export default function WorldPanel() {
 
   function remove(w: WorldEntity) {
     if (window.confirm(`¿Eliminar "${w.name}"?`)) deleteWorld(w.id);
+  }
+
+  async function enrich(w: WorldEntity) {
+    if (!currentProject || enriching) return;
+    setEnriching(w.id);
+    try {
+      await enrichWorld(w.id);
+      announce(`Elemento del mundo "${w.name}" enriquecido.`);
+    } catch (e) {
+      announce(e instanceof Error ? e.message : 'No se pudo enriquecer el elemento del mundo.');
+    } finally {
+      setEnriching(null);
+    }
   }
 
   return (
@@ -242,6 +257,24 @@ export default function WorldPanel() {
                     de biblia
                   </span>
                 ) : null}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void enrich(w);
+                  }}
+                  disabled={enriching === w.id || enriching !== null}
+                  title="Enriquecer la descripción con el co-writer, respetando el mundo de la obra"
+                  aria-label={`Enriquecer elemento ${w.name}`}
+                >
+                  {enriching === w.id ? (
+                    <span className="spinner-inline me-1" aria-hidden="true" />
+                  ) : (
+                    <i className="bi bi-stars me-1" aria-hidden="true" />
+                  )}
+                  Enriquecer
+                </button>
               </div>
               <div className="small mt-1 text-muted text-truncate">{w.description || 'Sin descripción'}</div>
             </div>

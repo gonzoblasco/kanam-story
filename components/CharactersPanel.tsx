@@ -94,12 +94,14 @@ export default function CharactersPanel() {
     updateCharacter,
     deleteCharacter,
     generateCharacter,
+    enrichCharacter,
     revertBibleImport,
     ensureStoryBible,
     regenerateStoryBible,
     announce,
   } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
+  const [enriching, setEnriching] = useState<string | null>(null);
   const autoFillAttemptedRef = useRef<string | null>(null);
 
   // Generate-character flow
@@ -154,6 +156,19 @@ export default function CharactersPanel() {
 
   function remove(c: Character) {
     if (window.confirm(`¿Eliminar el personaje "${c.name}"?`)) deleteCharacter(c.id);
+  }
+
+  async function enrich(c: Character) {
+    if (!currentProject || enriching) return;
+    setEnriching(c.id);
+    try {
+      await enrichCharacter(c.id);
+      announce(`Personaje "${c.name}" enriquecido.`);
+    } catch (e) {
+      announce(e instanceof Error ? e.message : 'No se pudo enriquecer el personaje.');
+    } finally {
+      setEnriching(null);
+    }
   }
 
   async function runGenerate(surprise = false) {
@@ -375,6 +390,24 @@ export default function CharactersPanel() {
                     de biblia
                   </span>
                 ) : null}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void enrich(c);
+                  }}
+                  disabled={enriching === c.id || enriching !== null}
+                  title="Enriquecer el perfil con el co-writer, respetando el mundo de la obra"
+                  aria-label={`Enriquecer personaje ${c.name}`}
+                >
+                  {enriching === c.id ? (
+                    <span className="spinner-inline me-1" aria-hidden="true" />
+                  ) : (
+                    <i className="bi bi-stars me-1" aria-hidden="true" />
+                  )}
+                  Enriquecer
+                </button>
               </div>
               <div className="meta">{c.type ? characterTypeLabel(c.type) : 'Sin tipo'}</div>
               {c.personality ? (

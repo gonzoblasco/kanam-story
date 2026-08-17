@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAgentReply, isValidAction, filterValidActions, parseBeatList, parseSuggestedCharacterList, parseStyleProfile } from '@/lib/agentReply';
+import { parseAgentReply, isValidAction, filterValidActions, parseBeatList, parseSuggestedCharacterList, parseStyleProfile, parseEnrichedCharacter, parseEnrichedWorld } from '@/lib/agentReply';
 
 describe('parseAgentReply', () => {
   it('parsea un bloque JSON limpio', () => {
@@ -358,5 +358,51 @@ Saludos.`;
   it('devuelve null si no hay JSON', () => {
     expect(parseStyleProfile('solo texto')).toBeNull();
     expect(parseStyleProfile('')).toBeNull();
+  });
+});
+
+describe('parseEnrichedCharacter', () => {
+  it('parsea un objeto de personaje enriquecido', () => {
+    const out = parseEnrichedCharacter(
+      '{"name":"Renzo","type":"protagonist","personality":"orgulloso, terco, con miedo","traits":["terco","obstinado"],"goals":"recuperar su honor"}',
+    );
+    expect(out).not.toBeNull();
+    expect(out!.name).toBe('Renzo');
+    expect(out!.personality).toContain('miedo');
+    expect(out!.traits).toContain('obstinado');
+    expect(out!.type).toBe('protagonist');
+  });
+
+  it('toleran prose alrededor del JSON', () => {
+    const out = parseEnrichedCharacter('Aquí va:\n{"name":"Ana","type":"supporting","age":"30"}');
+    expect(out?.name).toBe('Ana');
+    expect(out?.age).toBe('30');
+  });
+
+  it('devuelve null si no hay nombre', () => {
+    expect(parseEnrichedCharacter('{"type":"protagonist"}')).toBeNull();
+    expect(parseEnrichedCharacter('texto sin json')).toBeNull();
+  });
+
+  it('ignora tipos inválidos', () => {
+    const out = parseEnrichedCharacter('{"name":"X","type":"no-valido","age":"1"}');
+    expect(out?.type).toBeUndefined();
+    expect(out?.age).toBe('1');
+  });
+});
+
+describe('parseEnrichedWorld', () => {
+  it('parsea un objeto de mundo enriquecido', () => {
+    const out = parseEnrichedWorld(
+      '{"name":"Club","description":"Un salón con olor a naftalina y tableros gastados","traits":["antiguo","íntimo"]}',
+    );
+    expect(out).not.toBeNull();
+    expect(out!.description).toContain('naftalina');
+    expect(out!.traits).toEqual(['antiguo', 'íntimo']);
+  });
+
+  it('devuelve null si no hay json', () => {
+    expect(parseEnrichedWorld('')).toBeNull();
+    expect(parseEnrichedWorld('nada')).toBeNull();
   });
 });

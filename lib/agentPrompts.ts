@@ -268,6 +268,64 @@ Respondé SOLO con un array JSON de personajes, sin prosa, sin fences markdown, 
 }
 
 /**
+ * Builds the prompt for the "enrich character" flow: asks the model to deepen
+ * an EXISTING character's profile using what is already registered, coherent
+ * with the bible, world and the manuscript. It must respect the current
+ * literary world and not drift off-topic. Returns a JSON object (partial
+ * character fields to merge).
+ */
+export function buildEnrichCharacterPrompt(context: string, character: Character): string {
+  return `${context}
+
+Sos el co-writer de ficción de esta obra. El autor quiere ENRIQUECER el perfil del personaje existente "${character.name}", agregándole profundidad sin contradecir lo ya establecido ni salirse del mundo literario de la obra (biblia, personajes, mundo, lo ya escrito).
+
+Perfil ACTUAL del personaje:
+${JSON.stringify(
+  {
+    name: character.name,
+    type: character.type,
+    age: character.age,
+    appearance: character.appearance,
+    personality: character.personality,
+    voice: character.voice,
+    goals: character.goals,
+    backstory: character.backstory,
+    pronouns: character.pronouns ?? '',
+    groups: character.groups ?? [],
+    otherNames: character.otherNames ?? [],
+    traits: character.traits ?? [],
+  },
+  null,
+  2,
+)}
+
+Completá y profundizá los campos que tengan contenido o estén vacíos, manteniendo SIEMPRE consistencia con lo ya registrado y con el mundo. NO inventes giros que contradigan la biblia o el manuscrito. Podés: agregar matices a personalidad/voz, desarrollar objetivos y conflicto, ampliar historia previa, sumar rasgos/otros nombres coherentes, darle edad/apariencia si faltan.
+
+Respondé SOLO con un JSON de un único personaje (objeto, NO array) con los mismos campos que el perfil actual. Incluí TODOS los campos; lo que no cambie, devolvelo igual. Sin prosa, sin fences markdown, sin comentarios. Ejemplo:
+{"name":"Renzo","type":"protagonist","age":"58","appearance":"...","personality":"orgulloso, terco, pero con miedo a la derrota","voice":"seco, cortante","goals":"recuperar su honor, reconciliarse con su hija","backstory":"...","pronouns":"él","groups":[],"otherNames":[],"traits":["terco","orgulloso","obstinado"]}`;
+}
+
+/**
+ * Builds the prompt for the "enrich world" flow: asks the model to deepen an
+ * EXISTING world entity (place, organization, magic system, event, item, etc.)
+ * respecting the current literary world. Returns a JSON object to merge.
+ */
+export function buildEnrichWorldPrompt(context: string, entity: WorldEntity): string {
+  return `${context}
+
+Sos el co-writer de ficción de esta obra. El autor quiere ENRIQUECER el elemento del mundo "${entity.name}" (tipo: ${worldKindLabel(entity.kind)}), agregándole profundidad sin contradecir lo ya establecido ni salirse del mundo literario de la obra (biblia, personajes, mundo, lo ya escrito).
+
+Descripción ACTUAL:
+${entity.description || '(vacía)'}
+Otros nombres: ${(entity.otherNames ?? []).join(', ') || '(ninguno)'}
+Rasgos: ${(entity.traits ?? []).join(', ') || '(ninguno)'}
+
+Ampliá la descripción con detalle y profundidad (origen, función, relación con otros elementos, detalles sensoriales, implicaciones en la trama), manteniendo SIEMPRE consistencia con el mundo. NO inventes elementos que contradigan la biblia o el manuscrito.
+
+Respondé SOLO con un JSON de un único objeto con estos campos: {"name":"...","description":"...","otherNames":["..."],"traits":["..."]}. Incluí TODOS los campos; lo que no cambie, devolvelo igual. Sin prosa, sin fences markdown, sin comentarios.`;
+}
+
+/**
  * Builds the prompt for the "Match My Style" flow: asks the model to extract a
  * structured style profile from a sample of the author's writing. Returns a
  * JSON object (StyleProfile).

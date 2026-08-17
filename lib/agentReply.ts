@@ -1,4 +1,4 @@
-import type { ContentAction, BeatKind, BeatStatus, CharacterType, StyleProfile } from '@/types';
+import type { ContentAction, BeatKind, BeatStatus, CharacterType, Character, WorldEntity, StyleProfile } from '@/types';
 import { normalizeKind } from '@/lib/outlineGeneration';
 
 /**
@@ -398,6 +398,81 @@ export function parseStyleProfile(raw: string): StyleProfile | null {
         imagery: str('imagery'),
         subtext: str('subtext'),
       };
+    } catch {
+      lastBrace = text.lastIndexOf('}', lastBrace - 1);
+    }
+  }
+  return null;
+}
+
+// --- Enrich character / world (v0.15.0) ---
+
+function asStr(v: unknown, fallback = ''): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
+function asStrArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
+}
+
+/**
+ * Parses the model's "enrich character" response: a JSON object (single
+ * character) with the fields to merge into the existing character.
+ * Returns a Partial<Character> with only string/array fields we accept.
+ */
+export function parseEnrichedCharacter(raw: string): Partial<Character> | null {
+  const text = (raw ?? '').trim();
+  if (!text) return null;
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+  let lastBrace = text.lastIndexOf('}');
+  while (lastBrace > firstBrace) {
+    const candidate = text.slice(firstBrace, lastBrace + 1);
+    try {
+      const p = JSON.parse(candidate);
+      if (typeof p !== 'object' || p === null) return null;
+      const name = asStr(p.name).trim();
+      if (!name) return null;
+      const out: Partial<Character> = { name };
+      const type = asStr(p.type);
+      if ((CHARACTER_TYPES as string[]).includes(type)) out.type = type as CharacterType;
+      out.age = asStr(p.age);
+      out.appearance = asStr(p.appearance);
+      out.personality = asStr(p.personality);
+      out.voice = asStr(p.voice);
+      out.goals = asStr(p.goals);
+      out.backstory = asStr(p.backstory);
+      out.pronouns = asStr(p.pronouns);
+      out.groups = asStrArray(p.groups);
+      out.otherNames = asStrArray(p.otherNames);
+      out.traits = asStrArray(p.traits);
+      return out;
+    } catch {
+      lastBrace = text.lastIndexOf('}', lastBrace - 1);
+    }
+  }
+  return null;
+}
+
+/** Parses the model's "enrich world" response: a JSON object to merge. */
+export function parseEnrichedWorld(raw: string): Partial<WorldEntity> | null {
+  const text = (raw ?? '').trim();
+  if (!text) return null;
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+  let lastBrace = text.lastIndexOf('}');
+  while (lastBrace > firstBrace) {
+    const candidate = text.slice(firstBrace, lastBrace + 1);
+    try {
+      const p = JSON.parse(candidate);
+      if (typeof p !== 'object' || p === null) return null;
+      const name = asStr(p.name).trim();
+      if (!name) return null;
+      const out: Partial<WorldEntity> = { name };
+      out.description = asStr(p.description);
+      out.otherNames = asStrArray(p.otherNames);
+      out.traits = asStrArray(p.traits);
+      return out;
     } catch {
       lastBrace = text.lastIndexOf('}', lastBrace - 1);
     }
