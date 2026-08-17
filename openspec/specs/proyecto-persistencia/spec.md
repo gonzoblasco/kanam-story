@@ -81,10 +81,12 @@ El sistema SHALL exportar el manuscrito a Markdown, texto plano, PDF o DOCX, con
 
 ## Notas de auditoría (2026-08-17)
 
-Puntos a verificar en la auditoría de persistencia:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/proyecto-persistencia-2026-08-17.md`.
 
-- [ ] ¿El cascade delete cubre TODOS los datos dependientes (capítulos → escenas → beats → snapshots)?
-- [ ] ¿Las migraciones preservan los datos existentes (no los rompen)?
-- [ ] ¿La conversación activa se preserva al cambiar de proyecto?
-- [ ] ¿El export incluye solo la historia (no personajes/mundo)?
-- [ ] ¿El word count cuenta la prosa real (no títulos/metadata)?
+**Resultado: TODOS los requirements cumplidos. Sin hallazgos.**
+
+- ✅ CRUD + cascade (proyecto → capítulos → escenas → beats → snapshots → todo).
+- ✅ Persistencia IndexedDB + migraciones puras testeables (DB_VERSION 9).
+- ✅ Configuración (Ollama + tema sin flash).
+- ✅ Búsqueda + versionado (snapshots con dedupe).
+- ✅ Export (solo historia, portada + word count).
