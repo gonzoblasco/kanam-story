@@ -33,7 +33,9 @@ const mockApp = {
   scenes: [],
   beats: [],
   storyBible: null,
-  applyContentActions: vi.fn(async () => async () => {}),
+  applyContentActions: vi.fn<() => Promise<{ undo: () => Promise<void>; failed: string[] }>>(
+    async () => ({ undo: async () => {}, failed: [] }),
+  ),
   announce: vi.fn(),
   setView: vi.fn(),
   setActiveStorySection: vi.fn(),
@@ -177,5 +179,27 @@ describe('ChatPanel: inserción contextual (U7)', () => {
     expect(mockApp.applyContentActions).toHaveBeenCalledWith(mockReplyActions);
     expect(mockApp.setView).toHaveBeenCalledWith('outline');
     expect(mockApp.announce).toHaveBeenCalledWith('Cambios aplicados en el outline.');
+  });
+
+  it('anuncia cuando una acción no pudo aplicarse por un id inexistente', async () => {
+    mockReplyActions = [
+      { type: 'rewrite_scene', sceneId: 'no-existe', before: 'a', after: 'b', summary: 'x' },
+    ];
+    mockApp.applyContentActions.mockResolvedValueOnce({
+      undo: async () => {},
+      failed: ['escena no-existe'],
+    });
+    const user = userEvent.setup();
+    render(<ChatPanel />);
+    const input = screen.getByRole('textbox', { name: /escribí tu idea/i });
+    await user.type(input, 'Reescribí la escena');
+    await user.click(screen.getByRole('button', { name: /enviar/i }));
+
+    const accept = await screen.findByRole('button', { name: /aceptar/i });
+    await user.click(accept);
+
+    expect(mockApp.announce).toHaveBeenCalledWith(
+      'No se pudo aplicar: escena no-existe. Esos elementos ya no existen o no se encontraron.',
+    );
   });
 });

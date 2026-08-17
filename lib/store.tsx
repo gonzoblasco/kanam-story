@@ -194,7 +194,7 @@ interface AppState {
   applyGlobalOutline: (suggestions: SuggestedChapter[]) => Promise<void>;
 
   /** Applies agent actions to the real state (persists to IndexedDB) and returns an undo function. */
-  applyContentActions: (actions: ContentAction[]) => Promise<() => Promise<void>>;
+  applyContentActions: (actions: ContentAction[]) => Promise<{ undo: () => Promise<void>; failed: string[] }>;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -1246,13 +1246,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const applyContentActions = useCallback(
-    async (actions: ContentAction[]): Promise<() => Promise<void>> => {
-      if (!currentProject) return async () => {};
+    async (actions: ContentAction[]): Promise<{ undo: () => Promise<void>; failed: string[] }> => {
+      if (!currentProject) return { undo: async () => {}, failed: [] };
       // Capture previous values so we can revert each action.
       // Read each entity fresh from the DB (not from the React snapshot) so that
       // multiple actions on the same entity within one batch capture the correct
       // intermediate value as the "before" for the undo.
       const undos: Array<() => Promise<void>> = [];
+      const failed: string[] = [];
 
       for (const action of actions) {
         switch (action.type) {
@@ -1265,6 +1266,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // The manuscript changed → the manuscript-derived sections are stale.
               await markBibleStale(['summary', 'themes', 'rules']);
               undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
+            } else {
+              failed.push(`escena ${action.sceneId}`);
             }
             break;
           }
@@ -1274,6 +1277,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const prev = { ...beat };
               await updateBeat(action.beatId, action.changes);
               undos.push(() => updateBeat(action.beatId, prev));
+            } else {
+              failed.push(`beat ${action.beatId}`);
             }
             break;
           }
@@ -1297,6 +1302,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // Characters changed → the "characters" bible section is stale.
               await markBibleStale(['characters']);
               undos.push(() => clearBibleStale(['characters']));
+            } else {
+              failed.push(`personaje ${action.characterId}`);
             }
             break;
           }
@@ -1316,6 +1323,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // World changed → the "world" bible section is stale.
               await markBibleStale(['world']);
               undos.push(() => clearBibleStale(['world']));
+            } else {
+              failed.push(`entidad ${action.entityId}`);
             }
             break;
           }
@@ -1512,10 +1521,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Revert in reverse order.
-      return async () => {
-        for (let i = undos.length - 1; i >= 0; i--) {
-          await undos[i]();
-        }
+      return {
+        failed,
+        undo: async () => {
+          for (let i = undos.length - 1; i >= 0; i--) {
+            await undos[i]();
+          }
+        },
       };
     },
     [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],

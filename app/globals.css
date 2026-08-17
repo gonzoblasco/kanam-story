@@ -1025,6 +1025,13 @@ a {
   color: var(--sl-text);
 }
 
+.chat-thinking {
+  color: var(--sl-text-muted);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+}
+
 .chat-cursor {
   display: inline-block;
   width: 8px;

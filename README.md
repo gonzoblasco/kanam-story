@@ -1,6 +1,6 @@
 # Kanam Story
 
-> **Status:** `0.13.0` — chat-assisted global outline + automatic structure generation + orphan scene panel + accessible consistent buttons + partial outline edits (update_outline) + beats from the author's manuscript via chat + co-writer sidebar from the writing view. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
+> **Status:** `0.13.1` — chat-assisted global outline + automatic structure generation + orphan scene panel + accessible consistent buttons + partial outline edits (update_outline) + beats from the author's manuscript via chat + co-writer sidebar from the writing view. Local-first fiction co-writer where **the conversation is the product**: an agent you converse with that knows the manuscript, bible, outline and compass, and that **applies** changes to the content when you accept them.
 
 Local-first fiction co-writer (BYOK → Ollama) in Spanish. All AI runs on your machine via Ollama; the whole manuscript lives in IndexedDB. UI and prompts in Spanish.
 

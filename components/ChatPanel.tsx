@@ -7,6 +7,7 @@ import { parseAgentReply, filterValidActions } from '@/lib/agentReply';
 import { ollamaChatStream } from '@/lib/ollama';
 import { getActionsTarget } from '@/lib/actionTargets';
 import OutlineProposal from '@/components/OutlineProposal';
+import MarkdownView from '@/components/MarkdownView';
 import type { ContentAction } from '@/types';
 
 interface ChatPanelProps {
@@ -203,9 +204,14 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
     // (personaje → Personajes, beat → Outline, mundo → Mundo, etc.) para que el
     // usuario vea el resultado "en contexto" tras aceptar la propuesta.
     const target = getActionsTarget(pendingActions);
-    const undo = await applyContentActions(pendingActions);
+    const { undo, failed } = await applyContentActions(pendingActions);
     setLastUndo(() => undo);
     setPendingActions([]);
+    if (failed.length > 0) {
+      announce(
+        `No se pudo aplicar: ${failed.join(', ')}. Esos elementos ya no existen o no se encontraron.`,
+      );
+    }
     if (target) {
       if (target.view === 'story' && target.section) {
         setActiveStorySection(target.section);
@@ -347,7 +353,9 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
 
         {messages.map((m) => (
           <div key={m.id} className={`chat-msg chat-msg-${m.role}`}>
-            <div className="chat-msg-bubble">{m.content}</div>
+            <div className="chat-msg-bubble">
+              <MarkdownView source={m.content} />
+            </div>
             {m.actions.length > 0 ? (
               <div className="chat-actions-applied">
                 <i className="bi bi-check2-circle me-1" />
@@ -358,10 +366,19 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
           </div>
         ))}
 
+        {busy && !streamingText ? (
+          <div className="chat-msg chat-msg-assistant">
+            <div className="chat-msg-bubble chat-thinking">
+              <span className="spinner-inline me-2" aria-hidden="true" />
+              <span>Pensando…</span>
+            </div>
+          </div>
+        ) : null}
+
         {streamingText ? (
           <div className="chat-msg chat-msg-assistant">
             <div className="chat-msg-bubble">
-              {streamingText}
+              <MarkdownView source={streamingText} />
               <span className="chat-cursor" />
             </div>
           </div>

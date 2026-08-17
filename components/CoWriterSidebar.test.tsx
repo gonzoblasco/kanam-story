@@ -31,7 +31,7 @@ const mockApp = {
   beats: [],
   storyBible: null,
   currentSceneId: null,
-  applyContentActions: vi.fn(async () => async () => {}),
+  applyContentActions: vi.fn(async () => ({ undo: async () => {}, failed: [] })),
   announce: vi.fn(),
   setView: vi.fn(),
   setActiveStorySection: vi.fn(),

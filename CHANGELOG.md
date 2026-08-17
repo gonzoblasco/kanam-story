@@ -2,6 +2,16 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.13.1] - 2026-08-17
+
+### Fixed
+- **Markdown now renders in the co-writer chat.** The assistant and user messages (and the live stream) were rendered as plain text, so `*negrita*` appeared literally instead of **negrita**. They now render through `MarkdownView` (headings, bold, italic, lists, code, links).
+- **Visible feedback while the AI is thinking.** Added a "Pensando…" indicator with a spinner while the agent is working before the first stream chunk arrives, so it's clear you must wait.
+- **Feedback when a proposed action cannot be applied.** `applyContentActions` now returns `{ undo, failed }`; if a proposed action references an id that no longer exists (scene, beat, character, world entity), the chat announces which ones failed instead of silently showing "Cambios aplicados". This surfaces cases where the agent proposed an edit to an id that doesn't exist.
+
+### Tests
+- 338 tests passing (added failed-action announcement coverage).
+
 ## [0.13.0] - 2026-08-16
 
 ### Added
