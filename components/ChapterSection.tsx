@@ -102,7 +102,7 @@ export default function ChapterSection({
         onClick={() => (sceneId ? onAddBeat(chapter.id, sceneId) : onAddBeat(chapter.id))}
         aria-label={`Agregar beat a ${sceneId ? 'escena' : 'capítulo'}`}
       >
-        <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Beat
+        <i className="bi bi-plus-lg me-1" aria-hidden="true" /> Agregar beat
       </button>
     </div>
   );
@@ -126,30 +126,33 @@ export default function ChapterSection({
         {isGlobal ? (
           <>
             <button
-              className="icon-btn"
+              className="btn-icon-label"
               title="Subir capítulo"
               disabled={!canMoveUp}
               onClick={() => onMoveChapter(chapter.id, -1)}
               aria-label="Subir capítulo"
             >
               <i className="bi bi-arrow-up" aria-hidden="true" />
+              <span aria-hidden="true">Subir</span>
             </button>
             <button
-              className="icon-btn"
+              className="btn-icon-label"
               title="Bajar capítulo"
               disabled={!canMoveDown}
               onClick={() => onMoveChapter(chapter.id, 1)}
               aria-label="Bajar capítulo"
             >
               <i className="bi bi-arrow-down" aria-hidden="true" />
+              <span aria-hidden="true">Bajar</span>
             </button>
             <button
-              className="icon-btn"
+              className="btn-icon-label btn-icon-label-danger"
               title="Eliminar capítulo"
               onClick={() => onDeleteChapter(chapter.id)}
               aria-label="Eliminar capítulo"
             >
               <i className="bi bi-trash" aria-hidden="true" />
+              <span aria-hidden="true">Eliminar</span>
             </button>
             {onGenerateChapter ? (
               isGeneratingChapter ? (
@@ -198,7 +201,7 @@ export default function ChapterSection({
             <div key={s.id} className="d-flex align-items-center gap-1 mb-1">
               <span className="small flex-grow-1">{s.title}</span>
               <button
-                className="btn btn-sm btn-outline-secondary"
+                className="btn btn-sm btn-outline-primary"
                 title="Crear un beat para esta escena"
                 onClick={() => onLinkOrphan(chapter.id, s.id)}
                 aria-label={`Vincular escena "${s.title}" al outline`}

@@ -83,30 +83,33 @@ export default function BeatCard({
         </select>
         <div className="outline-beat-actions">
           <button
-            className="icon-btn"
-            title="Subir"
+            className="btn-icon-label"
+            title="Subir beat"
             disabled={!canUp}
             onClick={() => onMoveUp(beat.id)}
             aria-label="Subir beat"
           >
             <i className="bi bi-arrow-up" aria-hidden="true" />
+            <span aria-hidden="true">Subir</span>
           </button>
           <button
-            className="icon-btn"
-            title="Bajar"
+            className="btn-icon-label"
+            title="Bajar beat"
             disabled={!canDown}
             onClick={() => onMoveDown(beat.id)}
             aria-label="Bajar beat"
           >
             <i className="bi bi-arrow-down" aria-hidden="true" />
+            <span aria-hidden="true">Bajar</span>
           </button>
           <button
-            className="icon-btn"
+            className="btn-icon-label btn-icon-label-danger"
             title="Eliminar beat"
             onClick={() => onDelete(beat.id)}
             aria-label="Eliminar beat"
           >
             <i className="bi bi-trash" aria-hidden="true" />
+            <span aria-hidden="true">Eliminar</span>
           </button>
         </div>
         <button

@@ -77,7 +77,7 @@ export default function OrphanScenesPanel({
             </button>
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary"
+              className="btn btn-sm btn-outline-primary"
               onClick={() => onViewScene(s.id)}
               aria-label={`Ver escena "${s.title}" en el editor`}
             >

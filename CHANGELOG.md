@@ -2,6 +2,14 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.11.1] - 2026-08-16
+
+### Fixed
+- **Button accessibility and consistency in the outline.** The primary button (`btn-primary`) used a background (`#7c5cff`) that failed WCAG AA contrast (4.35:1) with white text in dark mode. Added `--sl-btn-primary-bg`/`--sl-btn-primary-hover` tokens so the primary button now clears AA (5.82:1). Unified `btn-ai` with the primary button style (removed the inconsistent gradient).
+- **Icon-only buttons now show visible labels.** Replaced `icon-btn` (icon-only, `aria-label` only) in `BeatCard` and `ChapterSection` with `btn-icon-label` buttons that show a short visible label (Subir / Bajar / Eliminar) plus the icon, improving comprehension and focus contrast.
+- **Consistent button variants in the outline.** Standardized `btn-outline-secondary` usages to `btn-outline-primary` (orphan scene link, view) so the outline uses a single secondary style.
+- **Unambiguous "Agregar beat" label.** The add-beat button now reads "Agregar beat" instead of just "Beat".
+
 ## [0.11.0] - 2026-08-16
 
 ### Added

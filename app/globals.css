@@ -8,6 +8,10 @@
   --sl-accent: #b48cff;
   --sl-accent-2: #7c5cff;
   --sl-danger: #ff6b6b;
+  /* Botón primario: fondo oscuro que cumple WCAG AA (>=4.5:1) con texto blanco
+     en tema oscuro. #6a4bd8 da 5.82:1; hover un poco más claro. */
+  --sl-btn-primary-bg: #6a4bd8;
+  --sl-btn-primary-hover: #7c5cff;
 }
 
 [data-bs-theme='light'] {
@@ -22,6 +26,8 @@
      bubbles (with white text). Both must clear WCAG AA contrast on white. */
   --sl-accent: #5f3dc4;
   --sl-accent-2: #6a4bd8;
+  --sl-btn-primary-bg: #5f3dc4;
+  --sl-btn-primary-hover: #6a4bd8;
 }
 
 html,
@@ -44,13 +50,20 @@ a {
 }
 
 .btn-primary {
-  background: var(--sl-accent-2);
-  border-color: var(--sl-accent-2);
+  background: var(--sl-btn-primary-bg);
+  border-color: var(--sl-btn-primary-bg);
+  color: #fff;
 }
 .btn-primary:hover,
 .btn-primary:focus {
-  background: var(--sl-accent);
-  border-color: var(--sl-accent);
+  background: var(--sl-btn-primary-hover);
+  border-color: var(--sl-btn-primary-hover);
+  color: #fff;
+}
+.btn-primary:disabled {
+  background: var(--sl-btn-primary-bg);
+  border-color: var(--sl-btn-primary-bg);
+  opacity: 0.6;
 }
 .btn-outline-primary {
   color: var(--sl-accent-2);
@@ -359,6 +372,38 @@ a {
 .icon-btn:hover {
   background: var(--sl-surface-2);
   color: var(--sl-text);
+}
+
+/* Botón compacto con icono + label visible (abreviación). Reemplaza a los
+   icon-btn sin texto en el outline: el label visible mejora la comprensión y
+   el contraste del foco. */
+.btn-icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--sl-border);
+  background: transparent;
+  color: var(--sl-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-icon-label:hover:not(:disabled) {
+  background: var(--sl-surface-2);
+  color: var(--sl-text);
+  border-color: var(--sl-border);
+}
+.btn-icon-label:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-icon-label-danger:hover:not(:disabled) {
+  color: var(--sl-danger);
+  border-color: var(--sl-danger);
+  background: transparent;
 }
 
 .action-menu {
@@ -743,13 +788,20 @@ a {
 }
 
 .btn-ai {
-  background: linear-gradient(135deg, var(--sl-accent), var(--sl-accent-2));
+  background: var(--sl-btn-primary-bg);
   color: #fff;
-  border: none;
+  border: 1px solid var(--sl-btn-primary-bg);
 }
-.btn-ai:hover {
-  filter: brightness(1.05);
+.btn-ai:hover,
+.btn-ai:focus {
+  background: var(--sl-btn-primary-hover);
+  border-color: var(--sl-btn-primary-hover);
   color: #fff;
+}
+.btn-ai:disabled {
+  background: var(--sl-btn-primary-bg);
+  border-color: var(--sl-btn-primary-bg);
+  opacity: 0.6;
 }
 
 .pill {
