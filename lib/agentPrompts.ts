@@ -161,6 +161,11 @@ export function buildAgentContext(sources: AgentSources): string {
         parts.push(`## ${active.title || 'Escena sin título'} (id: ${active.id})`);
         parts.push(activeText);
       }
+      // Notas de continuidad: elementos que el autor marcó como nuevos en esta
+      // escena. El agente debe respetarlas y mantenerlas coherentes.
+      if (active.continuityNotes?.trim()) {
+        parts.push(`\nNOTAS DE CONTINUIDAD DE ESTA ESCENA (respetalas y mantenelas coherentes):\n${active.continuityNotes.trim()}`);
+      }
     }
   }
 
@@ -195,6 +200,7 @@ Reglas:
 - "reply" es lo que le decís al autor. Puede incluir preguntas, análisis, opciones, markdown.
 - "actions" es un array de cambios que proponés aplicar. Cada acción debe tener "type" y los campos que correspondan:
   - {"type":"rewrite_scene","sceneId":"<id>","before":"<texto actual>","after":"<texto nuevo>","summary":"<qué cambió>"}
+  - {"type":"update_scene_notes","sceneId":"<id>","notes":"<notas de continuidad>","summary":"<qué cambió>"}
   - {"type":"add_beat","chapterId":"<id>","beat":{"kind":"inciting|rising|climax|falling|resolution|custom","title":"...","description":"...","notes":"...","characters":[],"status":"draft","source":"ai","position":<n>},"summary":"..."}
   - {"type":"update_beat","beatId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
@@ -207,6 +213,7 @@ Reglas:
 - "replace_outline" reemplaza TODO el outline actual por una nueva estructura de capítulos y beats. "chapterIndex" es el índice (0-based) del capítulo dentro de "chapters". Usala solo cuando el autor pida reorganizar el outline global. No combines "replace_outline" con otras acciones en la misma respuesta.
 - "update_outline" hace cambios parciales al outline SIN reemplazarlo completo: podés renombrar un capítulo, borrar un capítulo (sus escenas quedan sin capítulo, sus beats se borran), agregar beats a un capítulo o escena, borrar un beat, mover un beat a otro capítulo, o actualizar campos de un beat. Incluí solo las operaciones que necesites. Es ideal para ajustes puntuales: "agregá un beat de tensión al capítulo 2", "renombrá el capítulo 3", "mové el beat X al capítulo Y".
 - Cuando el autor te pida generar beats a partir de una escena o texto que ÉL escribió (por ejemplo "armá el outline de esta escena" o "generá los beats de este texto"), usá "add_beat" (o "update_outline" con "addBeats") y EXTRAÉ los beats del contenido real del autor: tomá sus ideas, momentos y giros como base. No es necesario respetar el mismo orden ni ritmo; podés reestructurarlos si aporta, pero NO inventes contenido que no esté en el texto. La escena activa aparece completa bajo "ESCENA ACTIVA".
+- Las "NOTAS DE CONTINUIDAD DE ESTA ESCENA" registran elementos que aparecen por primera vez en la escena actual (personajes, objetos, reglas, lugares, eventos) para mantener coherencia en escenas futuras. Si el autor te pide actualizarlas, o si detectás que algo nuevo e importante aparece en la escena, usá "update_scene_notes" para proponerlas/ajustarlas. Mantené coherencia con las notas existentes.
 - Para "kind" de beats usá EXACTAMENTE uno de estos valores en inglés: "inciting", "rising", "climax", "falling", "resolution", "custom". No uses sinónimos como "giro", "setup" o "desenlace"; mapeá esos conceptos al kind oficial más cercano.
 - Si no proponés cambios, usá "actions": [].
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.

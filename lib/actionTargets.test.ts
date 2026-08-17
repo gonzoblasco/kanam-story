@@ -22,6 +22,11 @@ describe('getActionTarget', () => {
     expect(target.view).toBe('outline');
     expect(target.label).toBe('Outline');
   });
+
+  it('update_scene_notes apunta al editor', () => {
+    const target = getActionTarget({ type: 'update_scene_notes', sceneId: 's1', notes: 'x', summary: 'nota' });
+    expect(target.view).toBe('editor');
+  });
 });
 
 describe('getActionsTarget', () => {

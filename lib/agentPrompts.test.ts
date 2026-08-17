@@ -147,6 +147,22 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('Renzo miró el tablero. Renzo miró el tablero.');
   });
 
+  it('incluye las notas de continuidad de la escena activa', () => {
+    const active: Scene = { ...scene, id: 's-activa', continuityNotes: 'Acá aparece el diario de Renzo.' };
+    const ctx = buildAgentContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [chapter],
+      scenes: [active],
+      beats: [beat],
+      storyBible: bible,
+      activeSceneId: 's-activa',
+    });
+    expect(ctx).toContain('NOTAS DE CONTINUIDAD');
+    expect(ctx).toContain('el diario de Renzo');
+  });
+
   it('buildSceneContext limita a la escena activa, su capítulo y sus beats', () => {
     const otherChapter: Chapter = { id: 'ch2', projectId: 'p1', title: 'Capítulo 2', order: 1, createdAt: 0, updatedAt: 0 };
     const otherScene: Scene = { ...scene, id: 's-otra', chapterId: 'ch2', title: 'Otra escena' };

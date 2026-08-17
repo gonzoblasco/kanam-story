@@ -177,6 +177,12 @@ describe('isValidAction', () => {
       }),
     ).toBe(false);
   });
+  it('acepta update_scene_notes con sceneId y notes', () => {
+    expect(isValidAction({ type: 'update_scene_notes', sceneId: 's1', notes: 'diario', summary: 'x' })).toBe(true);
+  });
+  it('rechaza update_scene_notes sin notes', () => {
+    expect(isValidAction({ type: 'update_scene_notes', sceneId: 's1', summary: 'x' })).toBe(false);
+  });
   it('normaliza alias en español para kind (ascenso -> rising)', () => {
     const parsed = parseAgentReply(
       JSON.stringify({

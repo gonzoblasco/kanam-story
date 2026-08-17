@@ -85,6 +85,17 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
       };
     }
 
+    case 'update_scene_notes': {
+      const scene = state.scenes.find((s) => s.id === action.sceneId);
+      if (!scene) return { next: state, undo: (s) => s };
+      const prev = scene.continuityNotes ?? '';
+      const next = updateScene(state, action.sceneId, { continuityNotes: action.notes });
+      return {
+        next,
+        undo: (s) => updateScene(s, action.sceneId, { continuityNotes: prev }),
+      };
+    }
+
     case 'update_beat': {
       const beat = state.beats.find((b) => b.id === action.beatId);
       if (!beat) return { next: state, undo: (s) => s };

@@ -1353,6 +1353,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             break;
           }
+          case 'update_scene_notes': {
+            const scene = await scenesDB.get(action.sceneId);
+            if (scene) {
+              const prev = scene.continuityNotes ?? '';
+              await updateScene(action.sceneId, { continuityNotes: action.notes });
+              undos.push(() => updateScene(action.sceneId, { continuityNotes: prev }));
+            } else {
+              failed.push(`escena ${action.sceneId}`);
+            }
+            break;
+          }
           case 'update_beat': {
             const beat = await beatsDB.get(action.beatId);
             if (beat) {

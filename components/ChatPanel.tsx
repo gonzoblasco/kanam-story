@@ -252,6 +252,8 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
     switch (a.type) {
       case 'rewrite_scene':
         return `Reescribir escena: ${a.summary || a.sceneId}`;
+      case 'update_scene_notes':
+        return `Actualizar notas de continuidad: ${a.summary || a.sceneId}`;
       case 'update_beat':
         return `Actualizar beat: ${a.summary || a.beatId}`;
       case 'add_beat':

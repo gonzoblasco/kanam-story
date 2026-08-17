@@ -273,6 +273,19 @@ describe('applyAction', () => {
     expect(next).toBe(state);
   });
 
+  it('update_scene_notes actualiza las notas de continuidad y revierte', () => {
+    const state = makeState();
+    const { next, undo } = applyAction(state, {
+      type: 'update_scene_notes',
+      sceneId: 's1',
+      notes: 'Acá aparece por primera vez el diario de Renzo.',
+      summary: 'agregar nota',
+    });
+    expect(next.scenes[0].continuityNotes).toBe('Acá aparece por primera vez el diario de Renzo.');
+    const reverted = undo(next);
+    expect(reverted.scenes[0].continuityNotes).toBe('');
+  });
+
   it('update_outline renombra un capítulo y revierte', () => {
     const state = makeState({
       chapters: [

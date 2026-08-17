@@ -33,6 +33,7 @@ export function getActionTarget(action: ContentAction): ActionTarget {
       return { view: 'outline', label: 'Outline' };
     case 'rewrite_scene':
     case 'append_scene':
+    case 'update_scene_notes':
       return { view: 'editor', label: 'Editor' };
     case 'replace_outline':
     case 'update_outline':

@@ -2,6 +2,15 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.16.0] - 2026-08-17
+
+### Added
+- **Continuity notes per scene.** Each scene now has a "Notas de continuidad" box in the editor where you can record elements that appear for the first time in that scene (characters, objects, rules, places, events) so future scenes stay coherent. Notes are stored on the `Scene` (optional field, no migration needed) and saved on blur.
+- **The co-writer respects and can propose continuity notes.** The active scene's continuity notes are included in the agent context ("NOTAS DE CONTINUIDAD DE ESTA ESCENA"), and a new `update_scene_notes` action lets the agent propose adding/editing them from the chat, with accept/undo and the same preview flow as other actions.
+
+### Tests
+- 359 tests passing (added notes apply/undo, validation, targeting, and context coverage).
+
 ## [0.15.2] - 2026-08-17
 
 ### Changed

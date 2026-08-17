@@ -56,6 +56,7 @@ export default function Editor() {
 
   const [titleDraft, setTitleDraft] = useState('');
   const [summaryDraft, setSummaryDraft] = useState('');
+  const [continuityDraft, setContinuityDraft] = useState('');
   const [busy, setBusy] = useState<'write' | 'describe' | 'rewrite' | 'expand' | 'dialogue' | 'tension' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
@@ -97,8 +98,9 @@ export default function Editor() {
     /* eslint-disable react-hooks/set-state-in-effect -- derived state from the selected scene */
     setTitleDraft(scene?.title ?? '');
     setSummaryDraft(scene?.summary ?? '');
+    setContinuityDraft(scene?.continuityNotes ?? '');
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scene?.id, scene?.title, scene?.summary]);
+  }, [scene?.id, scene?.title, scene?.summary, scene?.continuityNotes]);
 
   // Keep a ref in sync with the current scene id so the debounced autosave
   // always writes to the scene that was active when the edit happened, even if
@@ -443,6 +445,12 @@ export default function Editor() {
     if (!scene) return;
     if (summaryDraft !== scene.summary) updateScene(scene.id, { summary: summaryDraft });
   }
+  function saveContinuityBlur() {
+    if (!scene) return;
+    if (continuityDraft !== (scene.continuityNotes ?? '')) {
+      updateScene(scene.id, { continuityNotes: continuityDraft });
+    }
+  }
 
   if (!currentProject) {
     return (
@@ -488,6 +496,23 @@ export default function Editor() {
           onBlur={saveSummaryBlur}
           placeholder="Resumen de la escena (un beat en una oración)…"
         />
+
+        <div className="editor-continuity">
+          <label htmlFor="editor-continuity" className="editor-continuity-label">
+            <i className="bi bi-link-45deg me-1" aria-hidden="true" />
+            Notas de continuidad
+          </label>
+          <textarea
+            id="editor-continuity"
+            className="form-control form-control-sm"
+            rows={3}
+            value={continuityDraft}
+            onChange={(e) => setContinuityDraft(e.target.value)}
+            onBlur={saveContinuityBlur}
+            placeholder="Ej: acá aparece por primera vez el diario de Renzo — objeto clave del capítulo 3."
+            aria-label="Notas de continuidad de la escena"
+          />
+        </div>
 
         {sceneBeats.length > 0 ? (
           <div className="editor-beats">

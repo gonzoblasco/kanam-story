@@ -119,6 +119,8 @@ export function isValidAction(action: unknown): action is ContentAction {
   switch (type) {
     case 'rewrite_scene':
       return typeof a.sceneId === 'string' && typeof a.after === 'string';
+    case 'update_scene_notes':
+      return typeof a.sceneId === 'string' && typeof a.notes === 'string';
     case 'update_beat':
       return typeof a.beatId === 'string' && typeof a.changes === 'object' && a.changes !== null;
     case 'add_beat': {

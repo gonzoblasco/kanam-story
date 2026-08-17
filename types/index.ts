@@ -67,6 +67,10 @@ export interface Scene {
   content: string;
   summary: string;
   order: number;
+  /** Notas de continuidad: elementos que aparecen por primera vez en esta escena
+   * (personajes, objetos, reglas, lugares, eventos) para mantener coherencia
+   * en escenas futuras. Markdown. Opcional. */
+  continuityNotes?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -207,6 +211,7 @@ export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
  */
 export type ContentAction =
   | { type: 'rewrite_scene'; sceneId: string; before: string; after: string; summary: string }
+  | { type: 'update_scene_notes'; sceneId: string; notes: string; summary: string }
   | { type: 'update_beat'; beatId: string; changes: Partial<Beat>; summary: string }
   | { type: 'add_beat'; chapterId: string; beat: Beat; summary: string }
   | { type: 'update_character'; characterId: string; changes: Partial<Character>; summary: string }
