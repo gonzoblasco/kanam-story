@@ -101,5 +101,5 @@ El sistema SHALL reflejar en el editor los cambios externos a la escena activa (
 - ✅ Autosave (debounce 600ms) + contador de palabras/caracteres.
 - ✅ Sync con cambios externos - el effect depende de `scene.content`.
 
-**Hallazgo menor:** el contador de palabras del editor duplica la lógica de `countWords` del export
-(equivalente, no afecta resultado). Fix sugerido: reusar `countWords` en el editor.
+**Hallazgo menor:** el contador de palabras del editor duplicaba la lógica de `countWords` del export.
+✅ **APLICADO** (commit `9df57e3`): el editor ahora reusa `countWords`.

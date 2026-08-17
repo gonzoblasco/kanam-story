@@ -60,5 +60,6 @@ El sistema SHALL limpiar el campo `protagonist` cuando el personaje protagonista
 - ✅ Brújula orienta al agente (contexto + update_project con validación de POV).
 - ✅ Protagonista consistente (se limpia al borrar).
 
-**Hallazgo menor:** los textareas (premise/promesa/tema) commitean en **onBlur**, los selects
-(protagonista/POV/tense) en **onChange**. Difiere del spec ("onChange"). Comportamiento razonable.
+**Hallazgo menor:** los textareas (premise/promesa/tema) commiteaban en **onBlur**, los selects
+(protagonista/POV/tense) en **onChange**. ✅ **APLICADO** (commit `9df57e3`): los textareas ahora
+commitean en onChange, consistente con el spec.

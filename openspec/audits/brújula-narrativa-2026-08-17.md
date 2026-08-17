@@ -31,15 +31,14 @@ commit de los campos de texto vs los selects).
 ## Hallazgos
 
 ### 🟡 Hallazgo 1 (MENOR): Inconsistencia en el commit de los campos
-Los **textareas** de la brújula (premise, promesa, tema) commitean en **onBlur** (al salir del campo),
-mientras que los **selects** (protagonista, POV, tense) commitean en **onChange** (al cambiar).
+Los **textareas** de la brújula (premise, promesa, tema) commiteaban en **onBlur** (al salir del campo),
+mientras que los **selects** (protagonista, POV, tense) commiteaban en **onChange** (al cambiar).
 
-**Impacto:** bajo. Si el usuario escribe en un textarea y cierra la app sin salir del campo, el cambio
-se pierde. Es un comportamiento razonable (evita escribir a la DB en cada tecla), pero difiere del spec
-que dice "los cambios se guardan (onChange)".
+**Impacto:** bajo. Si el usuario escribía en un textarea y cerraba la app sin salir del campo, el
+cambio se perdía.
 
-**Fix sugerido:** actualizar el spec para reflejar que los textareas commitean en onBlur (o cambiar
-los textareas a onChange con debounce, si se prefiere guardado inmediato).
+**Fix:** ✅ **APLICADO** (commit `9df57e3`). Los textareas ahora commitean en `onChange` (igual que
+los selects), consistente con el spec.
 
 ## Conclusión
 
