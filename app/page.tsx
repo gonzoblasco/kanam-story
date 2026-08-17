@@ -14,6 +14,7 @@ import SearchPanel from '@/components/SearchPanel';
 import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 import ChapterReader from '@/components/ChapterReader';
 import CoWriterSidebar from '@/components/CoWriterSidebar';
+import { ENABLE_COWRITER } from '@/lib/features';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
@@ -90,17 +91,19 @@ export default function HomePage() {
             <i className={`bi ${view === 'outline' ? 'bi-pencil' : 'bi-list-nested'} me-1`} />
             <span className="btn-label">{view === 'outline' ? 'Editor' : 'Outline'}</span>
           </button>
-          <button
-            className={`btn btn-sm ${settings.cowriterOpen ? 'btn-primary' : 'btn-outline-primary'}`}
-            title="Abrir/cerrar el co-writer de la escena actual"
-            onClick={() => setSettings({ cowriterOpen: !settings.cowriterOpen })}
-            aria-expanded={!!settings.cowriterOpen}
-            aria-controls="cowriter-sidebar"
-            aria-label="Abrir o cerrar el co-writer de la escena actual"
-          >
-            <i className="bi bi-chat-dots me-1" />
-            <span className="btn-label">Co-writer</span>
-          </button>
+          {ENABLE_COWRITER ? (
+            <button
+              className={`btn btn-sm ${settings.cowriterOpen ? 'btn-primary' : 'btn-outline-primary'}`}
+              title="Abrir/cerrar el co-writer de la escena actual"
+              onClick={() => setSettings({ cowriterOpen: !settings.cowriterOpen })}
+              aria-expanded={!!settings.cowriterOpen}
+              aria-controls="cowriter-sidebar"
+              aria-label="Abrir o cerrar el co-writer de la escena actual"
+            >
+              <i className="bi bi-chat-dots me-1" />
+              <span className="btn-label">Co-writer</span>
+            </button>
+          ) : null}
           <button
             ref={newProjectTriggerRef}
             className="btn btn-sm btn-outline-primary"
@@ -174,10 +177,12 @@ export default function HomePage() {
       {showVersionHistory ? (
         <VersionHistoryPanel onClose={() => setShowVersionHistory(false)} />
       ) : null}
-      <CoWriterSidebar
-        open={!!settings.cowriterOpen}
-        onClose={() => setSettings({ cowriterOpen: false })}
-      />
+      {ENABLE_COWRITER ? (
+        <CoWriterSidebar
+          open={!!settings.cowriterOpen}
+          onClose={() => setSettings({ cowriterOpen: false })}
+        />
+      ) : null}
     </div>
   );
 }

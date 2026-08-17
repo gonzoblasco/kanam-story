@@ -2,6 +2,11 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [Unreleased]
+
+### Added
+- **Co-writer feature flag.** The co-writer (the chat with hands, the heart of the product) is now a paid feature: the open-source build has it disabled by default (`NEXT_PUBLIC_ENABLE_COWRITER` unset/false), and SaaS builds enable it (`NEXT_PUBLIC_ENABLE_COWRITER=true`). The open source keeps the full writing product (editor, Story Bible, outline, export, PWA) but without the chat. Centralized in `lib/features.ts`.
+
 ## [0.17.0] - 2026-08-17
 
 ### Added

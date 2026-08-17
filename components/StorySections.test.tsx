@@ -74,9 +74,9 @@ describe('StorySections: acordeón accesible (U2)', () => {
         <StorySections />
       </div>,
     );
-    const toggles = screen.getAllByRole('button', { name: /co-writer|brainstorm|personajes|mundo|biblia|ajustes|brújula/i });
-    // 7 secciones apiladas.
-    expect(toggles).toHaveLength(7);
+    const toggles = screen.getAllByRole('button', { name: /brainstorm|personajes|mundo|biblia|ajustes|brújula/i });
+    // 6 secciones apiladas (el co-writer es de pago y está deshabilitado en open source).
+    expect(toggles).toHaveLength(6);
     for (const t of toggles) {
       expect(t).toHaveAttribute('aria-expanded', 'true');
     }
@@ -104,8 +104,18 @@ describe('StorySections: acordeón accesible (U2)', () => {
         <StorySections />
       </div>,
     );
-    const coWriter = screen.getByRole('button', { name: /co-writer/i });
-    expect(coWriter).toHaveAttribute('aria-controls', 'body-co-writer');
+    const personajes = screen.getByRole('button', { name: /personajes/i });
+    expect(personajes).toHaveAttribute('aria-controls', 'body-characters');
+  });
+
+  it('el co-writer no se renderiza cuando está deshabilitado (open source)', () => {
+    render(
+      <div id="contenido-principal">
+        <StorySections />
+      </div>,
+    );
+    expect(screen.queryByRole('button', { name: /co-writer/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('panel-co-writer')).not.toBeInTheDocument();
   });
 });
 
