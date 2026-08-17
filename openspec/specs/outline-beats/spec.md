@@ -62,11 +62,18 @@ El sistema SHALL detectar escenas sin beats y permitir vincularlas (crear un bea
 - **AND** el usuario puede "Vincular" (crea un beat para esa escena)
 
 ### Requirement: El outline se filtra por POV y tiempo verbal
-El sistema SHALL permitir filtrar el outline por POV y tiempo verbal.
+> ⚠️ **PENDIENTE DE REDISEÑO (2026-08-17).** Los filtros de POV/tense fueron **removidos** en el
+> refactor `4349401` porque el modelo de filtrado era defectuoso (comparaba el filtro con el POV/tense
+> del proyecto, ocultando todo cuando no coincidían). Se removieron "hasta que se diseñe un modelo útil".
+> Este requirement documenta la intención, no el estado actual.
 
-#### Scenario: Filtros de outline
+El sistema SHALL permitir filtrar el outline por POV y tiempo verbal, con un modelo de filtrado
+útil (no el defectuoso que se removió).
+
+#### Scenario: Filtros de outline (pendiente de rediseño)
 - **WHEN** el usuario filtra el outline
 - **THEN** puede filtrar por POV y tiempo verbal
+- **AND** el filtro no oculta todo cuando no coincide con el POV/tense del proyecto
 
 ### Requirement: El chat puede armar/ajustar el outline
 El agente SHALL poder proponer `add_beat` y `update_beat` desde el chat, aplicables al aceptar.
@@ -78,10 +85,16 @@ El agente SHALL poder proponer `add_beat` y `update_beat` desde el chat, aplicab
 
 ## Notas de auditoría (2026-08-17)
 
-Puntos a verificar en la auditoría del outline:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/outline-beats-2026-08-17.md`.
 
-- [ ] ¿Los beats creados por el chat (`add_beat`) siempre incluyen `chapterId`?
-- [ ] ¿Al borrar un capítulo/escena se eliminan sus beats (cascade)?
-- [ ] ¿El reorder de beats preserva el orden correcto?
-- [ ] ¿La generación de escena desde beat maneja el caso de beat sin capítulo?
-- [ ] ¿Los beats sugeridos se deduplican (no se agregan repetidos)?
+**Resultado: 5/6 requirements cumplidos.**
+
+- ✅ Mapa de beats (edición manual, reorder, add/delete).
+- ✅ Sugerir outline con IA (preview Agregar/Descartar).
+- ✅ Generar escena desde beat (reuso de escena/capítulo, creación automática).
+- ✅ Vincular escenas huérfanas (Mover/Vincular/Ver/Eliminar).
+- ❌ **Filtros de POV/tense REMOVIDOS** (refactor `4349401`) - el modelo era defectuoso. Spec actualizado a "pendiente de rediseño".
+- ✅ Chat arma/ajusta el outline (add_beat/update_beat/update_outline/replace_outline).
+
+**Hallazgo:** el spec documentaba los filtros de POV/tense como implementados, pero fueron removidos
+deliberadamente. Spec actualizado para reflejar la realidad.
