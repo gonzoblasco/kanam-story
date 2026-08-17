@@ -109,7 +109,9 @@ export default function Editor() {
 
   // Keep the TipTap editor in sync with the selected scene. Without this,
   // switching scenes leaves the previous scene's content on screen and the
-  // next autosave overwrites the newly-selected scene.
+  // next autosave overwrites the newly-selected scene. Also re-syncs when the
+  // scene content changes externally (e.g. accepting a rewrite_scene from the
+  // co-writer), since scene.id alone doesn't change in that case.
   useEffect(() => {
     if (!editor || !scene) return;
     // Flush pending edits to the previous scene before switching.
@@ -123,7 +125,7 @@ export default function Editor() {
     }
     editor.commands.setContent(scene.content ?? '', { emitUpdate: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, scene?.id, updateScene]);
+  }, [editor, scene?.id, scene?.content, updateScene]);
 
   // U4: tomar el foco cuando `requestEditorFocus()` lo pide (p.ej. tras generar
   // una escena desde el outline), colocando el caret al final del contenido.

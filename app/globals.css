@@ -124,6 +124,18 @@ a {
   display: flex;
   flex-direction: column;
 }
+/* En el sidebar de co-writer el chat debe ocupar todo el alto disponible, con
+   el input al pie del contenedor (anula la altura fija de .chat-panel usada
+   en la sección Co-writer de Historia). */
+.cowriter-body .chat-panel {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+.cowriter-body .chat-messages {
+  flex: 1;
+  overflow-y: auto;
+}
 
 .app-shell.sidebar-collapsed {
   grid-template-columns: 56px 1fr;

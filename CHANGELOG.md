@@ -2,6 +2,16 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.15.1] - 2026-08-17
+
+### Fixed
+- **Co-writer sidebar now fills the full height with the input pinned to the bottom.** The chat panel had a fixed height (`min(58vh, 520px)`) meant for the History section, which left the input floating in the middle of the sidebar with empty space below. In the sidebar the chat now uses `height: 100%`, the message list grows and scrolls, and the input stays at the bottom.
+- **Accepted chat changes now appear immediately in the editor.** The editor only re-synced with the scene when its `id` changed, so accepting a `rewrite_scene` (same scene) left the old text on screen until you switched scenes. The sync effect now also depends on the scene content, so an accepted change is reflected at once.
+- **Line breaks and paragraphs are preserved when the agent rewrites a scene.** The agent can return plain text or markdown with newlines, which was saved raw and shown by TipTap as one giant paragraph. `rewrite_scene` and `append_scene` now normalize the content to valid HTML (`ensureHtml`): it keeps TipTap HTML as-is and converts plain text (double newlines → paragraphs, single newlines → `<br>`) before saving.
+
+### Tests
+- 353 tests passing (added `ensureHtml` coverage).
+
 ## [0.15.0] - 2026-08-17
 
 ### Added

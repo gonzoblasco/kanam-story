@@ -52,6 +52,7 @@ import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
 import { GENRE_TEMPLATES, type ProjectTemplate } from '@/lib/projectTemplates';
 import { reorderChapters, moveBeatToChapter } from '@/lib/outline';
+import { ensureHtml } from '@/lib/proseToHtml';
 import { suggestGlobalOutline, type SuggestedChapter } from '@/lib/outlineGeneration';
 
 /** U5 — Punto de partida al crear un proyecto (nunca obligatorio). */
@@ -1340,7 +1341,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const scene = await scenesDB.get(action.sceneId);
             if (scene) {
               const prev = scene.content;
-              await updateScene(action.sceneId, { content: action.after });
+              // Normaliza a HTML para que TipTap muestre párrafos (el agente
+              // puede devolver texto plano/markdown con saltos de línea).
+              await updateScene(action.sceneId, { content: ensureHtml(action.after) });
               undos.push(() => updateScene(action.sceneId, { content: prev }));
               // The manuscript changed → the manuscript-derived sections are stale.
               await markBibleStale(['summary', 'themes', 'rules']);
@@ -1421,7 +1424,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               projectId: currentProject.id,
               chapterId: action.chapterId,
               title: 'Escena nueva',
-              content: action.content,
+              content: ensureHtml(action.content),
               summary: action.summary,
               order: scenes.filter((s) => s.chapterId === action.chapterId).length,
             });

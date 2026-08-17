@@ -18,3 +18,16 @@ export function proseToHtml(text: string): string {
     })
     .join('');
 }
+
+/**
+ * Garantiza que un contenido sea HTML válido para TipTap. Si ya contiene tags
+ * de párrafo/br (HTML de TipTap), lo devuelve tal cual; si es texto plano o
+ * markdown (con saltos de línea), lo convierte con proseToHtml. Evita guardar
+ * contenido "crudo" que TipTap muestre todo de corrido.
+ */
+export function ensureHtml(content: string): string {
+  const trimmed = (content ?? '').trim();
+  if (!trimmed) return '';
+  if (/<\s*(p|br|div|h[1-6]|ul|ol|li)[\s>]/i.test(trimmed)) return trimmed;
+  return proseToHtml(trimmed);
+}
