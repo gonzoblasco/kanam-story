@@ -90,10 +90,16 @@ El sistema SHALL reflejar en el editor los cambios externos a la escena activa (
 
 ## Notas de auditoría (2026-08-17)
 
-Puntos a verificar en la auditoría del editor:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/editor-2026-08-17.md`.
 
-- [ ] ¿El streaming revierte el contenido parcial ante abort/error?
-- [ ] ¿El autosave se suprime correctamente durante el stream (sin guardados parciales)?
-- [ ] ¿El editor se sincroniza con cambios externos (aceptar rewrite_scene)?
-- [ ] ¿El diálogo multi-párrafo no pierde el wrapper de apertura?
-- [ ] ¿El contador de palabras cuenta la prosa real (no títulos/metadata)?
+**Resultado: TODOS los requirements cumplidos.** No se encontraron bugs funcionales.
+
+- ✅ Barra de formato completa (B/I/S/U, listas, headings, enlaces, undo/redo) + escritura libre.
+- ✅ Herramientas IA (Write/Describe/Rewrite/Expand/Dialogue/Tension) conectadas a la UI con validación.
+- ✅ Abortar (Stop) - AbortController + revert del contenido parcial.
+- ✅ Streaming - inserta en vivo, suprime autosave, guarda al final.
+- ✅ Autosave (debounce 600ms) + contador de palabras/caracteres.
+- ✅ Sync con cambios externos - el effect depende de `scene.content`.
+
+**Hallazgo menor:** el contador de palabras del editor duplica la lógica de `countWords` del export
+(equivalente, no afecta resultado). Fix sugerido: reusar `countWords` en el editor.
