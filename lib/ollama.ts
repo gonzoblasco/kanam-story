@@ -11,6 +11,30 @@ export interface OllamaChatOptions {
   messages: OllamaMessage[];
   signal?: AbortSignal;
   temperature?: number;
+  /** Max time to wait for the whole request before aborting (ms). Default 120s. */
+  timeoutMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 120_000;
+
+/**
+ * Combines an external `signal` (manual abort) with an internal timeout into a
+ * single AbortSignal. If no external signal is given, just returns a timeout
+ * signal. Falls back to manual wiring when `AbortSignal.any` is unavailable.
+ */
+export function withTimeout(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  if (!signal) return timeoutSignal;
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([signal, timeoutSignal]);
+  }
+  // Fallback for environments without AbortSignal.any: abort the combined
+  // signal when either the external signal or the timeout fires.
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener('abort', abort, { once: true });
+  timeoutSignal.addEventListener('abort', abort, { once: true });
+  return controller.signal;
 }
 
 /** Non-streaming call: returns the full response as a string. */
@@ -20,12 +44,13 @@ export async function ollamaChat({
   messages,
   signal,
   temperature = 0.8,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
 }: OllamaChatOptions): Promise<string> {
   const res = await fetch('/api/ollama', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ollamaUrl, model, messages, temperature, stream: false }),
-    signal,
+    signal: withTimeout(signal, timeoutMs),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -47,6 +72,7 @@ export async function ollamaChatStream(
     messages,
     signal,
     temperature = 0.8,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
   }: OllamaChatOptions,
   onChunk: (text: string) => void,
 ): Promise<void> {
@@ -54,7 +80,7 @@ export async function ollamaChatStream(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ollamaUrl, model, messages, temperature, stream: true }),
-    signal,
+    signal: withTimeout(signal, timeoutMs),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -99,12 +125,20 @@ export async function ollamaChatStream(
   }
 }
 
-export async function checkOllama(settings: Settings): Promise<{ ok: boolean; models?: string[]; error?: string }> {
+const HEALTH_CHECK_TIMEOUT_MS = 15_000;
+
+export async function checkOllama(
+  settings: Settings,
+  timeoutMs: number = HEALTH_CHECK_TIMEOUT_MS,
+): Promise<{ ok: boolean; models?: string[]; error?: string }> {
   try {
+    // Health check: short timeout so the settings modal never hangs waiting on
+    // a dead Ollama.
     const res = await fetch('/api/ollama/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ollamaUrl: settings.ollamaUrl }),
+      signal: withTimeout(undefined, timeoutMs),
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');

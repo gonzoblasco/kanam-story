@@ -2,6 +2,14 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.16.1] - 2026-08-17
+
+### Fixed
+- **Timeouts on Ollama requests.** `ollamaChat`, `ollamaChatStream` and the health check now abort if the request exceeds a time limit instead of hanging the UI forever: 120s default for chat/generation, 15s for the health check. The timeout composes with the existing manual abort ("Detener") via `AbortSignal.any`, so cancelling a stream still works. Both `timeoutMs` (chat) and the health-check timeout are configurable.
+
+### Tests
+- 366 tests passing (added `lib/ollama.test.ts`: timeout abort for chat/stream/health-check + manual-abort passthrough).
+
 ## [0.16.0] - 2026-08-17
 
 ### Added
