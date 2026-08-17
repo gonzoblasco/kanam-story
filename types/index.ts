@@ -189,7 +189,11 @@ export interface Settings {
   collapsedChapterIds?: string[];
   /** Whether the co-writer sidebar is open from the writing view. */
   cowriterOpen?: boolean;
+  /** Rol activo del agente en el co-writer (especialización del prompt). */
+  agentRole?: AgentRole;
 }
+
+export type AgentRole = 'co-writer' | 'plot-doctor' | 'consistency-checker';
 
 export type AICommand = 'write' | 'describe' | 'rewrite' | 'brainstorm';
 

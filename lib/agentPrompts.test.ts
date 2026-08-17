@@ -363,6 +363,27 @@ describe('buildAgentPrompt', () => {
     expect(prompt).toContain('"actions"');
     expect(prompt).toContain('rewrite_scene');
   });
+
+  it('por defecto usa el rol co-writer general', () => {
+    const prompt = buildAgentPrompt('ctx', 'hola');
+    expect(prompt).toContain('co-writer de ficción');
+    expect(prompt).not.toContain('Plot Doctor');
+    expect(prompt).not.toContain('Consistency Checker');
+  });
+
+  it('plot-doctor enfoca en estructura narrativa y arco', () => {
+    const prompt = buildAgentPrompt('ctx', '¿el segundo acto funciona?', 'plot-doctor');
+    expect(prompt).toContain('Plot Doctor');
+    expect(prompt).toContain('ARCO');
+    expect(prompt).toContain('tensión');
+  });
+
+  it('consistency-checker enfoca en coherencia interna', () => {
+    const prompt = buildAgentPrompt('ctx', '¿hay inconsistencias?', 'consistency-checker');
+    expect(prompt).toContain('Consistency Checker');
+    expect(prompt).toContain('COHERENCIA');
+    expect(prompt).toContain('inconsistencias');
+  });
 });
 
 describe('buildSuggestBeatsPrompt', () => {

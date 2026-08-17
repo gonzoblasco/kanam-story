@@ -1,4 +1,4 @@
-import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible } from '@/types';
+import type { Project, Character, WorldEntity, Scene, Chapter, Beat, StoryBible, AgentRole } from '@/types';
 import { povLabel, styleText, characterTypeLabel, worldKindLabel, tenseLabel } from '@/lib/labels';
 
 export interface AgentSources {
@@ -186,10 +186,31 @@ export function buildAgentContext(sources: AgentSources): string {
  * Builds the agent prompt. Instructs the model to respond with structured
  * JSON: `{"reply": "...", "actions": [...]}`.
  */
-export function buildAgentPrompt(context: string, userMessage: string): string {
+/**
+ * Instrucciones de rol especializado que se anteponen al prompt del agente.
+ * Cada rol afina el enfoque: co-writer general, Plot Doctor (estructura
+ * narrativa) o Consistency Checker (coherencia interna).
+ */
+function buildRoleIntro(role: AgentRole): string {
+  switch (role) {
+    case 'plot-doctor':
+      return `Sos el Plot Doctor de esta obra, un agente especializado en estructura narrativa. Conocés el manuscrito, el outline, la biblia, los personajes y el mundo. Tu foco es el ARCO y la TRAMA: ritmo, tensión, causalidad, giros, clímax, resolución, y si los beats cumplen su función dramática.
+
+Diagnosticá problemas de estructura (p.ej. un segundo acto sin tensión, un clímax débil, beats que no escalan) y proponé SOLUCIONES CONCRETAS: reorganizar beats, agregar/eliminar escenas, reescribir transiciones, subir o bajar la tensión. Cuando propongas cambios, usá las acciones (update_outline, add_beat, rewrite_scene, etc.). Si solo analizás, usá "actions": [].`;
+    case 'consistency-checker':
+      return `Sos el Consistency Checker de esta obra, un agente especializado en COHERENCIA INTERNA. Conocés el manuscrito, los personajes, el mundo, el outline y la biblia. Tu foco es detectar y corregir inconsistencias: nombres que cambian, objetos que aparecen de la nada, reglas del mundo violadas, líneas de tiempo contradictorias, rasgos de personaje que no se sostienen, tono que se rompe.
+
+Señalá cada inconsistencia con su ubicación (capítulo/escena/personaje), explicá por qué es un problema, y proponé la corrección. Usá las notas de continuidad (update_scene_notes) y las acciones de edición (rewrite_scene, update_character, update_world, update_bible) cuando haya un acuerdo. Si solo reportás, usá "actions": [].`;
+    default:
+      return `Sos el co-writer de ficción de esta obra. Conocés el manuscrito, los personajes, el mundo, el outline y la biblia. Tu rol es conversar con el autor: debatir ideas, estudiar casos, explorar finales alternativos, y cuando haya un acuerdo, proponer cambios concretos al contenido.`;
+  }
+}
+
+export function buildAgentPrompt(context: string, userMessage: string, role: AgentRole = 'co-writer'): string {
+  const roleIntro = buildRoleIntro(role);
   return `${context}
 
-Sos el co-writer de ficción de esta obra. Conocés el manuscrito, los personajes, el mundo, el outline y la biblia. Tu rol es conversar con el autor: debatir ideas, estudiar casos, explorar finales alternativos, y cuando haya un acuerdo, proponer cambios concretos al contenido.
+${roleIntro}
 
 El autor te escribe: "${userMessage}"
 

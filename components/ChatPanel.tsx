@@ -131,7 +131,7 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
             activeSceneId: currentSceneId ?? undefined,
           },
     );
-    const prompt = buildAgentPrompt(context, text);
+    const prompt = buildAgentPrompt(context, text, settings.agentRole ?? 'co-writer');
 
     // Conversation history (last 10 messages)
     const history: { role: 'user' | 'assistant'; content: string }[] = messages
