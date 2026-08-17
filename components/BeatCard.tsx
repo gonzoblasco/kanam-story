@@ -83,6 +83,7 @@ export default function BeatCard({
         </select>
         <div className="outline-beat-actions">
           <button
+            type="button"
             className="btn-icon-label"
             title="Subir beat"
             disabled={!canUp}
@@ -93,6 +94,7 @@ export default function BeatCard({
             <span aria-hidden="true">Subir</span>
           </button>
           <button
+            type="button"
             className="btn-icon-label"
             title="Bajar beat"
             disabled={!canDown}
@@ -103,6 +105,7 @@ export default function BeatCard({
             <span aria-hidden="true">Bajar</span>
           </button>
           <button
+            type="button"
             className="btn-icon-label btn-icon-label-danger"
             title="Eliminar beat"
             onClick={() => onDelete(beat.id)}

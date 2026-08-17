@@ -81,6 +81,18 @@ const settings: Settings = {
   rightPanelCollapsed: false,
 };
 
+const scene3: Scene = {
+  id: 's3',
+  projectId: 'p1',
+  chapterId: 'c1',
+  title: 'Escena con capítulo sin beats',
+  content: '',
+  summary: '',
+  order: 2,
+  createdAt: 0,
+  updatedAt: 0,
+};
+
 const mockApp = {
   currentProject: mockProject,
   chapters: [chapter1, chapter2],
@@ -209,6 +221,7 @@ describe('OutlineView', () => {
   });
 
   it('does not render orphan panel when there are no orphan scenes', () => {
+    mockApp.scenes = [scene1, scene3];
     render(<OutlineView />);
     expect(screen.queryByRole('heading', { name: /Escenas sin capítulo/i })).not.toBeInTheDocument();
   });

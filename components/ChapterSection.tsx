@@ -126,6 +126,7 @@ export default function ChapterSection({
         {isGlobal ? (
           <>
             <button
+              type="button"
               className="btn-icon-label"
               title="Subir capítulo"
               disabled={!canMoveUp}
@@ -136,6 +137,7 @@ export default function ChapterSection({
               <span aria-hidden="true">Subir</span>
             </button>
             <button
+              type="button"
               className="btn-icon-label"
               title="Bajar capítulo"
               disabled={!canMoveDown}
@@ -146,6 +148,7 @@ export default function ChapterSection({
               <span aria-hidden="true">Bajar</span>
             </button>
             <button
+              type="button"
               className="btn-icon-label btn-icon-label-danger"
               title="Eliminar capítulo"
               onClick={() => onDeleteChapter(chapter.id)}

@@ -76,13 +76,10 @@ export default function OutlineView() {
     [chapters],
   );
 
-  // Compute orphan scenes (scenes with zero beats)
-  const orphanScenes = useMemo(() => {
-    return scenes.filter((scene) => {
-      const sceneBeats = beats.filter((b) => b.sceneId === scene.id);
-      return sceneBeats.length === 0;
-    });
-  }, [scenes, beats]);
+  // Compute orphan scenes: scenes that have no chapter (e.g. after an outline
+  // replacement). This is different from ChapterSection's "scene without beats"
+  // concept; here the relationship missing is scene → chapter.
+  const orphanScenes = useMemo(() => scenes.filter((s) => s.chapterId === ''), [scenes]);
 
   const addBeat = async (chapterId: string, sceneId?: string) => {
     if (!currentProject) return;

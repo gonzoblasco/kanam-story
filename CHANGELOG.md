@@ -2,6 +2,12 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.11.2] - 2026-08-16
+
+### Fixed
+- **Self-review of the orphan scene panel.** `OutlineView` filtered orphan scenes as "scenes without beats" instead of "scenes without a chapter" (`chapterId: ''`), which duplicated the local `ChapterSection` concept and showed scenes that actually had a chapter. Now the global panel only lists scenes with `chapterId === ''`.
+- **Explicit `type="button"` on `btn-icon-label` buttons** in `BeatCard` and `ChapterSection`, so they never act as implicit form submit buttons.
+
 ## [0.11.1] - 2026-08-16
 
 ### Fixed
