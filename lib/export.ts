@@ -1,4 +1,5 @@
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
+import { povLabel } from '@/lib/labels';
 import type { Content } from 'pdfmake/interfaces';
 
 /**
@@ -39,6 +40,16 @@ export interface ExportSources {
 }
 
 /**
+ * Counts words in plain text (split on whitespace). Used for the word-count
+ * footer appended to exports. Pure and testable.
+ */
+export function countWords(text: string): number {
+  const t = text.trim();
+  if (!t) return 0;
+  return t.split(/\s+/).length;
+}
+
+/**
  * Builds a plain-text Markdown manuscript from the project's chapters and
  * scenes. Used for the MD export and as the base for DOCX/PDF.
  */
@@ -46,12 +57,11 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
   const { project, chapters, scenes } = sources;
   const parts: string[] = [];
 
+  // Portada: título, descripción, y metadata narrativa (género/tono/POV/estilo).
   parts.push(`# ${project.name}`);
   if (project.description) parts.push(`\n> ${project.description}`);
-  if (project.genre || project.tone) {
-    const meta = [project.genre, project.tone].filter(Boolean).join(' · ');
-    if (meta) parts.push(`\n*${meta}*`);
-  }
+  const meta = [project.genre, project.tone, project.pov && povLabel(project.pov), project.style?.custom].filter(Boolean);
+  if (meta.length) parts.push(`\n*${meta.join(' · ')}*`);
 
   const byChapter = new Map<string, Scene[]>();
   for (const s of scenes) {
@@ -61,6 +71,7 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
   }
 
   const sortedChapters = [...chapters].sort((a, b) => a.order - b.order);
+  let wordCount = 0;
   for (const ch of sortedChapters) {
     parts.push(`\n## ${ch.title}`);
     const scs = (byChapter.get(ch.id) ?? []).sort((a, b) => a.order - b.order);
@@ -69,12 +80,18 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
       parts.push(`\n### ${s.title}`);
       if (s.summary) parts.push(`\n*${s.summary}*`);
       const text = stripHtml(s.content);
-      if (text) parts.push(`\n${text}`);
+      if (text) {
+        parts.push(`\n${text}`);
+        wordCount += countWords(markdownToPlainText(text));
+      }
       // Separador visual entre escenas (no al final del manuscrito).
       const isLast = ch === sortedChapters[sortedChapters.length - 1] && i === scs.length - 1;
       if (!isLast) parts.push('\n---');
     }
   }
+
+  // Pie con el conteo de palabras del manuscrito (útil para escritores).
+  parts.push(`\n---\n*${wordCount.toLocaleString('es-AR')} palabras*`);
 
   return parts.join('\n').trim() + '\n';
 }

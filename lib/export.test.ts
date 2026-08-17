@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildManuscriptMarkdown, markdownToPlainText, markdownToPdfmakeContent } from '@/lib/export';
+import { buildManuscriptMarkdown, markdownToPlainText, markdownToPdfmakeContent, countWords } from '@/lib/export';
 import type { Project, Chapter, Scene, Character, WorldEntity, Beat } from '@/types';
 
 const project: Project = {
@@ -110,6 +110,35 @@ describe('buildManuscriptMarkdown', () => {
     const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [scene, scene2], characters: [], world: [], beats: [] });
     // Hay un separador '---' entre las dos escenas.
     expect(md.match(/---/g)?.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('incluye metadata narrativa (POV y estilo) en la portada', () => {
+    const md = buildManuscriptMarkdown({ project, chapters: [], scenes: [], characters: [], world: [], beats: [] });
+    expect(md).toContain('Tercera (limitado)');
+    expect(md).toContain('escueto');
+  });
+
+  it('agrega el conteo de palabras al final del manuscrito', () => {
+    const multiScene: Scene = {
+      ...scene,
+      content: '<p>Santiago abrió el bolso.</p><p>Adentro había una carta.</p>',
+    };
+    const md = buildManuscriptMarkdown({ project, chapters: [chapter], scenes: [multiScene], characters: [], world: [], beats: [] });
+    // "Santiago abrió el bolso. Adentro había una carta." = 8 palabras.
+    expect(md).toContain('*8 palabras*');
+  });
+});
+
+describe('countWords', () => {
+  it('cuenta palabras separadas por espacios', () => {
+    expect(countWords('hola mundo')).toBe(2);
+  });
+  it('ignora texto vacío y espacios', () => {
+    expect(countWords('')).toBe(0);
+    expect(countWords('   ')).toBe(0);
+  });
+  it('maneja saltos de línea y múltiples espacios', () => {
+    expect(countWords('uno  dos\ntres')).toBe(3);
   });
 });
 
