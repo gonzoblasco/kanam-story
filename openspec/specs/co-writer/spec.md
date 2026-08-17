@@ -149,18 +149,12 @@ El agente SHALL excluir de su contexto los personajes/entidades con `inContext: 
 
 > **Auditoría realizada 2026-08-17** - ver `openspec/audits/co-writer-2026-08-17.md`.
 
-**Hallazgos (4):**
-- 🔴 **ALTO:** el contexto del chat NO incluye IDs de personajes/mundo (solo escenas/beats). El modelo adivina IDs → acciones `update_character`/`delete_character`/`update_world`/`delete_world` pueden fallar.
-- 🟠 **MEDIO:** el filtro `inContext` es inconsistente - personajes excluidos en el chat pero NO en el editor.
-- 🟠 **MEDIO:** la brújula NO se incluye en el editor (solo en el chat).
-- 🟠 **MEDIO:** las notas de continuidad NO se incluyen en el editor (solo en el chat).
+**Hallazgos (4) - TODOS APLICADOS (commit `f618a38`):**
+- ✅ **ALTO (IDs):** el contexto del chat ahora incluye IDs de personajes/mundo (antes solo escenas/beats).
+- ✅ **MEDIO (inContext):** el filtro `inContext` ahora es consistente - personajes excluidos en chat Y editor.
+- ✅ **MEDIO (brújula):** la brújula ahora se incluye en el editor (antes solo en el chat).
+- ✅ **MEDIO (continuidad):** las notas de continuidad ahora se incluyen en el editor (antes solo en el chat).
 
-**Causa raíz:** `buildContext` (editor) es una versión empobrecida de `buildAgentContext` (chat).
-
-**Pendiente de verificar:**
-- [ ] ¿El contexto del agente incluye SIEMPRE los IDs de escenas/personajes/entidades? (❌ personajes/mundo NO)
-- [ ] ¿El modelo de aceptación se respeta en TODAS las acciones? (✅ chat; el editor aplica directo - aclarar en spec)
-- [ ] ¿Las acciones destructivas solo se proponen cuando el autor lo pide? (✅ prompt lo indica)
-- [ ] ¿La navegación contextual lleva a la sección correcta para cada acción? (✅ `actionTargets.ts`)
-- [ ] ¿El streaming se aborta correctamente y el contenido parcial se revierte? (✅ chat + editor)
-- [ ] ¿El filtro inContext se aplica en TODOS los prompts (chat + editor)? (❌ personajes en editor NO)
+**Nota sobre el modelo de aceptación:** el modelo de aceptación (propuesta → diff → aceptar/deshacer)
+aplica al **chat** (el co-writer). El **editor** aplica directamente (solo undo + revert de streaming) -
+es una distinción de diseño intencional, no un bug.
