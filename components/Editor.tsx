@@ -17,6 +17,7 @@ import {
 } from '@/lib/prompts';
 import { ollamaChatStream } from '@/lib/ollama';
 import { proseToHtml } from '@/lib/proseToHtml';
+import { countWords } from '@/lib/export';
 import PromptDialog from '@/components/PromptDialog';
 
 const REWRITE_STYLES = [
@@ -476,7 +477,7 @@ export default function Editor() {
     );
   }
 
-  const wordCount = editor ? editor.getText().trim().split(/\s+/).filter(Boolean).length : 0;
+  const wordCount = editor ? countWords(editor.getText()) : 0;
 
   return (
     <div className="main-content">

@@ -6,6 +6,8 @@ All notable changes to Kanam Story are documented here. The format follows [Keep
 
 ### Fixed
 - **Co-writer context audit fixes (2026-08-17).** The editor (`buildContext`) now receives the same enriched context as the chat (`buildAgentContext`): character/world IDs, the `inContext` filter for characters, the narrative compass, and the active scene's continuity notes. Previously the editor had a poorer context (no IDs, no character `inContext` filter, no compass, no continuity notes), which could make the agent drift from the promise or break coherence when generating text.
+- **Compass fields commit on change (2026-08-17).** The premise/promise/theme text fields now commit on `onChange` (like the protagonist/POV/tense selects) instead of `onBlur`, so a change is never lost if the user leaves without blurring the field.
+- **Editor word count reuses `countWords` (2026-08-17).** The editor's word counter now uses the shared `countWords` from `lib/export.ts` instead of duplicating the logic inline, so the editor and the export stay consistent if the counting logic changes.
 
 ### Added
 - **Welcome screen (onboarding).** When no project exists, the main area shows a welcome screen explaining what Kanam Story is (co-writer, outline & beats, living bible, narrative compass) with a clear "Create your first project" button, instead of an empty editor.

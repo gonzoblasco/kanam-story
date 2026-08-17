@@ -52,8 +52,11 @@ export default function CompassPanel() {
             rows={2}
             placeholder="La idea en 1-2 frases"
             value={draft.premise}
-            onChange={(e) => setDraft((d) => ({ ...d, premise: e.target.value }))}
-            onBlur={() => commit({ premise: draft.premise })}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((d) => ({ ...d, premise: v }));
+              commit({ premise: v });
+            }}
           />
         </div>
         <div>
@@ -63,8 +66,11 @@ export default function CompassPanel() {
             rows={2}
             placeholder="Qué le prometés al lector"
             value={draft.promise}
-            onChange={(e) => setDraft((d) => ({ ...d, promise: e.target.value }))}
-            onBlur={() => commit({ promise: draft.promise })}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((d) => ({ ...d, promise: v }));
+              commit({ promise: v });
+            }}
           />
         </div>
         <div>
@@ -72,8 +78,11 @@ export default function CompassPanel() {
           <input
             className="form-control form-control-sm"
             value={draft.theme}
-            onChange={(e) => setDraft((d) => ({ ...d, theme: e.target.value }))}
-            onBlur={() => commit({ theme: draft.theme })}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((d) => ({ ...d, theme: v }));
+              commit({ theme: v });
+            }}
           />
         </div>
         <div>
