@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/store';
 import type { Scene } from '@/types';
 import { searchScenes, buildReplacePlan, htmlToText, type SceneSearchHit } from '@/lib/search';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const FIELD_LABELS: Record<string, string> = {
   content: 'Contenido',
@@ -17,6 +18,7 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
   const [replacement, setReplacement] = useState('');
   const [showReplace, setShowReplace] = useState(false);
   const [replaced, setReplaced] = useState(0);
+  const [confirmReplace, setConfirmReplace] = useState<{ plan: ReturnType<typeof buildReplacePlan>; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const hits = useMemo(
@@ -65,10 +67,14 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
         ),
       0,
     );
-    const ok = window.confirm(
-      `¿Reemplazar "${q}" por "${replacement}" en ${plan.length} escena(s) (${total} ocurrencia(s))?`,
-    );
-    if (!ok) return;
+    setConfirmReplace({
+      plan,
+      message: `¿Reemplazar "${q}" por "${replacement}" en ${plan.length} escena(s) (${total} ocurrencia(s))?`,
+    });
+  }
+
+  async function applyReplace(plan: ReturnType<typeof buildReplacePlan>) {
+    setConfirmReplace(null);
     setError(null);
     // Agrupar todos los cambios de una escena en un solo updateScene y aplicarlos
     // secuencialmente: evita que las escrituras read-modify-write concurrentes de
@@ -213,6 +219,18 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        show={confirmReplace !== null}
+        title="Reemplazar en escenas"
+        message={confirmReplace?.message ?? ''}
+        confirmLabel="Reemplazar"
+        danger
+        onCancel={() => setConfirmReplace(null)}
+        onConfirm={() => {
+          if (confirmReplace) void applyReplace(confirmReplace.plan);
+        }}
+      />
     </div>
   );
 }

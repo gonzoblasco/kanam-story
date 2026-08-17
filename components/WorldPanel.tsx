@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/store';
 import { WORLD_KIND_LABELS } from '@/lib/labels';
 import type { WorldEntity, WorldKind } from '@/types';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const KINDS: WorldKind[] = [
   'place',
@@ -102,6 +103,7 @@ export default function WorldPanel() {
   } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
   const [enriching, setEnriching] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<WorldEntity | null>(null);
   const autoFillAttemptedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function WorldPanel() {
   }
 
   function remove(w: WorldEntity) {
-    if (window.confirm(`¿Eliminar "${w.name}"?`)) deleteWorld(w.id);
+    setRemoveTarget(w);
   }
 
   async function enrich(w: WorldEntity) {
@@ -281,6 +283,19 @@ export default function WorldPanel() {
           )}
         </div>
       ))}
+
+      <ConfirmDialog
+        show={removeTarget !== null}
+        title="Eliminar entrada de mundo"
+        message={`¿Eliminar "${removeTarget?.name ?? ''}"?`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          if (removeTarget) deleteWorld(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }

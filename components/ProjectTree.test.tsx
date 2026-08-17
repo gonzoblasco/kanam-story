@@ -233,42 +233,46 @@ describe('ProjectTree', () => {
   });
 
   it('renames a scene via the scene action menu without selecting it', async () => {
-    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('Nuevo título');
     const user = userEvent.setup();
     render(<ProjectTree />);
 
     await user.click(screen.getByTitle('Acciones de Escena 2'));
     await user.click(within(screen.getByLabelText('Acciones de Escena 2')).getByRole('menuitem', { name: /Renombrar escena/i }));
 
+    // El diálogo accesible reemplaza window.prompt.
+    const input = screen.getByLabelText('Título de la escena');
+    await user.clear(input);
+    await user.type(input, 'Nuevo título');
+    await user.click(screen.getByRole('button', { name: 'Renombrar' }));
+
     expect(updateScene).toHaveBeenCalledWith('s2', { title: 'Nuevo título' });
     expect(selectScene).not.toHaveBeenCalled();
     expect(setView).not.toHaveBeenCalled();
-
-    promptSpy.mockRestore();
   });
 
   it('deletes a scene via the scene action menu without selecting it', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
     const user = userEvent.setup();
     render(<ProjectTree />);
 
     await user.click(screen.getByTitle('Acciones de Escena 2'));
     await user.click(within(screen.getByLabelText('Acciones de Escena 2')).getByRole('menuitem', { name: /Eliminar escena/i }));
 
+    // El diálogo accesible reemplaza window.confirm.
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
+
     expect(deleteScene).toHaveBeenCalledWith('s2');
     expect(selectScene).not.toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
   });
 
   it('elimina un proyecto tras confirmar', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<ProjectTree />);
 
     await user.click(screen.getByTitle('Eliminar proyecto Proyecto'));
 
+    // El diálogo accesible reemplaza window.confirm.
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
+
     expect(mockApp.deleteProject).toHaveBeenCalledWith('p1');
-    confirmSpy.mockRestore();
   });
 });

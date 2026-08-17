@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '@/lib/store';
 import { STORY_SECTIONS } from '@/lib/storySections';
 import ActionMenu from '@/components/ActionMenu';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import PromptDialog from '@/components/PromptDialog';
 import type { Chapter, StorySectionKey } from '@/types';
 
 export default function ProjectTree() {
@@ -49,6 +51,13 @@ export default function ProjectTree() {
   }, [chapters, collapsedIds, currentSceneId, scenes]);
 
   const collapsed = settings.sidebarCollapsed;
+
+  // Diálogos accesibles (reemplazan window.prompt / window.confirm nativos).
+  const [renameChapterTarget, setRenameChapterTarget] = useState<Chapter | null>(null);
+  const [removeChapterTarget, setRemoveChapterTarget] = useState<Chapter | null>(null);
+  const [removeProjectTarget, setRemoveProjectTarget] = useState<{ id: string; name: string } | null>(null);
+  const [renameSceneTarget, setRenameSceneTarget] = useState<{ id: string; title: string } | null>(null);
+  const [removeSceneTarget, setRemoveSceneTarget] = useState<{ id: string; title: string } | null>(null);
 
   if (projects.length === 0) {
     return (
@@ -142,29 +151,23 @@ export default function ProjectTree() {
   }
 
   function renameChapter(c: Chapter) {
-    const next = window.prompt('Título del capítulo', c.title);
-    if (next && next !== c.title) updateChapter(c.id, { title: next });
+    setRenameChapterTarget(c);
   }
 
   function removeChapter(c: Chapter) {
-    if (window.confirm(`¿Eliminar "${c.title}" y todas sus escenas?`)) {
-      deleteChapter(c.id);
-    }
+    setRemoveChapterTarget(c);
   }
 
   function removeProject(p: { id: string; name: string }) {
-    if (window.confirm(`¿Eliminar el proyecto "${p.name}" y TODO su contenido? Esta acción no se puede deshacer.`)) {
-      void deleteProject(p.id);
-    }
+    setRemoveProjectTarget(p);
   }
 
   function renameScene(id: string, title: string) {
-    const next = window.prompt('Título de la escena', title);
-    if (next && next !== title) updateScene(id, { title: next });
+    setRenameSceneTarget({ id, title });
   }
 
   function removeScene(id: string, title: string) {
-    if (window.confirm(`¿Eliminar "${title}"?`)) deleteScene(id);
+    setRemoveSceneTarget({ id, title });
   }
 
   if (collapsed) {
@@ -418,6 +421,72 @@ export default function ProjectTree() {
           );
         })}
       </div>
+
+      {/* Diálogos accesibles (reemplazan window.prompt / window.confirm). */}
+      <PromptDialog
+        show={renameChapterTarget !== null}
+        title="Renombrar capítulo"
+        label="Título del capítulo"
+        initialValue={renameChapterTarget?.title ?? ''}
+        confirmLabel="Renombrar"
+        onCancel={() => setRenameChapterTarget(null)}
+        onConfirm={(next) => {
+          if (renameChapterTarget && next && next !== renameChapterTarget.title) {
+            updateChapter(renameChapterTarget.id, { title: next });
+          }
+          setRenameChapterTarget(null);
+        }}
+      />
+      <ConfirmDialog
+        show={removeChapterTarget !== null}
+        title="Eliminar capítulo"
+        message={`¿Eliminar "${removeChapterTarget?.title ?? ''}" y todas sus escenas?`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveChapterTarget(null)}
+        onConfirm={() => {
+          if (removeChapterTarget) deleteChapter(removeChapterTarget.id);
+          setRemoveChapterTarget(null);
+        }}
+      />
+      <ConfirmDialog
+        show={removeProjectTarget !== null}
+        title="Eliminar proyecto"
+        message={`¿Eliminar el proyecto "${removeProjectTarget?.name ?? ''}" y TODO su contenido? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveProjectTarget(null)}
+        onConfirm={() => {
+          if (removeProjectTarget) void deleteProject(removeProjectTarget.id);
+          setRemoveProjectTarget(null);
+        }}
+      />
+      <PromptDialog
+        show={renameSceneTarget !== null}
+        title="Renombrar escena"
+        label="Título de la escena"
+        initialValue={renameSceneTarget?.title ?? ''}
+        confirmLabel="Renombrar"
+        onCancel={() => setRenameSceneTarget(null)}
+        onConfirm={(next) => {
+          if (renameSceneTarget && next && next !== renameSceneTarget.title) {
+            updateScene(renameSceneTarget.id, { title: next });
+          }
+          setRenameSceneTarget(null);
+        }}
+      />
+      <ConfirmDialog
+        show={removeSceneTarget !== null}
+        title="Eliminar escena"
+        message={`¿Eliminar "${removeSceneTarget?.title ?? ''}"?`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveSceneTarget(null)}
+        onConfirm={() => {
+          if (removeSceneTarget) deleteScene(removeSceneTarget.id);
+          setRemoveSceneTarget(null);
+        }}
+      />
     </>
   );
 }

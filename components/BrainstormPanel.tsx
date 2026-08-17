@@ -6,6 +6,8 @@ import { ollamaChat } from '@/lib/ollama';
 import { buildContext, buildBrainstormPrompt } from '@/lib/prompts';
 import type { BrainstormNote } from '@/types';
 import MarkdownView from '@/components/MarkdownView';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import PromptDialog from '@/components/PromptDialog';
 
 export default function BrainstormPanel() {
   const { currentProject, brainstorm, characters, world, settings, createNote, updateNote, deleteNote, announce } = useApp();
@@ -13,6 +15,8 @@ export default function BrainstormPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<BrainstormNote | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<BrainstormNote | null>(null);
 
   if (!currentProject) {
     return <div className="text-muted small">No hay proyecto seleccionado.</div>;
@@ -72,13 +76,11 @@ export default function BrainstormPanel() {
   }
 
   function renameNote(n: BrainstormNote) {
-    const next = window.prompt('Título de la nota', n.title);
-    if (next != null && next !== n.title) updateNote(n.id, { title: next });
+    setRenameTarget(n);
   }
 
   function removeNote(n: BrainstormNote) {
-    if (window.confirm(`¿Eliminar "${n.title || 'Sin título'}"?`)) deleteNote(n.id);
-    if (editingId === n.id) setEditingId(null);
+    setRemoveTarget(n);
   }
 
   return (
@@ -169,6 +171,36 @@ export default function BrainstormPanel() {
           </div>
         );
       })}
+
+      <PromptDialog
+        show={renameTarget !== null}
+        title="Renombrar nota"
+        label="Título de la nota"
+        initialValue={renameTarget?.title ?? ''}
+        confirmLabel="Renombrar"
+        onCancel={() => setRenameTarget(null)}
+        onConfirm={(next) => {
+          if (renameTarget && next != null && next !== renameTarget.title) {
+            updateNote(renameTarget.id, { title: next });
+          }
+          setRenameTarget(null);
+        }}
+      />
+      <ConfirmDialog
+        show={removeTarget !== null}
+        title="Eliminar nota"
+        message={`¿Eliminar "${removeTarget?.title || 'Sin título'}"?`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          if (removeTarget) {
+            deleteNote(removeTarget.id);
+            if (editingId === removeTarget.id) setEditingId(null);
+          }
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }

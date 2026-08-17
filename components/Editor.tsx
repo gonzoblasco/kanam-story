@@ -17,6 +17,7 @@ import {
 } from '@/lib/prompts';
 import { ollamaChatStream } from '@/lib/ollama';
 import { proseToHtml } from '@/lib/proseToHtml';
+import PromptDialog from '@/components/PromptDialog';
 
 const REWRITE_STYLES = [
   'más evocativo y sensorial',
@@ -58,6 +59,7 @@ export default function Editor() {
   const [summaryDraft, setSummaryDraft] = useState('');
   const [continuityDraft, setContinuityDraft] = useState('');
   const [busy, setBusy] = useState<'write' | 'describe' | 'rewrite' | 'expand' | 'dialogue' | 'tension' | null>(null);
+  const [linkDraft, setLinkDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rewriteStyle, setRewriteStyle] = useState(REWRITE_STYLES[0]);
   const [expandLength, setExpandLength] = useState<ExpandLength>('medium');
@@ -254,13 +256,7 @@ export default function Editor() {
       return;
     }
     const prev = (editor.getAttributes('link').href as string | undefined) ?? '';
-    const url = window.prompt('URL del enlace:', prev);
-    if (url === null) return; // cancelado
-    if (url.trim() === '') {
-      editor.chain().focus().unsetLink().run();
-    } else {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
-    }
+    setLinkDraft(prev);
   }
 
   function buildContextNow() {
@@ -845,6 +841,25 @@ export default function Editor() {
           <span>Modelo: {settings.ollamaModel}</span>
         </div>
       </div>
+
+      <PromptDialog
+        show={linkDraft !== null}
+        title="Insertar enlace"
+        label="URL del enlace"
+        initialValue={linkDraft ?? ''}
+        placeholder="https://…"
+        confirmLabel="Insertar"
+        onCancel={() => setLinkDraft(null)}
+        onConfirm={(url) => {
+          setLinkDraft(null);
+          if (!editor) return;
+          if (url.trim() === '') {
+            editor.chain().focus().unsetLink().run();
+          } else {
+            editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+          }
+        }}
+      />
     </div>
   );
 }

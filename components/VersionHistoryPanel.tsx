@@ -8,6 +8,7 @@ import {
   diffLines,
   sortSnapshotsNewestFirst,
 } from '@/lib/snapshots';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 /**
  * B6 — Versioning / snapshots.
@@ -22,6 +23,7 @@ export default function VersionHistoryPanel({ onClose }: { onClose: () => void }
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
 
   const scene = scenes.find((s) => s.id === currentSceneId) || null;
 
@@ -52,11 +54,12 @@ export default function VersionHistoryPanel({ onClose }: { onClose: () => void }
 
   async function handleRestore() {
     if (!selected || !scene) return;
-    const ok = window.confirm(
-      `¿Restaurar la escena a la versión del ${formatSnapshotTime(selected.createdAt)}? ` +
-        'Se guardará una snapshot del estado actual antes de restaurar.',
-    );
-    if (!ok) return;
+    setConfirmRestore(true);
+  }
+
+  async function doRestore() {
+    if (!selected || !scene) return;
+    setConfirmRestore(false);
     setError(null);
     try {
       await restoreSceneSnapshot(scene.id, selected);
@@ -194,6 +197,20 @@ export default function VersionHistoryPanel({ onClose }: { onClose: () => void }
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        show={confirmRestore}
+        title="Restaurar versión"
+        message={
+          selected
+            ? `¿Restaurar la escena a la versión del ${formatSnapshotTime(selected.createdAt)}? ` +
+              'Se guardará una snapshot del estado actual antes de restaurar.'
+            : ''
+        }
+        confirmLabel="Restaurar"
+        onCancel={() => setConfirmRestore(false)}
+        onConfirm={() => void doRestore()}
+      />
     </div>
   );
 }

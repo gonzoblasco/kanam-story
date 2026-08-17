@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/lib/store';
 import { CHARACTER_TYPE_LABELS, characterTypeLabel } from '@/lib/labels';
 import type { Character, CharacterType } from '@/types';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const TEXT_FIELDS: { key: keyof Character; label: string; rows?: number }[] = [
   { key: 'pronouns', label: 'Pronombres', rows: 1 },
@@ -108,6 +109,7 @@ export default function CharactersPanel() {
   const [genOpen, setGenOpen] = useState(false);
   const [genType, setGenType] = useState('');
   const [genInstructions, setGenInstructions] = useState('');
+  const [removeTarget, setRemoveTarget] = useState<Character | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<Partial<Character>[] | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
@@ -155,7 +157,7 @@ export default function CharactersPanel() {
   }
 
   function remove(c: Character) {
-    if (window.confirm(`¿Eliminar el personaje "${c.name}"?`)) deleteCharacter(c.id);
+    setRemoveTarget(c);
   }
 
   async function enrich(c: Character) {
@@ -417,6 +419,19 @@ export default function CharactersPanel() {
           )}
         </div>
       ))}
+
+      <ConfirmDialog
+        show={removeTarget !== null}
+        title="Eliminar personaje"
+        message={`¿Eliminar el personaje "${removeTarget?.name ?? ''}"?`}
+        confirmLabel="Eliminar"
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          if (removeTarget) deleteCharacter(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }
