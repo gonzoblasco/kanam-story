@@ -14,6 +14,7 @@ import SearchPanel from '@/components/SearchPanel';
 import VersionHistoryPanel from '@/components/VersionHistoryPanel';
 import ChapterReader from '@/components/ChapterReader';
 import CoWriterSidebar from '@/components/CoWriterSidebar';
+import WelcomeScreen from '@/components/WelcomeScreen';
 
 export default function HomePage() {
   const { ready, currentProject, settings, setSettings, view, setView, announcement } = useApp();
@@ -149,7 +150,9 @@ export default function HomePage() {
       ) : null}
 
       <main id="contenido-principal" className="main">
-        {view === 'outline' ? (
+        {!currentProject ? (
+          <WelcomeScreen onCreateProject={() => setShowNewProject(true)} />
+        ) : view === 'outline' ? (
           <OutlineView />
         ) : view === 'story' ? (
           <StorySections />

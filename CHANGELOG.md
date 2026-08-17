@@ -2,6 +2,11 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [Unreleased]
+
+### Added
+- **Welcome screen (onboarding).** When no project exists, the main area shows a welcome screen explaining what Kanam Story is (co-writer, outline & beats, living bible, narrative compass) with a clear "Create your first project" button, instead of an empty editor.
+
 ## [0.17.0] - 2026-08-17
 
 ### Added
