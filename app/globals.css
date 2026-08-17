@@ -28,6 +28,11 @@
   --sl-accent-2: #6a4bd8;
   --sl-btn-primary-bg: #5f3dc4;
   --sl-btn-primary-hover: #6a4bd8;
+  /* Rojo mas oscuro que el del tema oscuro: `--sl-danger` se usa como color de
+     texto sobre superficies claras (btn-icon-label-danger, action-menu-item-danger,
+     diff labels/lines). #ff6b6b da 2.78:1 sobre blanco (falla AA); #c82333 da
+     5.22:1 sobre el fondo claro #f7f6fb (cumple AA con margen). */
+  --sl-danger: #c82333;
 }
 
 html,
