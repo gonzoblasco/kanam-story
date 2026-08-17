@@ -2,6 +2,25 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.17.0] - 2026-08-17
+
+### Added
+- **Specialized co-writer roles.** A role selector in the co-writer sidebar specializes the agent prompt: `co-writer` (default, general creative debate), `plot-doctor` (narrative structure, arc, pacing, tension - proposes concrete fixes) and `consistency-checker` (internal coherence: names, objects, rules, timelines, traits). Implemented as a specialization of `buildAgentPrompt(role)` + `settings.agentRole`, persisted across reloads.
+- **New destructive agent actions.** `delete_character` and `delete_world` (only when the author asks) and `update_project` (refines project metadata: synopsis, genre, tone, POV, style, with POV validation). Pure logic + undo in `lib/actions.ts`, handlers in the store, validation in `agentReply.ts`, contextual navigation (delete_character → Personajes, delete_world → Mundo, update_project → Ajustes).
+- **PWA support with Serwist.** Service worker compiled at build time via a route handler (`/serwist/sw.js`), web app manifest, offline page (`/~offline`), `SerwistProvider`. Branded app icons (purple gradient + white K) generated programmatically with PIL.
+- **Accessible dialogs.** `ConfirmDialog` and `PromptDialog` replace the 12 native `window.prompt`/`window.confirm` calls across 7 components (managed focus, `aria-modal`, Escape to cancel, backdrop click to cancel).
+- **Mobile responsive layout (≤768px).** The sidebar becomes a drawer overlay with backdrop (controlled by the topbar toggle, `aria-expanded`, Escape/backdrop close); the topbar compacts to icon-only buttons (accessible names preserved); reduced padding in main-content/editor/stack-section; co-writer overlay full-width; modals full-width; ai-bar stacks.
+- **Export polish.** The manuscript cover now includes POV and style (in addition to genre/tone); a footer shows the manuscript word count (real prose, not titles/metadata) via a pure, tested `countWords()`.
+
+### Changed
+- **`--sl-danger` contrast in light theme** raised from 2.78:1 to 5.22:1 (WCAG AA) by overriding to `#c82333` on light surfaces, following the `btn-primary` token pattern.
+
+### Fixed
+- **Lint: `useId()` + uncontrolled input** (10 ESLint errors → 0).
+
+### Tests
+- 377 tests passing (added smoke test for specialized agent roles, `scripts/smoke-roles.ts`).
+
 ## [0.16.1] - 2026-08-17
 
 ### Fixed
