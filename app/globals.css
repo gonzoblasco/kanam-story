@@ -205,6 +205,21 @@ a {
   .topbar .d-md-inline {
     display: none !important;
   }
+  /* Reducir padding del contenido y del editor en pantallas chicas. */
+  .main-content {
+    padding: 1rem;
+  }
+  .editor-shell {
+    padding: 1rem 1.25rem;
+  }
+  .stack-section {
+    padding: 1rem 1.1rem;
+  }
+  /* El co-writer overlay ocupa todo el ancho en mobile. */
+  .cowriter-overlay {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .topbar {
