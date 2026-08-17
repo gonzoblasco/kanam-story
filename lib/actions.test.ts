@@ -210,6 +210,38 @@ describe('applyAction', () => {
     expect(revertedSection.manual).toBe('');
   });
 
+  it('delete_character elimina y revierte', () => {
+    const state = makeState();
+    const { next, undo } = applyAction(state, {
+      type: 'delete_character',
+      characterId: 'c1',
+      summary: 'eliminar personaje',
+    });
+    expect(next.characters.find((c) => c.id === 'c1')).toBeUndefined();
+    expect(undo(next).characters.find((c) => c.id === 'c1')).toBeDefined();
+  });
+
+  it('delete_character con ID inexistente no cambia nada', () => {
+    const state = makeState();
+    const { next } = applyAction(state, {
+      type: 'delete_character',
+      characterId: 'nope',
+      summary: 'eliminar',
+    });
+    expect(next.characters.length).toBe(state.characters.length);
+  });
+
+  it('delete_world elimina y revierte', () => {
+    const state = makeState();
+    const { next, undo } = applyAction(state, {
+      type: 'delete_world',
+      entityId: 'w1',
+      summary: 'eliminar mundo',
+    });
+    expect(next.world.find((w) => w.id === 'w1')).toBeUndefined();
+    expect(undo(next).world.find((w) => w.id === 'w1')).toBeDefined();
+  });
+
   it('append_scene agrega una escena nueva y revierte', () => {
     const state = makeState();
     const { next, undo } = applyAction(state, {

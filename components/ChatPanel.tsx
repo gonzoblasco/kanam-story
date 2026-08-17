@@ -264,6 +264,12 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
         return `Agregar personaje: ${a.summary || a.character.name}`;
       case 'update_world':
         return `Actualizar mundo: ${a.summary || a.entityId}`;
+      case 'delete_character':
+        return `Eliminar personaje: ${a.summary || a.characterId}`;
+      case 'delete_world':
+        return `Eliminar entrada de mundo: ${a.summary || a.entityId}`;
+      case 'update_project':
+        return `Actualizar proyecto: ${a.summary || 'cambios de metadata'}`;
       case 'update_bible':
         return `Actualizar biblia (${a.section}): ${a.summary}`;
       case 'append_scene':

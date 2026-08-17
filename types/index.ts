@@ -216,8 +216,11 @@ export type ContentAction =
   | { type: 'add_beat'; chapterId: string; beat: Beat; summary: string }
   | { type: 'update_character'; characterId: string; changes: Partial<Character>; summary: string }
   | { type: 'add_character'; character: Character; summary: string }
+  | { type: 'delete_character'; characterId: string; summary: string }
   | { type: 'update_world'; entityId: string; changes: Partial<WorldEntity>; summary: string }
+  | { type: 'delete_world'; entityId: string; summary: string }
   | { type: 'update_bible'; section: StoryBibleSection['key']; value: string; summary: string }
+  | { type: 'update_project'; changes: Partial<Project>; summary: string }
   | { type: 'append_scene'; chapterId: string; content: string; summary: string }
   | {
       type: 'replace_outline';

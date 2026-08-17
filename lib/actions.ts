@@ -142,6 +142,32 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
       };
     }
 
+    case 'delete_character': {
+      const character = state.characters.find((c) => c.id === action.characterId);
+      if (!character) return { next: state, undo: (s) => s };
+      const next = {
+        ...state,
+        characters: state.characters.filter((c) => c.id !== action.characterId),
+      };
+      return {
+        next,
+        undo: (s) => ({ ...s, characters: [...s.characters, character] }),
+      };
+    }
+
+    case 'delete_world': {
+      const entity = state.world.find((w) => w.id === action.entityId);
+      if (!entity) return { next: state, undo: (s) => s };
+      const next = {
+        ...state,
+        world: state.world.filter((w) => w.id !== action.entityId),
+      };
+      return {
+        next,
+        undo: (s) => ({ ...s, world: [...s.world, entity] }),
+      };
+    }
+
     case 'update_bible': {
       const before = state.bible?.sections.find((s) => s.key === action.section)?.manual ?? '';
       const next = updateBibleSection(state, action.section, action.value);

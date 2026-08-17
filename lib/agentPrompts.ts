@@ -206,6 +206,9 @@ Reglas:
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
   - {"type":"add_character","character":{"name":"...","type":"protagonist|antagonist|supporting|minor|love_interest|custom","pronouns":"...","age":"...","appearance":"...","personality":"...","voice":"...","goals":"...","backstory":"...","groups":["..."],"otherNames":["..."],"traits":["..."]},"summary":"..."}
   - {"type":"update_world","entityId":"<id>","changes":{...},"summary":"..."}
+  - {"type":"delete_character","characterId":"<id>","summary":"..."}
+  - {"type":"delete_world","entityId":"<id>","summary":"..."}
+  - {"type":"update_project","changes":{"description":"...","tone":"...","pov":"first|third-limited|third-omniscient|second"},"summary":"..."}
   - {"type":"update_bible","section":"summary|themes|characters|world|rules","value":"<texto nuevo de la sección>","summary":"..."}
   - {"type":"append_scene","chapterId":"<id>","content":"<prosa nueva>","summary":"..."}
   - {"type":"replace_outline","summary":"...","chapters":[{"title":"Capítulo 1","order":0}],"beats":[{"title":"...","kind":"inciting|rising|climax|falling|resolution|custom","description":"...","notes":"...","chapterIndex":0,"position":0,"status":"draft"}]}
@@ -216,6 +219,8 @@ Reglas:
 - Las "NOTAS DE CONTINUIDAD DE ESTA ESCENA" registran elementos que aparecen por primera vez en la escena actual (personajes, objetos, reglas, lugares, eventos) para mantener coherencia en escenas futuras. Si el autor te pide actualizarlas, o si detectás que algo nuevo e importante aparece en la escena, usá "update_scene_notes" para proponerlas/ajustarlas. Mantené coherencia con las notas existentes.
 - Para "kind" de beats usá EXACTAMENTE uno de estos valores en inglés: "inciting", "rising", "climax", "falling", "resolution", "custom". No uses sinónimos como "giro", "setup" o "desenlace"; mapeá esos conceptos al kind oficial más cercano.
 - Si no proponés cambios, usá "actions": [].
+- "delete_character" elimina un personaje existente; "delete_world" elimina una entrada del mundo. Usalos solo cuando el autor lo pida explícitamente (son destructivos).
+- "update_project" ajusta la metadata del proyecto (sinopsis, género, tono, POV, estilo). "pov" debe ser uno de: "first", "third-limited", "third-omniscient", "second". Usala para refinar la premisa o dirección de la historia.
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.
 - Respondé SOLO con el JSON. Sin prosa fuera del JSON, sin fences markdown, sin comentarios.`;
 }

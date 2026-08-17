@@ -23,11 +23,15 @@ export function getActionTarget(action: ContentAction): ActionTarget {
   switch (action.type) {
     case 'add_character':
     case 'update_character':
+    case 'delete_character':
       return { view: 'story', section: 'characters', label: 'Personajes' };
     case 'update_world':
+    case 'delete_world':
       return { view: 'story', section: 'world', label: 'Mundo' };
     case 'update_bible':
       return { view: 'story', section: 'bible', label: 'Biblia' };
+    case 'update_project':
+      return { view: 'story', section: 'bible-settings', label: 'Ajustes' };
     case 'add_beat':
     case 'update_beat':
       return { view: 'outline', label: 'Outline' };

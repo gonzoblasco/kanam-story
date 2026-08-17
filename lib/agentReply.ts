@@ -97,6 +97,9 @@ function normalizeActionKinds(actions: unknown[]): ContentAction[] {
 /** Valid StoryBible section keys (used to validate `update_bible` actions). */
 const BIBLE_SECTION_KEYS = ['summary', 'themes', 'characters', 'world', 'rules'] as const;
 
+/** Valid POV values (used to validate `update_project` changes). */
+const POV_VALUES = ['first', 'third-limited', 'third-omniscient', 'second'] as const;
+
 const CHARACTER_TYPES: CharacterType[] = [
   'protagonist',
   'antagonist',
@@ -159,6 +162,18 @@ export function isValidAction(action: unknown): action is ContentAction {
     }
     case 'update_world':
       return typeof a.entityId === 'string' && typeof a.changes === 'object' && a.changes !== null;
+    case 'delete_character':
+      return typeof a.characterId === 'string';
+    case 'delete_world':
+      return typeof a.entityId === 'string';
+    case 'update_project': {
+      if (typeof a.changes !== 'object' || a.changes === null) return false;
+      const ch = a.changes as Record<string, unknown>;
+      if (ch.pov !== undefined && typeof ch.pov === 'string' && !(POV_VALUES as readonly string[]).includes(ch.pov)) {
+        return false;
+      }
+      return true;
+    }
     case 'update_bible':
       return (
         typeof a.section === 'string' &&

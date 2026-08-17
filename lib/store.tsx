@@ -1421,6 +1421,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             break;
           }
+          case 'delete_character': {
+            const character = await charactersDB.get(action.characterId);
+            if (character) {
+              await deleteCharacter(action.characterId);
+              undos.push(() => createCharacter(character).then(() => {}));
+              await markBibleStale(['characters']);
+              undos.push(() => clearBibleStale(['characters']));
+            } else {
+              failed.push(`personaje ${action.characterId}`);
+            }
+            break;
+          }
+          case 'delete_world': {
+            const entity = await worldDB.get(action.entityId);
+            if (entity) {
+              await deleteWorld(action.entityId);
+              undos.push(() => createWorld(entity).then(() => {}));
+              await markBibleStale(['world']);
+              undos.push(() => clearBibleStale(['world']));
+            } else {
+              failed.push(`entidad ${action.entityId}`);
+            }
+            break;
+          }
+          case 'update_project': {
+            if (currentProject) {
+              const prev = {
+                name: currentProject.name,
+                description: currentProject.description,
+                genre: currentProject.genre,
+                tone: currentProject.tone,
+                pov: currentProject.pov,
+                style: currentProject.style,
+              };
+              await updateProject(currentProject.id, action.changes);
+              undos.push(() => updateProject(currentProject.id, prev));
+            }
+            break;
+          }
           case 'update_bible': {
             if (storyBible) {
               const section = storyBible.sections.find((s) => s.key === action.section);
@@ -1623,7 +1662,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         },
       };
     },
-    [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
+    [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, deleteWorld, createWorld, updateProject, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
   );
 
   const value: AppState = {
