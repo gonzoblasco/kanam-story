@@ -102,6 +102,7 @@ const mockApp = {
   reorderChapters,
   createScene: vi.fn(),
   updateScene: vi.fn(),
+  deleteScene: vi.fn(),
   selectScene: vi.fn(),
   setView: vi.fn(),
   requestEditorFocus: vi.fn(),
@@ -111,6 +112,30 @@ const mockApp = {
   setSettings: vi.fn(),
 };
 
+const scene1: Scene = {
+  id: 's1',
+  projectId: 'p1',
+  chapterId: 'c1',
+  title: 'Escena 1',
+  content: '',
+  summary: '',
+  order: 0,
+  createdAt: 0,
+  updatedAt: 0,
+};
+
+const scene2: Scene = {
+  id: 's2',
+  projectId: 'p1',
+  chapterId: '',
+  title: 'Escena huérfana',
+  content: '',
+  summary: '',
+  order: 1,
+  createdAt: 0,
+  updatedAt: 0,
+};
+
 vi.mock('@/lib/store', () => ({
   useApp: () => mockApp,
 }));
@@ -118,6 +143,7 @@ vi.mock('@/lib/store', () => ({
 describe('OutlineView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockApp.scenes = [];
   });
 
   it('renders the current chapter in chapter mode', () => {
@@ -180,5 +206,57 @@ describe('OutlineView', () => {
 
     await user.click(screen.getByRole('button', { name: /Aplicar/i }));
     expect(applyGlobalOutline).toHaveBeenCalled();
+  });
+
+  it('does not render orphan panel when there are no orphan scenes', () => {
+    render(<OutlineView />);
+    expect(screen.queryByRole('heading', { name: /Escenas sin capítulo/i })).not.toBeInTheDocument();
+  });
+
+  it('renders orphan panel in global mode and moves an orphan scene to a chapter', async () => {
+    mockApp.scenes = [scene1, scene2];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Global/i }));
+    expect(screen.getByRole('heading', { name: /Escenas sin capítulo/i })).toBeInTheDocument();
+    expect(screen.getByText('Escena huérfana')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Mover escena "Escena huérfana" al capítulo seleccionado/i }));
+    expect(mockApp.updateScene).toHaveBeenCalledWith('s2', { chapterId: 'c1' });
+  });
+
+  it('links an orphan scene to a chapter creating a beat', async () => {
+    mockApp.scenes = [scene2];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Global/i }));
+    await user.click(screen.getByRole('button', { name: /Mover y crear beat para "Escena huérfana"/i }));
+    expect(mockApp.updateScene).toHaveBeenCalledWith('s2', { chapterId: 'c1' });
+    expect(createBeat).toHaveBeenCalledWith(expect.objectContaining({ chapterId: 'c1', sceneId: 's2' }));
+  });
+
+  it('deletes an orphan scene', async () => {
+    mockApp.scenes = [scene2];
+    vi.stubGlobal('confirm', () => true);
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Global/i }));
+    await user.click(screen.getByRole('button', { name: /Eliminar escena "Escena huérfana"/i }));
+    expect(mockApp.deleteScene).toHaveBeenCalledWith('s2');
+    vi.unstubAllGlobals();
+  });
+
+  it('opens an orphan scene in the editor', async () => {
+    mockApp.scenes = [scene2];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Global/i }));
+    await user.click(screen.getByRole('button', { name: /Ver escena "Escena huérfana" en el editor/i }));
+    expect(mockApp.selectScene).toHaveBeenCalledWith('s2');
+    expect(mockApp.setView).toHaveBeenCalledWith('editor');
   });
 });

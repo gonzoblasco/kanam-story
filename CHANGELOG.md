@@ -2,6 +2,14 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.11.0] - 2026-08-16
+
+### Added
+- **Orphan scene panel in global outline (U4).** Scenes that lost their chapter after a `replace_outline` (or created without a chapter) now appear in an "Escenas sin capítulo" section at the bottom of the global outline. Each orphan scene can be moved to an existing chapter, linked to a new beat, opened in the editor, or deleted.
+
+### Fixed
+- **ProjectTree test reactivity for derived expanded state.** Updated `ProjectTree.test.tsx` mocks so that `setSettings` triggers a re-render, matching the new `useMemo`-derived `expanded` state.
+
 ## [0.10.2] - 2026-08-16
 
 ### Fixed

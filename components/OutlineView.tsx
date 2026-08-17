@@ -7,6 +7,7 @@ import { planGenerateScene } from '@/lib/sceneFromBeat';
 import { generateSceneContent } from '@/lib/generateSceneContent';
 import ChapterSection from '@/components/ChapterSection';
 import SuggestedOutlinePreview from '@/components/SuggestedOutlinePreview';
+import OrphanScenesPanel from '@/components/OrphanScenesPanel';
 import type { SuggestedChapter } from '@/lib/outlineGeneration';
 import type { Beat, Scene } from '@/types';
 
@@ -32,6 +33,7 @@ export default function OutlineView() {
     reorderChapters,
     createScene,
     updateScene,
+    deleteScene,
     selectScene,
     setView,
     requestEditorFocus,
@@ -73,6 +75,14 @@ export default function OutlineView() {
     () => [...chapters].sort((a, b) => a.order - b.order),
     [chapters],
   );
+
+  // Compute orphan scenes (scenes with zero beats)
+  const orphanScenes = useMemo(() => {
+    return scenes.filter((scene) => {
+      const sceneBeats = beats.filter((b) => b.sceneId === scene.id);
+      return sceneBeats.length === 0;
+    });
+  }, [scenes, beats]);
 
   const addBeat = async (chapterId: string, sceneId?: string) => {
     if (!currentProject) return;
@@ -122,6 +132,33 @@ export default function OutlineView() {
   const handleMoveBeatToChapter = async (beatId: string, targetChapterId: string) => {
     await moveBeatToChapter(beatId, targetChapterId);
     announce('Beat movido de capítulo.');
+  };
+
+  const handleMoveScene = async (sceneId: string, chapterId: string) => {
+    if (!chapterId) return;
+    await updateScene(sceneId, { chapterId });
+    announce(`Escena movida al capítulo.`);
+  };
+
+  const handleMoveAndLink = async (sceneId: string, chapterId: string) => {
+    if (!chapterId) return;
+    await updateScene(sceneId, { chapterId });
+    await addBeat(chapterId, sceneId);
+    announce(`Escena vinculada al outline.`);
+  };
+
+  const handleDeleteScene = async (sceneId: string) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    if (!confirm(`Eliminar la escena "${scene.title}"?`)) return;
+    await deleteScene(sceneId);
+    announce(`Escena "${scene.title}" eliminada.`);
+  };
+
+  const handleViewScene = (sceneId: string) => {
+    selectScene(sceneId);
+    setView('editor');
+    requestEditorFocus();
   };
 
   const suggestGlobal = async () => {
@@ -471,6 +508,16 @@ export default function OutlineView() {
           ))}
         </div>
       )}
+      {mode === 'global' && orphanScenes.length > 0 ? (
+        <OrphanScenesPanel
+          scenes={orphanScenes}
+          chapters={chapters}
+          onMoveScene={handleMoveScene}
+          onMoveAndLink={handleMoveAndLink}
+          onDeleteScene={handleDeleteScene}
+          onViewScene={handleViewScene}
+        />
+      ) : null}
     </div>
   );
 }

@@ -94,11 +94,35 @@ const scene2: Scene = {
   updatedAt: 0,
 };
 
-const setSettings = vi.fn((patch: Partial<typeof mockApp.settings>) => {
+const setSettings = vi.fn((patch: Partial<{ sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] }>) => {
   mockApp.settings = { ...mockApp.settings, ...patch };
 });
 
-const mockApp = {
+interface MockApp {
+  projects: Project[];
+  currentProject: Project | null;
+  selectProject: () => void;
+  createChapter: () => Promise<unknown>;
+  createScene: (data: Omit<Scene, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Scene>;
+  updateChapter: () => Promise<void>;
+  deleteChapter: () => Promise<void>;
+  updateScene: () => Promise<void>;
+  deleteScene: () => Promise<void>;
+  chapters: Chapter[];
+  scenes: Scene[];
+  currentSceneId: string | null;
+  selectScene: (id: string) => void;
+  settings: { sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] };
+  setSettings: (patch: Partial<{ sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] }>) => void;
+  view: 'story';
+  setView: (v: string) => void;
+  activeStorySection: StorySectionKey;
+  setActiveStorySection: (s: StorySectionKey) => void;
+  setCurrentOutlineChapterId: (id: string) => void;
+  setCurrentChapterId: (id: string) => void;
+}
+
+const mockApp: MockApp = {
   projects: [mockProject],
   currentProject: mockProject,
   selectProject: vi.fn(),
@@ -110,10 +134,10 @@ const mockApp = {
   deleteScene,
   chapters: [chapter1, chapter2],
   scenes: [scene1, scene2],
-  currentSceneId: 's1',
+  currentSceneId: null,
   selectScene,
   settings: { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark', collapsedChapterIds: [] as string[] },
-  setSettings,
+  setSettings: setSettings as (patch: Partial<{ sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] }>) => void,
   view: 'story' as const,
   setView,
   activeStorySection: 'chat' as StorySectionKey,
@@ -126,7 +150,9 @@ vi.mock('@/lib/store', () => ({
   useApp: () => {
     const [settings, setSettingsState] = React.useState(mockApp.settings);
     mockApp.settings = settings;
-    mockApp.setSettings = (patch: Partial<typeof mockApp.settings>) => setSettingsState((s) => ({ ...s, ...patch }));
+    mockApp.setSettings = (patch: Partial<{ sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] }>) => {
+      setSettingsState((s: { sidebarCollapsed: boolean; ollamaUrl: string; ollamaModel: string; theme: string; collapsedChapterIds: string[] }) => ({ ...s, ...patch }));
+    };
     return mockApp;
   },
 }));
@@ -142,6 +168,7 @@ vi.mock('@/lib/storySections', () => ({
 describe('ProjectTree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockApp.currentSceneId = null;
     mockApp.settings = { sidebarCollapsed: false, ollamaUrl: '', ollamaModel: '', theme: 'dark', collapsedChapterIds: [] };
   });
 
