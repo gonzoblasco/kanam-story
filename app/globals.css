@@ -220,6 +220,27 @@ a {
     width: 100%;
     max-width: 100%;
   }
+  /* Modales: ocupan casi todo el ancho en mobile. */
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: none;
+  }
+  .modal-dialog.modal-lg {
+    max-width: none;
+  }
+  /* Chapter reader: padding mínimo en mobile. */
+  .chapter-reader {
+    padding: 0.75rem;
+  }
+  /* AI bar: los grupos con combobox se apilan en mobile. */
+  .ai-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ai-bar > .d-inline-flex,
+  .ai-bar > div {
+    width: 100%;
+  }
 }
 
 .topbar {
