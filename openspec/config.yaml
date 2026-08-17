@@ -1,0 +1,47 @@
+schema: spec-driven
+
+# Project context - shown to AI when creating artifacts.
+context: |
+  Kanam Story - co-writer de ficción local-first en español donde la conversación ES el producto.
+  Un agente con el que conversás que conoce el manuscrito, la biblia, el outline y la brújula,
+  y que APLICA cambios al contenido cuando los aceptás (modelo propuesta → diff → aceptar/deshacer).
+
+  Tech stack:
+  - Next.js 16 (App Router, Turbopack)
+  - TipTap 3 (editor)
+  - Bootstrap 5 + tokens CSS custom (--sl-*)
+  - IndexedDB via idb (un store por entidad) - 100% local-first, sin backend
+  - Ollama como motor de IA (BYOK), proxied via /api/ollama (evita CORS)
+  - Vitest 4 (379 tests), testing-library + jsdom para componentes
+
+  Convenciones:
+  - UI y prompts en español (el usuario escribe ficción en español)
+  - Campos de dominio en inglés (pov, type, kind, key) porque se serializan en IndexedDB
+  - Commits en inglés, formato type(#issue): description
+  - Lógica pura testeable extraída a lib/*.ts (sin DB/DOM)
+  - Toda persistencia via lib/db.ts + lib/store.tsx (componentes nunca tocan idb directo)
+  - Toda llamada IA via lib/ollama.ts
+
+  Dominio:
+  - Project (brújula: premise, promise, theme, protagonist, pov, tense, style)
+  - Chapter / Scene (manuscrito tipTap JSON)
+  - Beat (mapa de estructura: inciting/rising/climax/falling/resolution/custom)
+  - Character (fichas ricas: type, pronouns, groups, traits, inContext)
+  - WorldEntity (worldbuilding tipado: place/organization/lore/key_event/clue/magic_system/item/rule/other)
+  - StoryBible (5 secciones auto-generadas + overrides manuales)
+  - Conversation / Message / ContentAction (el chat con manos)
+
+  Estrategia de producto (3 públicos):
+  - Open source (gratis, local-first, BYOK → Ollama)
+  - SaaS BYOK (5 USD/mes, sync en la nube, multi-dispositivo)
+  - SaaS premium (con LLM incluido, DeepSeek V4 Flash server-side)
+  - El co-writer es el bonus de pago (feature flag NEXT_PUBLIC_ENABLE_COWRITER, hoy habilitado en open source)
+
+rules:
+  proposal:
+    - Keep proposals concise (1-2 pages)
+    - Every capability must map to a real spec file
+    - Include a "Non-goals" section
+  tasks:
+    - Break tasks into chunks of max 2 hours
+    - Each task = commit atómico + push + actualizar STATUS.md
