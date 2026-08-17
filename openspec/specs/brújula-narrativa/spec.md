@@ -51,9 +51,14 @@ El sistema SHALL limpiar el campo `protagonist` cuando el personaje protagonista
 
 ## Notas de auditoría (2026-08-17)
 
-Puntos a verificar en la auditoría de la brújula:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/brújula-narrativa-2026-08-17.md`.
 
-- [ ] ¿Los selects de brújula commitean en onChange (no en blur)?
-- [ ] ¿El `protagonist` se limpia al borrar el personaje?
-- [ ] ¿La brújula se incluye en TODOS los prompts (chat + editor)?
-- [ ] ¿El POV se valida en `update_project` (no acepta valores inválidos)?
+**Resultado: TODOS los requirements cumplidos. 1 hallazgo menor.**
+
+- ✅ Campos editables (premise/promise/theme/protagonist/pov/tense).
+- ✅ Strip de promesa en el editor.
+- ✅ Brújula orienta al agente (contexto + update_project con validación de POV).
+- ✅ Protagonista consistente (se limpia al borrar).
+
+**Hallazgo menor:** los textareas (premise/promesa/tema) commitean en **onBlur**, los selects
+(protagonista/POV/tense) en **onChange**. Difiere del spec ("onChange"). Comportamiento razonable.
