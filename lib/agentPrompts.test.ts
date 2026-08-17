@@ -107,6 +107,7 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('Club Argentino de Ajedrez');
     expect(ctx).toContain('OUTLINE (beats)');
     expect(ctx).toContain('La invitación');
+    expect(ctx).toContain('(id: b1');
     expect(ctx).toContain('MANUSCRITO');
     expect(ctx).toContain('La vuelta');
     expect(ctx).toContain('(id: s1)');
@@ -126,6 +127,24 @@ describe('buildAgentContext', () => {
     });
     expect(ctx).toContain('La Última Partida');
     expect(ctx).not.toContain('BIBLIA');
+  });
+
+  it('incluye la escena activa completa bajo ESCENA ACTIVA', () => {
+    const longContent = '<p>' + 'Renzo miró el tablero. '.repeat(200) + '</p>'; // > 800 chars
+    const active: Scene = { ...scene, id: 's-activa', content: longContent };
+    const ctx = buildAgentContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [chapter],
+      scenes: [active],
+      beats: [beat],
+      storyBible: bible,
+      activeSceneId: 's-activa',
+    });
+    expect(ctx).toContain('ESCENA ACTIVA');
+    // La escena activa se incluye completa: el texto largo no se trunca con '…'.
+    expect(ctx).toContain('Renzo miró el tablero. Renzo miró el tablero.');
   });
 
   it('limpia HTML del manuscrito', () => {

@@ -2,6 +2,18 @@
 
 All notable changes to Kanam Story are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (relaxed during beta).
 
+## [0.12.1] - 2026-08-16
+
+### Added
+- **Beats from the author's manuscript via chat.** The co-writer now receives the active scene's full text (under "ESCENA ACTIVA") instead of the previous 800-char truncation, and is instructed to extract beats from the author's actual content - keeping the ideas but free to reorder/respace them, without inventing new content. This enables flows like "generá el outline de esta escena" or "armá los beats de este texto" by pasting or working on the current scene.
+- **Beat ids now exposed in the agent context.** The outline context now shows each beat's `id` (`(id: b1, capítulo ch1)`), so actions that reference a `beatId` (`update_beat`, `deleteBeat`, `moveBeatToChapter`, `updateBeat`) target real beats instead of falling back to scene/chapter ids.
+
+### Fixed
+- **Agent could not reference beats by id.** The outline context did not include beat ids, so the model emitted `beatId` values that pointed at scene or chapter ids (e.g. `"s1"`), which would fail or corrupt when applied. Now ids are visible and validated.
+
+### Tests
+- 331 tests passing (added active-scene context and beat-id context coverage).
+
 ## [0.12.0] - 2026-08-16
 
 ### Added

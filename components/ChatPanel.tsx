@@ -26,6 +26,7 @@ export default function ChatPanel() {
     scenes,
     beats,
     storyBible,
+    currentSceneId,
     applyContentActions,
     announce,
     setView,
@@ -104,6 +105,7 @@ export default function ChatPanel() {
       scenes,
       beats,
       storyBible,
+      activeSceneId: currentSceneId ?? undefined,
     });
     const prompt = buildAgentPrompt(context, text);
 

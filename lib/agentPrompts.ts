@@ -9,6 +9,8 @@ export interface AgentSources {
   scenes: Scene[];
   beats: Beat[];
   storyBible: StoryBible | null;
+  /** Si se pasa, la escena activa se incluye COMPLETA (no truncada) en el contexto. */
+  activeSceneId?: string;
 }
 
 function stripHtml(html: string): string {
@@ -37,7 +39,7 @@ function beatKindLabel(k: Beat['kind']): string {
  * manuscript (by chapter/scene), outline (beats) and bible.
  */
 export function buildAgentContext(sources: AgentSources): string {
-  const { project, characters, world, chapters, scenes, beats, storyBible } = sources;
+  const { project, characters, world, chapters, scenes, beats, storyBible, activeSceneId } = sources;
   const parts: string[] = [];
 
   parts.push(`Título: ${project.name}`);
@@ -100,7 +102,7 @@ export function buildAgentContext(sources: AgentSources): string {
     for (const b of sorted) {
       const scope = b.chapterId ? `capítulo ${b.chapterId}` : b.sceneId ? `escena ${b.sceneId}` : 'proyecto';
       parts.push(
-        `- [${beatKindLabel(b.kind)}] ${b.title} (${scope}): ${b.description}${b.notes ? ` — ${b.notes}` : ''}`,
+        `- [${beatKindLabel(b.kind)}] ${b.title} (id: ${b.id}, ${scope}): ${b.description}${b.notes ? ` — ${b.notes}` : ''}`,
       );
     }
   }
@@ -123,9 +125,23 @@ export function buildAgentContext(sources: AgentSources): string {
           parts.push(`- **${s.title}** (id: ${s.id})${s.summary ? `: ${s.summary}` : ''}`);
         }
         if (hasText) {
-          const snippet = text.length > 500 ? text.slice(0, 500) + '…' : text;
+          const snippet = text.length > 800 ? text.slice(0, 800) + '…' : text;
           parts.push(`  Texto: ${snippet}`);
         }
+      }
+    }
+  }
+
+  // Escena activa: incluirla COMPLETA para que el agente pueda extraer beats
+  // de lo que el autor está escribiendo, sin truncar a 800 chars.
+  if (activeSceneId) {
+    const active = scenes.find((s) => s.id === activeSceneId);
+    if (active) {
+      const activeText = stripHtml(active.content);
+      if (activeText.length > 0) {
+        parts.push('\nESCENA ACTIVA (texto completo del autor — extraé beats respetando SUS ideas):');
+        parts.push(`## ${active.title || 'Escena sin título'} (id: ${active.id})`);
+        parts.push(activeText);
       }
     }
   }
@@ -172,6 +188,7 @@ Reglas:
   - {"type":"update_outline","summary":"...","renameChapter":{"chapterId":"<id>","title":"Nuevo título"},"deleteChapter":{"chapterId":"<id>"},"addBeats":[{"chapterId":"<id>","beat":{"title":"...","kind":"inciting|rising|climax|falling|resolution|custom","description":"...","notes":"...","status":"draft"}}],"deleteBeat":{"beatId":"<id>"},"moveBeatToChapter":{"beatId":"<id>","targetChapterId":"<id>"},"updateBeat":{"beatId":"<id>","changes":{"title":"..."}}}
 - "replace_outline" reemplaza TODO el outline actual por una nueva estructura de capítulos y beats. "chapterIndex" es el índice (0-based) del capítulo dentro de "chapters". Usala solo cuando el autor pida reorganizar el outline global. No combines "replace_outline" con otras acciones en la misma respuesta.
 - "update_outline" hace cambios parciales al outline SIN reemplazarlo completo: podés renombrar un capítulo, borrar un capítulo (sus escenas quedan sin capítulo, sus beats se borran), agregar beats a un capítulo o escena, borrar un beat, mover un beat a otro capítulo, o actualizar campos de un beat. Incluí solo las operaciones que necesites. Es ideal para ajustes puntuales: "agregá un beat de tensión al capítulo 2", "renombrá el capítulo 3", "mové el beat X al capítulo Y".
+- Cuando el autor te pida generar beats a partir de una escena o texto que ÉL escribió (por ejemplo "armá el outline de esta escena" o "generá los beats de este texto"), usá "add_beat" (o "update_outline" con "addBeats") y EXTRAÉ los beats del contenido real del autor: tomá sus ideas, momentos y giros como base. No es necesario respetar el mismo orden ni ritmo; podés reestructurarlos si aporta, pero NO inventes contenido que no esté en el texto. La escena activa aparece completa bajo "ESCENA ACTIVA".
 - Para "kind" de beats usá EXACTAMENTE uno de estos valores en inglés: "inciting", "rising", "climax", "falling", "resolution", "custom". No uses sinónimos como "giro", "setup" o "desenlace"; mapeá esos conceptos al kind oficial más cercano.
 - Si no proponés cambios, usá "actions": [].
 - Los IDs de escenas, beats, personajes y entidades deben ser los que aparecen en el contexto. Si no conocés un ID, no inventes una acción que lo requiera.
