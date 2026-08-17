@@ -65,11 +65,13 @@ con `inContext: false`.
 
 ## Notas de auditoría (2026-08-17)
 
-Puntos a verificar en la auditoría de la biblia:
+> **Auditoría realizada 2026-08-17** - ver `openspec/audits/biblia-viva-2026-08-17.md`.
 
-- [ ] ¿El sync corre DESPUÉS de regenerar (no antes)?
-- [ ] ¿El sync lee la biblia fresca de la DB, no del closure de React?
-- [ ] ¿El dedupe por nombre es case-insensitive?
-- [ ] ¿El sync solo toca entidades `source: 'biblia'` (no pisa manual)?
-- [ ] ¿El stale tracking se limpia al deshacer un cambio del chat?
-- [ ] ¿El filtro inContext se aplica en la biblia también?
+**Resultado: TODOS los requirements cumplidos. Sin hallazgos.**
+
+- ✅ Generación automática desde el manuscrito (5 secciones, overrides preservados).
+- ✅ Sync + stale tracking (marca stale, limpia al deshacer, auto-import con dedupe).
+- ✅ Overrides manuales preservados (solo toca `source: 'biblia'`, solo rellena vacíos).
+- ✅ Biblia alimenta el contexto (filtro inContext aplicado).
+
+**Nota:** el sync corre DESPUÉS de regenerar (bug de orden corregido en U5, verificado en `StoryBiblePanel`).
