@@ -21,7 +21,7 @@ import {
 } from '@/lib/migrations';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -132,6 +132,15 @@ function getDB() {
           ensureIndex(store, 'by-project', 'projectId');
           ensureIndex(store, 'by-scene', 'sceneId');
           ensureIndex(store, 'by-scene-created', ['sceneId', 'createdAt']);
+        }
+
+        // v9 → v10: Chapter gains optional direct-content fields (content,
+        // summary, continuityNotes). Purely additive — existing chapters remain
+        // valid without them, so no data transform is needed. We only assert the
+        // `chapters` store exists (it is created/ensured above); the version bump
+        // alone forces onupgradeneeded to rerun for browsers still on v9.
+        if (oldVersion < 10 && !db.objectStoreNames.contains('chapters')) {
+          db.createObjectStore('chapters', { keyPath: 'id' });
         }
 
         // v3 → v4: migrate `style` from string to ProjectStyle object.

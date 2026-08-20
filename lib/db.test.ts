@@ -192,6 +192,28 @@ describe('db: CRUD', () => {
     expect((await chaptersDB.listByProject(p.id)).length).toBe(2);
   });
 
+  it('chapters: create/update persist optional direct-content fields', async () => {
+    const { projectsDB, chaptersDB } = db;
+    const p = await projectsDB.create(makeProject());
+    const c = await chaptersDB.create({
+      ...makeChapter(p.id, 0),
+      content: '<p>Directo</p>',
+      summary: 'Resumen',
+      continuityNotes: 'Notas',
+    });
+
+    const created = (await chaptersDB.listByProject(p.id))[0];
+    expect(created.content).toBe('<p>Directo</p>');
+    expect(created.summary).toBe('Resumen');
+    expect(created.continuityNotes).toBe('Notas');
+
+    await chaptersDB.update(c.id, { content: '<p>Editado</p>', summary: 'Nuevo resumen' });
+    const updated = (await chaptersDB.listByProject(p.id))[0];
+    expect(updated.content).toBe('<p>Editado</p>');
+    expect(updated.summary).toBe('Nuevo resumen');
+    expect(updated.continuityNotes).toBe('Notas');
+  });
+
   it('scenes: create, listByProject/Chapter, get, update, delete', async () => {
     const { projectsDB, chaptersDB, scenesDB } = db;
     const p = await projectsDB.create(makeProject());

@@ -55,6 +55,12 @@ export interface Chapter {
   projectId: string;
   title: string;
   order: number;
+  /** Contenido directo del capítulo (trabajo sin escenas). Opcional. */
+  content?: string;
+  /** Resumen del capítulo. Opcional. */
+  summary?: string;
+  /** Notas de continuidad del capítulo. Markdown. Opcional. */
+  continuityNotes?: string;
   createdAt: number;
   updatedAt: number;
 }
