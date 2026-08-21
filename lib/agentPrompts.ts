@@ -11,6 +11,10 @@ export interface AgentSources {
   storyBible: StoryBible | null;
   /** Si se pasa, la escena activa se incluye COMPLETA (no truncada) en el contexto. */
   activeSceneId?: string;
+  /** Si se pasa, el capítulo activo (modo capítulo-directo, sin escenas) se
+   * incluye COMPLETO en el contexto: su content + sus beats + sus notas de
+   * continuidad. */
+  activeChapterId?: string;
 }
 
 /**
@@ -18,17 +22,32 @@ export interface AgentSources {
  * (completa), su capítulo, los beats de ese capítulo, y toda la biblia,
  * personajes y mundo. Excluye las demás escenas para que el agente solo pueda
  * editar la escena en la que el autor está trabajando.
+ *
+ * Si no hay escena activa pero sí un capítulo activo (modo capítulo-directo,
+ * sin escenas), acota al capítulo activo: lo deja en `chapters` y filtra sus
+ * beats, para que el agente opere sobre ese capítulo y no sobre el resto.
  */
 export function buildSceneContext(sources: AgentSources): AgentSources {
   const active = sources.scenes.find((s) => s.id === sources.activeSceneId);
-  if (!active) return sources;
-  const chapterId = active.chapterId;
-  return {
-    ...sources,
-    scenes: [active],
-    chapters: chapterId ? sources.chapters.filter((c) => c.id === chapterId) : [],
-    beats: chapterId ? sources.beats.filter((b) => b.chapterId === chapterId) : [],
-  };
+  if (active) {
+    const chapterId = active.chapterId;
+    return {
+      ...sources,
+      scenes: [active],
+      chapters: chapterId ? sources.chapters.filter((c) => c.id === chapterId) : [],
+      beats: chapterId ? sources.beats.filter((b) => b.chapterId === chapterId) : [],
+    };
+  }
+  if (sources.activeChapterId) {
+    const chapterId = sources.activeChapterId;
+    return {
+      ...sources,
+      scenes: [],
+      chapters: sources.chapters.filter((c) => c.id === chapterId),
+      beats: sources.beats.filter((b) => b.chapterId === chapterId),
+    };
+  }
+  return sources;
 }
 
 function stripHtml(html: string): string {
@@ -57,7 +76,7 @@ function beatKindLabel(k: Beat['kind']): string {
  * manuscript (by chapter/scene), outline (beats) and bible.
  */
 export function buildAgentContext(sources: AgentSources): string {
-  const { project, characters, world, chapters, scenes, beats, storyBible, activeSceneId } = sources;
+  const { project, characters, world, chapters, scenes, beats, storyBible, activeSceneId, activeChapterId } = sources;
   const parts: string[] = [];
 
   parts.push(`Título: ${project.name}`);
@@ -169,6 +188,25 @@ export function buildAgentContext(sources: AgentSources): string {
     }
   }
 
+  // Capítulo activo: en modo capítulo-directo (sin escenas) el autor edita el
+  // content del capítulo como una unidad. Incluirlo COMPLETO (sin truncar a
+  // 800 chars) para que el agente pueda reescribirlo, extraer beats o ajustar
+  // sus notas de continuidad.
+  if (activeChapterId) {
+    const active = chapters.find((c) => c.id === activeChapterId);
+    if (active) {
+      const activeText = stripHtml(active.content ?? '');
+      if (activeText.length > 0) {
+        parts.push('\nCAPÍTULO ACTIVO (texto completo del autor — extraé beats respetando SUS ideas):');
+        parts.push(`## ${active.title || 'Capítulo sin título'} (id: ${active.id})`);
+        parts.push(activeText);
+      }
+      if (active.continuityNotes?.trim()) {
+        parts.push(`\nNOTAS DE CONTINUIDAD DE ESTE CAPÍTULO (respetalas y mantenelas coherentes):\n${active.continuityNotes.trim()}`);
+      }
+    }
+  }
+
   if (storyBible) {
     parts.push('\nBIBLIA:');
     for (const section of storyBible.sections) {
@@ -222,6 +260,9 @@ Reglas:
 - "actions" es un array de cambios que proponés aplicar. Cada acción debe tener "type" y los campos que correspondan:
   - {"type":"rewrite_scene","sceneId":"<id>","before":"<texto actual>","after":"<texto nuevo>","summary":"<qué cambió>"}
   - {"type":"update_scene_notes","sceneId":"<id>","notes":"<notas de continuidad>","summary":"<qué cambió>"}
+  - {"type":"rewrite_chapter","chapterId":"<id>","before":"<texto actual>","after":"<texto nuevo>","summary":"<qué cambió>"}
+  - {"type":"update_chapter_notes","chapterId":"<id>","notes":"<notas de continuidad>","summary":"<qué cambió>"}
+  - {"type":"append_chapter_content","chapterId":"<id>","content":"<prosa nueva>","summary":"<qué cambió>"}
   - {"type":"add_beat","chapterId":"<id>","beat":{"kind":"inciting|rising|climax|falling|resolution|custom","title":"...","description":"...","notes":"...","characters":[],"status":"draft","source":"ai","position":<n>},"summary":"..."}
   - {"type":"update_beat","beatId":"<id>","changes":{...},"summary":"..."}
   - {"type":"update_character","characterId":"<id>","changes":{...},"summary":"..."}
@@ -238,6 +279,7 @@ Reglas:
 - "update_outline" hace cambios parciales al outline SIN reemplazarlo completo: podés renombrar un capítulo, borrar un capítulo (sus escenas quedan sin capítulo, sus beats se borran), agregar beats a un capítulo o escena, borrar un beat, mover un beat a otro capítulo, o actualizar campos de un beat. Incluí solo las operaciones que necesites. Es ideal para ajustes puntuales: "agregá un beat de tensión al capítulo 2", "renombrá el capítulo 3", "mové el beat X al capítulo Y".
 - Cuando el autor te pida generar beats a partir de una escena o texto que ÉL escribió (por ejemplo "armá el outline de esta escena" o "generá los beats de este texto"), usá "add_beat" (o "update_outline" con "addBeats") y EXTRAÉ los beats del contenido real del autor: tomá sus ideas, momentos y giros como base. No es necesario respetar el mismo orden ni ritmo; podés reestructurarlos si aporta, pero NO inventes contenido que no esté en el texto. La escena activa aparece completa bajo "ESCENA ACTIVA".
 - Las "NOTAS DE CONTINUIDAD DE ESTA ESCENA" registran elementos que aparecen por primera vez en la escena actual (personajes, objetos, reglas, lugares, eventos) para mantener coherencia en escenas futuras. Si el autor te pide actualizarlas, o si detectás que algo nuevo e importante aparece en la escena, usá "update_scene_notes" para proponerlas/ajustarlas. Mantené coherencia con las notas existentes.
+- Cuando el autor edita un capítulo-directo (sin escenas), el capítulo aparece completo bajo "CAPÍTULO ACTIVO". Para operar sobre ese capítulo usá las acciones de capítulo: "rewrite_chapter" (reescribir su content), "update_chapter_notes" (ajustar sus notas de continuidad) o "append_chapter_content" (agregar prosa al final). No uses las acciones de escena (rewrite_scene, update_scene_notes, append_scene) para un capítulo-directo: no hay escena activa.
 - Para "kind" de beats usá EXACTAMENTE uno de estos valores en inglés: "inciting", "rising", "climax", "falling", "resolution", "custom". No uses sinónimos como "giro", "setup" o "desenlace"; mapeá esos conceptos al kind oficial más cercano.
 - Si no proponés cambios, usá "actions": [].
 - "delete_character" elimina un personaje existente; "delete_world" elimina una entrada del mundo. Usalos solo cuando el autor lo pida explícitamente (son destructivos).

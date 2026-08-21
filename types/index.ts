@@ -239,6 +239,9 @@ export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 export type ContentAction =
   | { type: 'rewrite_scene'; sceneId: string; before: string; after: string; summary: string }
   | { type: 'update_scene_notes'; sceneId: string; notes: string; summary: string }
+  | { type: 'rewrite_chapter'; chapterId: string; before: string; after: string; summary: string }
+  | { type: 'update_chapter_notes'; chapterId: string; notes: string; summary: string }
+  | { type: 'append_chapter_content'; chapterId: string; content: string; summary: string }
   | { type: 'update_beat'; beatId: string; changes: Partial<Beat>; summary: string }
   | { type: 'add_beat'; chapterId: string; beat: Beat; summary: string }
   | { type: 'update_character'; characterId: string; changes: Partial<Character>; summary: string }

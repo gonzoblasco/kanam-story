@@ -1402,6 +1402,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             break;
           }
+          case 'rewrite_chapter': {
+            const chapter = await chaptersDB.get(action.chapterId);
+            if (chapter) {
+              const prev = chapter.content ?? '';
+              // Normaliza a HTML para que TipTap muestre párrafos (el agente
+              // puede devolver texto plano/markdown con saltos de línea).
+              await updateChapter(action.chapterId, { content: ensureHtml(action.after) });
+              undos.push(() => updateChapter(action.chapterId, { content: prev }));
+              // The manuscript changed → the manuscript-derived sections are stale.
+              await markBibleStale(['summary', 'themes', 'rules']);
+              undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
+            } else {
+              failed.push(`capítulo ${action.chapterId}`);
+            }
+            break;
+          }
+          case 'update_chapter_notes': {
+            const chapter = await chaptersDB.get(action.chapterId);
+            if (chapter) {
+              const prev = chapter.continuityNotes ?? '';
+              await updateChapter(action.chapterId, { continuityNotes: action.notes });
+              undos.push(() => updateChapter(action.chapterId, { continuityNotes: prev }));
+            } else {
+              failed.push(`capítulo ${action.chapterId}`);
+            }
+            break;
+          }
+          case 'append_chapter_content': {
+            const chapter = await chaptersDB.get(action.chapterId);
+            if (chapter) {
+              const prev = chapter.content ?? '';
+              await updateChapter(action.chapterId, { content: `${prev}${ensureHtml(action.content)}` });
+              undos.push(() => updateChapter(action.chapterId, { content: prev }));
+              // New manuscript content → manuscript-derived sections are stale.
+              await markBibleStale(['summary', 'themes', 'rules']);
+              undos.push(() => clearBibleStale(['summary', 'themes', 'rules']));
+            } else {
+              failed.push(`capítulo ${action.chapterId}`);
+            }
+            break;
+          }
           case 'update_beat': {
             const beat = await beatsDB.get(action.beatId);
             if (beat) {
@@ -1700,7 +1741,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         },
       };
     },
-    [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, deleteWorld, createWorld, updateProject, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
+    [currentProject, storyBible, scenes, beats, chapters, loadProjectData, updateScene, updateChapter, updateBeat, createBeat, deleteBeat, updateCharacter, createCharacter, deleteCharacter, updateWorld, deleteWorld, createWorld, updateProject, updateBibleSection, createScene, deleteScene, markBibleStale, clearBibleStale],
   );
 
   const value: AppState = {

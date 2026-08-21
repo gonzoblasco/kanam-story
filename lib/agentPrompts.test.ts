@@ -163,6 +163,87 @@ describe('buildAgentContext', () => {
     expect(ctx).toContain('el diario de Renzo');
   });
 
+  it('incluye el capítulo activo completo bajo CAPÍTULO ACTIVO', () => {
+    const longContent = '<p>' + 'Renzo meditó sobre la partida. '.repeat(200) + '</p>'; // > 800 chars
+    const activeChapter: Chapter = { ...chapter, id: 'ch-activo', content: longContent };
+    const ctx = buildAgentContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [activeChapter],
+      scenes: [],
+      beats: [beat],
+      storyBible: bible,
+      activeChapterId: 'ch-activo',
+    });
+    expect(ctx).toContain('CAPÍTULO ACTIVO');
+    // El capítulo activo se incluye completo: el texto largo no se trunca con '…'.
+    expect(ctx).toContain('Renzo meditó sobre la partida. Renzo meditó sobre la partida.');
+  });
+
+  it('incluye las notas de continuidad del capítulo activo', () => {
+    const activeChapter: Chapter = { ...chapter, id: 'ch-activo', content: '<p>texto</p>', continuityNotes: 'Acá aparece el tablero mágico.' };
+    const ctx = buildAgentContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [activeChapter],
+      scenes: [],
+      beats: [beat],
+      storyBible: bible,
+      activeChapterId: 'ch-activo',
+    });
+    expect(ctx).toContain('NOTAS DE CONTINUIDAD DE ESTE CAPÍTULO');
+    expect(ctx).toContain('el tablero mágico');
+  });
+
+  it('no incluye CAPÍTULO ACTIVO si el id no existe', () => {
+    const ctx = buildAgentContext({
+      project,
+      characters: [],
+      world: [],
+      chapters: [chapter],
+      scenes: [],
+      beats: [],
+      storyBible: null,
+      activeChapterId: 'no-existe',
+    });
+    expect(ctx).not.toContain('CAPÍTULO ACTIVO');
+  });
+
+  it('buildSceneContext acota al capítulo activo cuando no hay escena activa', () => {
+    const otherChapter: Chapter = { id: 'ch2', projectId: 'p1', title: 'Capítulo 2', order: 1, createdAt: 0, updatedAt: 0 };
+    const otherBeat: Beat = { ...beat, id: 'b-otro', chapterId: 'ch2', title: 'Otro beat' };
+    const scoped = buildSceneContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [chapter, otherChapter],
+      scenes: [scene],
+      beats: [beat, otherBeat],
+      storyBible: bible,
+      activeChapterId: 'ch1',
+    });
+    expect(scoped.scenes).toEqual([]);
+    expect(scoped.chapters.map((c) => c.id)).toEqual(['ch1']);
+    expect(scoped.beats.map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('buildSceneContext prioriza la escena activa sobre el capítulo activo', () => {
+    const scoped = buildSceneContext({
+      project,
+      characters: [character],
+      world: [world],
+      chapters: [chapter],
+      scenes: [scene],
+      beats: [beat],
+      storyBible: bible,
+      activeSceneId: 's1',
+      activeChapterId: 'ch1',
+    });
+    expect(scoped.scenes.map((s) => s.id)).toEqual(['s1']);
+  });
+
   it('buildSceneContext limita a la escena activa, su capítulo y sus beats', () => {
     const otherChapter: Chapter = { id: 'ch2', projectId: 'p1', title: 'Capítulo 2', order: 1, createdAt: 0, updatedAt: 0 };
     const otherScene: Scene = { ...scene, id: 's-otra', chapterId: 'ch2', title: 'Otra escena' };
@@ -362,6 +443,14 @@ describe('buildAgentPrompt', () => {
     expect(prompt).toContain('"reply"');
     expect(prompt).toContain('"actions"');
     expect(prompt).toContain('rewrite_scene');
+  });
+
+  it('documenta las acciones de capítulo-directo', () => {
+    const prompt = buildAgentPrompt('ctx', 'hola');
+    expect(prompt).toContain('rewrite_chapter');
+    expect(prompt).toContain('update_chapter_notes');
+    expect(prompt).toContain('append_chapter_content');
+    expect(prompt).toContain('CAPÍTULO ACTIVO');
   });
 
   it('por defecto usa el rol co-writer general', () => {

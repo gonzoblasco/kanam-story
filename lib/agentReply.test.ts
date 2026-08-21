@@ -183,6 +183,24 @@ describe('isValidAction', () => {
   it('rechaza update_scene_notes sin notes', () => {
     expect(isValidAction({ type: 'update_scene_notes', sceneId: 's1', summary: 'x' })).toBe(false);
   });
+  it('acepta rewrite_chapter con chapterId y after', () => {
+    expect(isValidAction({ type: 'rewrite_chapter', chapterId: 'ch1', after: 'x', summary: 'y' })).toBe(true);
+  });
+  it('rechaza rewrite_chapter sin after', () => {
+    expect(isValidAction({ type: 'rewrite_chapter', chapterId: 'ch1', summary: 'y' })).toBe(false);
+  });
+  it('acepta update_chapter_notes con chapterId y notes', () => {
+    expect(isValidAction({ type: 'update_chapter_notes', chapterId: 'ch1', notes: 'nota', summary: 'y' })).toBe(true);
+  });
+  it('rechaza update_chapter_notes sin notes', () => {
+    expect(isValidAction({ type: 'update_chapter_notes', chapterId: 'ch1', summary: 'y' })).toBe(false);
+  });
+  it('acepta append_chapter_content con chapterId y content', () => {
+    expect(isValidAction({ type: 'append_chapter_content', chapterId: 'ch1', content: 'prosa', summary: 'y' })).toBe(true);
+  });
+  it('rechaza append_chapter_content sin content', () => {
+    expect(isValidAction({ type: 'append_chapter_content', chapterId: 'ch1', summary: 'y' })).toBe(false);
+  });
   it('normaliza alias en español para kind (ascenso -> rising)', () => {
     const parsed = parseAgentReply(
       JSON.stringify({

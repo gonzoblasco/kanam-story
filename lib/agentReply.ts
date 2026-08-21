@@ -124,6 +124,12 @@ export function isValidAction(action: unknown): action is ContentAction {
       return typeof a.sceneId === 'string' && typeof a.after === 'string';
     case 'update_scene_notes':
       return typeof a.sceneId === 'string' && typeof a.notes === 'string';
+    case 'rewrite_chapter':
+      return typeof a.chapterId === 'string' && typeof a.after === 'string';
+    case 'update_chapter_notes':
+      return typeof a.chapterId === 'string' && typeof a.notes === 'string';
+    case 'append_chapter_content':
+      return typeof a.chapterId === 'string' && typeof a.content === 'string';
     case 'update_beat':
       return typeof a.beatId === 'string' && typeof a.changes === 'object' && a.changes !== null;
     case 'add_beat': {

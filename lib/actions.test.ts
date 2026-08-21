@@ -318,6 +318,85 @@ describe('applyAction', () => {
     expect(reverted.scenes[0].continuityNotes).toBe('');
   });
 
+  it('rewrite_chapter reemplaza el content del capítulo y revierte', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, content: '<p>texto original</p>', createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'rewrite_chapter',
+      chapterId: 'ch1',
+      before: '<p>texto original</p>',
+      after: '<p>texto nuevo</p>',
+      summary: 'reescribir capítulo',
+    });
+    expect(next.chapters[0].content).toBe('<p>texto nuevo</p>');
+    const reverted = undo(next);
+    expect(reverted.chapters[0].content).toBe('<p>texto original</p>');
+  });
+
+  it('rewrite_chapter con ID inexistente no cambia nada', () => {
+    const state = makeState();
+    const { next } = applyAction(state, {
+      type: 'rewrite_chapter',
+      chapterId: 'no-existe',
+      before: 'a',
+      after: 'b',
+      summary: 'x',
+    });
+    expect(next).toBe(state);
+  });
+
+  it('update_chapter_notes actualiza las notas de continuidad del capítulo y revierte', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'update_chapter_notes',
+      chapterId: 'ch1',
+      notes: 'Acá aparece el tablero mágico.',
+      summary: 'agregar nota de capítulo',
+    });
+    expect(next.chapters[0].continuityNotes).toBe('Acá aparece el tablero mágico.');
+    const reverted = undo(next);
+    expect(reverted.chapters[0].continuityNotes).toBe('');
+  });
+
+  it('append_chapter_content agrega prosa al final del capítulo y revierte', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, content: '<p>inicio</p>', createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next, undo } = applyAction(state, {
+      type: 'append_chapter_content',
+      chapterId: 'ch1',
+      content: '<p>continuación</p>',
+      summary: 'agregar contenido',
+    });
+    expect(next.chapters[0].content).toBe('<p>inicio</p><p>continuación</p>');
+    const reverted = undo(next);
+    expect(reverted.chapters[0].content).toBe('<p>inicio</p>');
+  });
+
+  it('append_chapter_content con capítulo sin content previo lo crea', () => {
+    const state = makeState({
+      chapters: [
+        { id: 'ch1', projectId: 'p1', title: 'Capítulo 1', order: 0, createdAt: 0, updatedAt: 0 },
+      ],
+    });
+    const { next } = applyAction(state, {
+      type: 'append_chapter_content',
+      chapterId: 'ch1',
+      content: '<p>primer párrafo</p>',
+      summary: 'agregar contenido',
+    });
+    expect(next.chapters[0].content).toBe('<p>primer párrafo</p>');
+  });
+
   it('update_outline renombra un capítulo y revierte', () => {
     const state = makeState({
       chapters: [

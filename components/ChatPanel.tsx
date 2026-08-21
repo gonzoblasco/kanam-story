@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '@/lib/store';
-import { buildAgentContext, buildSceneContext, buildAgentPrompt } from '@/lib/agentPrompts';
+import { buildAgentContext, buildSceneContext, buildAgentPrompt, type AgentSources } from '@/lib/agentPrompts';
 import { parseAgentReply, filterValidActions } from '@/lib/agentReply';
 import { ollamaChatStream } from '@/lib/ollama';
 import { getActionsTarget } from '@/lib/actionTargets';
@@ -38,6 +38,7 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
     beats,
     storyBible,
     currentSceneId,
+    currentChapterId,
     applyContentActions,
     announce,
     setView,
@@ -108,28 +109,24 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // U5: el co-writer opera sobre lo que el autor está editando. Si hay una
+    // escena activa, se incluye completa; si no (modo capítulo-directo, sin
+    // escenas) pero hay un capítulo activo, se incluye el capítulo completo.
+    const baseSources: AgentSources = {
+      project: currentProject,
+      characters,
+      world,
+      chapters,
+      scenes,
+      beats,
+      storyBible,
+      activeSceneId: currentSceneId ?? undefined,
+      activeChapterId: currentSceneId ? undefined : currentChapterId ?? undefined,
+    };
     const context = buildAgentContext(
-      contextScope === 'scene' && currentSceneId
-        ? buildSceneContext({
-            project: currentProject,
-            characters,
-            world,
-            chapters,
-            scenes,
-            beats,
-            storyBible,
-            activeSceneId: currentSceneId,
-          })
-        : {
-            project: currentProject,
-            characters,
-            world,
-            chapters,
-            scenes,
-            beats,
-            storyBible,
-            activeSceneId: currentSceneId ?? undefined,
-          },
+      contextScope === 'scene' && (currentSceneId || currentChapterId)
+        ? buildSceneContext(baseSources)
+        : baseSources,
     );
     const prompt = buildAgentPrompt(context, text, settings.agentRole ?? 'co-writer');
 
@@ -254,6 +251,12 @@ export default function ChatPanel({ contextScope = 'full' }: ChatPanelProps) {
         return `Reescribir escena: ${a.summary || a.sceneId}`;
       case 'update_scene_notes':
         return `Actualizar notas de continuidad: ${a.summary || a.sceneId}`;
+      case 'rewrite_chapter':
+        return `Reescribir capítulo: ${a.summary || a.chapterId}`;
+      case 'update_chapter_notes':
+        return `Actualizar notas de continuidad del capítulo: ${a.summary || a.chapterId}`;
+      case 'append_chapter_content':
+        return `Agregar contenido al capítulo: ${a.summary || a.chapterId}`;
       case 'update_beat':
         return `Actualizar beat: ${a.summary || a.beatId}`;
       case 'add_beat':

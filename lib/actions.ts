@@ -28,6 +28,13 @@ function updateScene(state: StoryState, sceneId: string, patch: Partial<Scene>):
   };
 }
 
+function updateChapter(state: StoryState, chapterId: string, patch: Partial<Chapter>): StoryState {
+  return {
+    ...state,
+    chapters: state.chapters.map((c) => (c.id === chapterId ? { ...c, ...patch, updatedAt: now() } : c)),
+  };
+}
+
 function updateBeat(state: StoryState, beatId: string, patch: Partial<Beat>): StoryState {
   return {
     ...state,
@@ -93,6 +100,38 @@ export function applyAction(state: StoryState, action: ContentAction): ApplyResu
       return {
         next,
         undo: (s) => updateScene(s, action.sceneId, { continuityNotes: prev }),
+      };
+    }
+
+    case 'rewrite_chapter': {
+      const chapter = state.chapters.find((c) => c.id === action.chapterId);
+      if (!chapter) return { next: state, undo: (s) => s };
+      const next = updateChapter(state, action.chapterId, { content: action.after });
+      return {
+        next,
+        undo: (s) => updateChapter(s, action.chapterId, { content: action.before }),
+      };
+    }
+
+    case 'update_chapter_notes': {
+      const chapter = state.chapters.find((c) => c.id === action.chapterId);
+      if (!chapter) return { next: state, undo: (s) => s };
+      const prev = chapter.continuityNotes ?? '';
+      const next = updateChapter(state, action.chapterId, { continuityNotes: action.notes });
+      return {
+        next,
+        undo: (s) => updateChapter(s, action.chapterId, { continuityNotes: prev }),
+      };
+    }
+
+    case 'append_chapter_content': {
+      const chapter = state.chapters.find((c) => c.id === action.chapterId);
+      if (!chapter) return { next: state, undo: (s) => s };
+      const prev = chapter.content ?? '';
+      const next = updateChapter(state, action.chapterId, { content: `${prev}${action.content}` });
+      return {
+        next,
+        undo: (s) => updateChapter(s, action.chapterId, { content: prev }),
       };
     }
 
