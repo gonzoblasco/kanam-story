@@ -114,20 +114,17 @@ export default function Editor() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [scene?.id, scene?.title, scene?.summary, scene?.continuityNotes, chapter?.id, chapter?.title, chapter?.summary, chapter?.continuityNotes]);
 
-  // Keep a ref in sync with the current target id + mode so the debounced
-  // autosave always writes to the target that was active when the edit
-  // happened, even if the user switches targets before the timeout fires.
-  useEffect(() => {
-    targetIdRef.current = scene?.id ?? chapter?.id ?? null;
-    targetModeRef.current = scene ? 'scene' : chapter ? 'chapter' : null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the ids drive the refs
-  }, [scene?.id, chapter?.id]);
-
   // Keep the TipTap editor in sync with the selected target (scene or chapter).
   // Without this, switching targets leaves the previous target's content on
   // screen and the next autosave overwrites the newly-selected one. Also
   // re-syncs when the target content changes externally (e.g. accepting a
   // rewrite from the co-writer), since the id alone doesn't change in that case.
+  //
+  // IMPORTANT: this effect MUST run before the ref-sync effect below. It reads
+  // `targetIdRef`/`targetModeRef` as the *previous* target to flush pending
+  // edits to it before switching. If the ref-sync effect ran first, it would
+  // already point at the new target and the flush would write the old target's
+  // content into the new one, corrupting it.
   useEffect(() => {
     if (!editor || !scene && !chapter) return;
     // Flush pending edits to the previous target before switching.
@@ -145,6 +142,17 @@ export default function Editor() {
     editor.commands.setContent(scene?.content ?? chapter?.content ?? '', { emitUpdate: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, scene?.id, scene?.content, chapter?.id, chapter?.content, updateScene, updateChapter]);
+
+  // Keep a ref in sync with the current target id + mode so the debounced
+  // autosave always writes to the target that was active when the edit
+  // happened, even if the user switches targets before the timeout fires.
+  // Runs AFTER the flush effect above so the flush still sees the previous
+  // target's id/mode.
+  useEffect(() => {
+    targetIdRef.current = scene?.id ?? chapter?.id ?? null;
+    targetModeRef.current = scene ? 'scene' : chapter ? 'chapter' : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the ids drive the refs
+  }, [scene?.id, chapter?.id]);
 
   // U4: tomar el foco cuando `requestEditorFocus()` lo pide (p.ej. tras generar
   // una escena desde el outline), colocando el caret al final del contenido.
