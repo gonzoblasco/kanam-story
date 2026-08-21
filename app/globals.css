@@ -619,6 +619,16 @@ a {
   outline: none;
 }
 
+/* U3: indicador de capítulo directo (sin escenas) en el árbol. */
+.tree-chapter-direct {
+  display: inline-flex;
+  align-items: center;
+  color: var(--sl-accent);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+  flex-shrink: 0;
+}
+
 .editor-shell {
   background: var(--sl-surface);
   border-radius: 14px;
@@ -1394,6 +1404,21 @@ a {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-size: 0.7rem;
+}
+
+/* U3: badge que indica que el editor está en modo "capítulo directo". */
+.editor-chapter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sl-accent);
+  background: var(--sl-surface-2);
+  border: 1px solid var(--sl-border);
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+  margin: 0.25rem 0 0.5rem;
 }
 
 /* --- Export menu (Slice 5) --- */

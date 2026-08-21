@@ -21,6 +21,7 @@ const setView = vi.fn();
 const setActiveStorySection = vi.fn();
 const setCurrentOutlineChapterId = vi.fn();
 const setCurrentChapterId = vi.fn();
+const selectChapter = vi.fn();
 const createScene = vi.fn(async (data: Omit<Scene, 'id' | 'createdAt' | 'updatedAt'>) => ({
   id: 'new-scene',
   ...data,
@@ -121,6 +122,7 @@ interface MockApp {
   setActiveStorySection: (s: StorySectionKey) => void;
   setCurrentOutlineChapterId: (id: string) => void;
   setCurrentChapterId: (id: string) => void;
+  selectChapter: (id: string) => void;
 }
 
 const mockApp: MockApp = {
@@ -146,6 +148,7 @@ const mockApp: MockApp = {
   setActiveStorySection,
   setCurrentOutlineChapterId,
   setCurrentChapterId,
+  selectChapter,
 };
 
 vi.mock('@/lib/store', () => ({
@@ -220,16 +223,16 @@ describe('ProjectTree', () => {
     expect(setView).toHaveBeenCalledWith('editor');
   });
 
-  it('creates and opens a new scene when the chapter has no scenes', async () => {
+  it('opens the chapter as a direct chapter when it has no scenes', async () => {
     const user = userEvent.setup();
     render(<ProjectTree />);
 
     await user.click(screen.getByTitle('Acciones de Capítulo 2'));
     await user.click(within(screen.getByLabelText('Acciones de Capítulo 2')).getByRole('menuitem', { name: /Abrir primera escena/i }));
 
-    expect(createScene).toHaveBeenCalledWith(expect.objectContaining({ chapterId: 'c2' }));
-    expect(selectScene).toHaveBeenCalledWith('new-scene');
-    expect(setView).toHaveBeenCalledWith('editor');
+    expect(selectChapter).toHaveBeenCalledWith('c2');
+    expect(createScene).not.toHaveBeenCalled();
+    expect(selectScene).not.toHaveBeenCalled();
   });
 
   it('renames a scene via the scene action menu without selecting it', async () => {

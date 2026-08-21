@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '@/lib/store';
+import { resolveEditorTarget, chapterToSceneLike } from '@/lib/editorTarget';
 import {
   buildContext,
   buildWritePrompt,
@@ -40,17 +41,24 @@ export default function Editor() {
   const {
     currentProject,
     currentSceneId,
+    currentChapterId,
     scenes,
     chapters,
     characters,
     world,
     settings,
     updateScene,
+    updateChapter,
     beats,
     editorFocusNonce,
   } = useApp();
 
-  const scene = scenes.find((s) => s.id === currentSceneId) || null;
+  // U3: the editor can target either a scene (classic flow) or a chapter's
+  // direct content (a chapter with no scenes). Resolve which one is active.
+  const target = resolveEditorTarget(currentSceneId, currentChapterId, scenes, chapters);
+  const scene = target.mode === 'scene' ? target.scene : null;
+  const chapter = target.mode === 'chapter' ? target.chapter : null;
+  const isChapterMode = target.mode === 'chapter';
 
   const sceneBeats = currentSceneId
     ? beats.filter((b) => b.sceneId === currentSceneId).sort((a, b) => a.position - b.position)
@@ -72,7 +80,8 @@ export default function Editor() {
   const [indicatorPos, setIndicatorPos] = useState<{ top: number; left: number } | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sceneIdRef = useRef<string | null>(null);
+  const targetIdRef = useRef<string | null>(null);
+  const targetModeRef = useRef<'scene' | 'chapter' | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // B7: while streaming, suppress the debounced autosave so partial AI text is
   // never persisted mid-generation.
@@ -84,7 +93,7 @@ export default function Editor() {
         heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
-        placeholder: 'Empezá a escribir tu escena…',
+        placeholder: isChapterMode ? 'Empezá a escribir tu capítulo…' : 'Empezá a escribir tu escena…',
       }),
     ],
     content: '',
@@ -96,41 +105,45 @@ export default function Editor() {
     immediatelyRender: false,
   });
 
-  // Sync the local title/summary drafts when the selected scene changes.
+  // Sync the local title/summary drafts when the selected target changes.
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- derived state from the selected scene */
-    setTitleDraft(scene?.title ?? '');
-    setSummaryDraft(scene?.summary ?? '');
-    setContinuityDraft(scene?.continuityNotes ?? '');
+    /* eslint-disable react-hooks/set-state-in-effect -- derived state from the selected target */
+    setTitleDraft(scene?.title ?? chapter?.title ?? '');
+    setSummaryDraft(scene?.summary ?? chapter?.summary ?? '');
+    setContinuityDraft(scene?.continuityNotes ?? chapter?.continuityNotes ?? '');
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scene?.id, scene?.title, scene?.summary, scene?.continuityNotes]);
+  }, [scene?.id, scene?.title, scene?.summary, scene?.continuityNotes, chapter?.id, chapter?.title, chapter?.summary, chapter?.continuityNotes]);
 
-  // Keep a ref in sync with the current scene id so the debounced autosave
-  // always writes to the scene that was active when the edit happened, even if
-  // the user switches scenes before the timeout fires.
+  // Keep a ref in sync with the current target id + mode so the debounced
+  // autosave always writes to the target that was active when the edit
+  // happened, even if the user switches targets before the timeout fires.
   useEffect(() => {
-    sceneIdRef.current = scene?.id ?? null;
-  }, [scene?.id]);
+    targetIdRef.current = scene?.id ?? chapter?.id ?? null;
+    targetModeRef.current = scene ? 'scene' : chapter ? 'chapter' : null;
+  }, [scene?.id, chapter?.id]);
 
-  // Keep the TipTap editor in sync with the selected scene. Without this,
-  // switching scenes leaves the previous scene's content on screen and the
-  // next autosave overwrites the newly-selected scene. Also re-syncs when the
-  // scene content changes externally (e.g. accepting a rewrite_scene from the
-  // co-writer), since scene.id alone doesn't change in that case.
+  // Keep the TipTap editor in sync with the selected target (scene or chapter).
+  // Without this, switching targets leaves the previous target's content on
+  // screen and the next autosave overwrites the newly-selected one. Also
+  // re-syncs when the target content changes externally (e.g. accepting a
+  // rewrite from the co-writer), since the id alone doesn't change in that case.
   useEffect(() => {
-    if (!editor || !scene) return;
-    // Flush pending edits to the previous scene before switching.
+    if (!editor || !scene && !chapter) return;
+    // Flush pending edits to the previous target before switching.
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
-      const previousSceneId = sceneIdRef.current;
-      if (previousSceneId) {
-        updateScene(previousSceneId, { content: editor.getHTML() });
+      const previousId = targetIdRef.current;
+      const previousMode = targetModeRef.current;
+      if (previousId && previousMode === 'scene') {
+        updateScene(previousId, { content: editor.getHTML() });
+      } else if (previousId && previousMode === 'chapter') {
+        updateChapter(previousId, { content: editor.getHTML() });
       }
     }
-    editor.commands.setContent(scene.content ?? '', { emitUpdate: false });
+    editor.commands.setContent(scene?.content ?? chapter?.content ?? '', { emitUpdate: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, scene?.id, scene?.content, updateScene]);
+  }, [editor, scene?.id, scene?.content, chapter?.id, chapter?.content, updateScene, updateChapter]);
 
   // U4: tomar el foco cuando `requestEditorFocus()` lo pide (p.ej. tras generar
   // una escena desde el outline), colocando el caret al final del contenido.
@@ -142,11 +155,16 @@ export default function Editor() {
 
   const saveContent = useCallback(
     (html: string) => {
-      const sceneId = sceneIdRef.current;
-      if (!sceneId) return;
-      updateScene(sceneId, { content: html });
+      const targetId = targetIdRef.current;
+      const targetMode = targetModeRef.current;
+      if (!targetId) return;
+      if (targetMode === 'chapter') {
+        updateChapter(targetId, { content: html });
+      } else {
+        updateScene(targetId, { content: html });
+      }
     },
-    [updateScene],
+    [updateScene, updateChapter],
   );
 
   const handleEditorUpdate = useCallback(() => {
@@ -263,14 +281,15 @@ export default function Editor() {
   function buildContextNow() {
     if (!currentProject) return '';
     // Auditoría 2026-08-17: el editor ahora recibe el mismo contexto enriquecido
-    // que el chat (IDs, inContext, brújula) + las notas de continuidad de la escena activa.
+    // que el chat (IDs, inContext, brújula) + las notas de continuidad del
+    // target activo (escena o capítulo directo).
     return buildContext(currentProject, characters, world, {
-      continuityNotes: scene?.continuityNotes,
+      continuityNotes: scene?.continuityNotes ?? chapter?.continuityNotes,
     });
   }
 
   async function runAI(kind: 'write' | 'describe' | 'rewrite' | 'expand' | 'dialogue' | 'tension') {
-    if (!editor || !currentProject || !scene) return;
+    if (!editor || !currentProject || (!scene && !chapter)) return;
     if (busy) {
       abortRef.current?.abort();
     }
@@ -336,11 +355,17 @@ export default function Editor() {
         }
         prompt = buildRewritePrompt(ctx, selection, rewriteStyle);
       } else if (kind === 'expand') {
-        const chapter = chapters.find((c) => c.id === scene.chapterId);
-        const previousScene = scenes
-          .filter((s) => s.chapterId === scene.chapterId && s.order < scene.order)
-          .sort((a, b) => b.order - a.order)[0];
-        prompt = buildExpandPrompt(ctx, scene, chapter, expandLength, previousScene);
+        // U3: in chapter-direct mode, expand the chapter's own content as a
+        // unit (no scene/previous-scene context).
+        if (isChapterMode && chapter) {
+          prompt = buildExpandPrompt(ctx, chapterToSceneLike(chapter), chapter, expandLength);
+        } else if (scene) {
+          const chapter = chapters.find((c) => c.id === scene.chapterId);
+          const previousScene = scenes
+            .filter((s) => s.chapterId === scene.chapterId && s.order < scene.order)
+            .sort((a, b) => b.order - a.order)[0];
+          prompt = buildExpandPrompt(ctx, scene, chapter, expandLength, previousScene);
+        }
         temperature = 0.8;
       } else if (kind === 'dialogue') {
         if (!selection) {
@@ -351,13 +376,19 @@ export default function Editor() {
         const setup = `${before}\n[DIÁLOGO]\n${selection}\n[/DIÁLOGO]\n${after}`.trim();
         prompt = buildDialoguePrompt(ctx, dialogueCharacter, setup, DIALOGUE_COUNT);
       } else if (kind === 'tension') {
-        if (!scene.content?.trim()) {
-          setError('La escena está vacía. Escribí algo antes de tensar el cierre.');
+        const currentContent = scene?.content ?? chapter?.content;
+        if (!currentContent?.trim()) {
+          setError('El contenido está vacío. Escribí algo antes de tensar el cierre.');
           setBusy(null);
           return;
         }
-        const chapter = chapters.find((c) => c.id === scene.chapterId);
-        prompt = buildTensionPrompt(ctx, scene, chapter);
+        // U3: in chapter-direct mode, tension the chapter's own content.
+        if (isChapterMode && chapter) {
+          prompt = buildTensionPrompt(ctx, chapterToSceneLike(chapter), chapter);
+        } else if (scene) {
+          const chapter = chapters.find((c) => c.id === scene.chapterId);
+          prompt = buildTensionPrompt(ctx, scene, chapter);
+        }
         temperature = 0.8;
       }
 
@@ -416,11 +447,7 @@ export default function Editor() {
           // for a dialogue block inserted mid-scene.
           editor.chain().focus().insertContent('\n').run();
         }
-        if (kind === 'expand' || kind === 'tension') {
-          updateScene(scene.id, { content: editor.getHTML() });
-        } else {
-          saveContent(editor.getHTML());
-        }
+        saveContent(editor.getHTML());
       }
     } catch (e) {
       // B7: revert any partial streamed proposal so the editor matches the
@@ -439,17 +466,28 @@ export default function Editor() {
   }
 
   function saveTitleBlur() {
-    if (!scene) return;
-    if (titleDraft !== scene.title) updateScene(scene.id, { title: titleDraft });
+    if (scene) {
+      if (titleDraft !== scene.title) updateScene(scene.id, { title: titleDraft });
+    } else if (chapter) {
+      if (titleDraft !== chapter.title) updateChapter(chapter.id, { title: titleDraft });
+    }
   }
   function saveSummaryBlur() {
-    if (!scene) return;
-    if (summaryDraft !== scene.summary) updateScene(scene.id, { summary: summaryDraft });
+    if (scene) {
+      if (summaryDraft !== scene.summary) updateScene(scene.id, { summary: summaryDraft });
+    } else if (chapter) {
+      if (summaryDraft !== (chapter.summary ?? '')) updateChapter(chapter.id, { summary: summaryDraft });
+    }
   }
   function saveContinuityBlur() {
-    if (!scene) return;
-    if (continuityDraft !== (scene.continuityNotes ?? '')) {
-      updateScene(scene.id, { continuityNotes: continuityDraft });
+    if (scene) {
+      if (continuityDraft !== (scene.continuityNotes ?? '')) {
+        updateScene(scene.id, { continuityNotes: continuityDraft });
+      }
+    } else if (chapter) {
+      if (continuityDraft !== (chapter.continuityNotes ?? '')) {
+        updateChapter(chapter.id, { continuityNotes: continuityDraft });
+      }
     }
   }
 
@@ -465,7 +503,7 @@ export default function Editor() {
     );
   }
 
-  if (!scene) {
+  if (!scene && !chapter) {
     return (
       <div className="empty-state">
         <div>
@@ -487,7 +525,7 @@ export default function Editor() {
           value={titleDraft}
           onChange={(e) => setTitleDraft(e.target.value)}
           onBlur={saveTitleBlur}
-          placeholder="Título de la escena"
+          placeholder={isChapterMode ? 'Título del capítulo' : 'Título de la escena'}
         />
         <textarea
           className="editor-summary"
@@ -495,7 +533,7 @@ export default function Editor() {
           value={summaryDraft}
           onChange={(e) => setSummaryDraft(e.target.value)}
           onBlur={saveSummaryBlur}
-          placeholder="Resumen de la escena (un beat en una oración)…"
+          placeholder={isChapterMode ? 'Resumen del capítulo (un beat en una oración)…' : 'Resumen de la escena (un beat en una oración)…'}
         />
 
         <div className="editor-continuity">
@@ -511,17 +549,24 @@ export default function Editor() {
             onChange={(e) => setContinuityDraft(e.target.value)}
             onBlur={saveContinuityBlur}
             placeholder="Ej: acá aparece por primera vez el diario de Renzo — objeto clave del capítulo 3."
-            aria-label="Notas de continuidad de la escena"
+            aria-label="Notas de continuidad"
           />
         </div>
 
-        {sceneBeats.length > 0 ? (
+        {!isChapterMode && sceneBeats.length > 0 ? (
           <div className="editor-beats">
             {sceneBeats.map((b) => (
               <span key={b.id} className={`editor-beat editor-beat-${b.status}`} title={b.description}>
                 {b.title}
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {isChapterMode ? (
+          <div className="editor-chapter-badge">
+            <i className="bi bi-book me-1" />
+            Capítulo directo
           </div>
         ) : null}
 

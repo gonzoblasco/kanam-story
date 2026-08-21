@@ -31,6 +31,7 @@ export default function ProjectTree() {
     setActiveStorySection,
     setCurrentOutlineChapterId,
     setCurrentChapterId,
+    selectChapter,
     setSettings,
   } = useApp();
 
@@ -146,7 +147,9 @@ export default function ProjectTree() {
     if (scene) {
       openScene(scene.id);
     } else {
-      void addScene(chapterId, true);
+      // U3: un capítulo sin escenas se abre como "capítulo directo" editable
+      // (selectChapter) en vez de forzar la creación de una escena.
+      selectChapter(chapterId);
     }
   }
 
@@ -316,6 +319,11 @@ export default function ProjectTree() {
                 >
                   {c.title}
                 </button>
+                {chapterScenes.length === 0 ? (
+                  <span className="tree-chapter-direct" title="Capítulo directo (sin escenas)">
+                    <i className="bi bi-book" aria-hidden="true" />
+                  </span>
+                ) : null}
                 <div className="actions">
                   <ActionMenu trigger={<i className="bi bi-three-dots-vertical" />} triggerTitle={`Acciones de ${c.title}`}>
                     <button

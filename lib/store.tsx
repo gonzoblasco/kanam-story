@@ -263,12 +263,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (v: 'editor' | 'outline' | 'story' | 'chapter-reader') => {
       setViewState(v);
       // Al salir de la vista de lectura de capítulo, limpiamos el capítulo activo
-      // para que no quede colgado si volvemos al editor/outline.
-      if (v !== 'chapter-reader') {
+      // para que no quede colgado si volvemos al editor/outline. Solo lo limpiamos
+      // cuando realmente salimos de `chapter-reader`: en el editor, `currentChapterId`
+      // también se usa para el modo "capítulo directo" (U3) y no debe borrarse al
+      // navegar dentro de la vista de escritura.
+      if (view === 'chapter-reader' && v !== 'chapter-reader') {
         setCurrentChapterIdState(null);
       }
     },
-    [],
+    [view],
   );
   const setCurrentChapterId = useCallback((id: string | null) => {
     setCurrentChapterIdState(id);
@@ -566,7 +569,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const selectChapter = useCallback(
     (id: string | null) => {
       setCurrentChapterIdState(id);
-      if (id) setCurrentSceneId(null);
+      if (id) {
+        // U3: seleccionar un capítulo para editar su contenido directo abre el
+        // editor en modo "capítulo directo" (sin escenas). Limpiamos la escena
+        // activa para que el Editor no siga mostrando una escena.
+        setCurrentSceneId(null);
+        setViewState('editor');
+      }
     },
     [],
   );
