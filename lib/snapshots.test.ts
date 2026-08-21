@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Scene, SceneSnapshot } from '@/types';
+import type { Scene, SceneSnapshot, Chapter, ChapterSnapshot } from '@/types';
 import {
   sceneEditable,
   sameContent,
@@ -8,6 +8,10 @@ import {
   sortSnapshotsNewestFirst,
   formatSnapshotTime,
   diffLines,
+  chapterEditable,
+  sameChapterContent,
+  shouldChapterSnapshot,
+  buildChapterSnapshot,
 } from '@/lib/snapshots';
 
 function scene(partial: Partial<Scene> & { id: string }): Scene {
@@ -27,6 +31,29 @@ function scene(partial: Partial<Scene> & { id: string }): Scene {
 function snapshot(partial: Partial<SceneSnapshot> & { id: string }): SceneSnapshot {
   return {
     sceneId: 's1',
+    projectId: 'p1',
+    title: '',
+    content: '',
+    summary: '',
+    createdAt: 0,
+    ...partial,
+  };
+}
+
+function chapter(partial: Partial<Chapter> & { id: string }): Chapter {
+  return {
+    projectId: 'p1',
+    title: '',
+    order: 0,
+    createdAt: 0,
+    updatedAt: 0,
+    ...partial,
+  };
+}
+
+function chapterSnapshot(partial: Partial<ChapterSnapshot> & { id: string }): ChapterSnapshot {
+  return {
+    chapterId: 'c1',
     projectId: 'p1',
     title: '',
     content: '',
@@ -138,5 +165,62 @@ describe('diffLines', () => {
     // and adds 'x'.
     expect(diffLines('', 'x')).toEqual({ added: ['x'], removed: [''] });
     expect(diffLines('x', '')).toEqual({ added: [''], removed: ['x'] });
+  });
+});
+
+describe('chapterEditable', () => {
+  it('extracts title/content/summary with empty defaults', () => {
+    expect(chapterEditable(chapter({ id: 'c1', title: 'T', content: 'C', summary: 'S' }))).toEqual({
+      title: 'T',
+      content: 'C',
+      summary: 'S',
+    });
+    expect(chapterEditable(chapter({ id: 'c1' }))).toEqual({ title: '', content: '', summary: '' });
+  });
+});
+
+describe('sameChapterContent', () => {
+  it('is true when all three fields match', () => {
+    const a = { title: 'T', content: 'C', summary: 'S' };
+    expect(sameChapterContent(a, { ...a })).toBe(true);
+  });
+  it('is false when any field differs', () => {
+    const a = { title: 'T', content: 'C', summary: 'S' };
+    expect(sameChapterContent(a, { ...a, content: 'C2' })).toBe(false);
+    expect(sameChapterContent(a, { ...a, title: 'T2' })).toBe(false);
+    expect(sameChapterContent(a, { ...a, summary: 'S2' })).toBe(false);
+  });
+});
+
+describe('shouldChapterSnapshot', () => {
+  it('returns true when there is no previous snapshot', () => {
+    expect(shouldChapterSnapshot(chapter({ id: 'c1', content: '<p>x</p>' }), undefined)).toBe(true);
+  });
+  it('returns false when content is identical to the last snapshot', () => {
+    const last = chapterSnapshot({ id: 'x', content: '<p>x</p>', title: 'T', summary: 'S' });
+    expect(shouldChapterSnapshot(chapter({ id: 'c1', content: '<p>x</p>', title: 'T', summary: 'S' }), last)).toBe(false);
+  });
+  it('returns true when content changed', () => {
+    const last = chapterSnapshot({ id: 'x', content: '<p>x</p>' });
+    expect(shouldChapterSnapshot(chapter({ id: 'c1', content: '<p>y</p>' }), last)).toBe(true);
+  });
+  it('returns true when only the title changed', () => {
+    const last = chapterSnapshot({ id: 'x', title: 'T', content: '<p>x</p>' });
+    expect(shouldChapterSnapshot(chapter({ id: 'c1', title: 'T2', content: '<p>x</p>' }), last)).toBe(true);
+  });
+});
+
+describe('buildChapterSnapshot', () => {
+  it('builds a snapshot with the given createdAt and chapter fields', () => {
+    const s = buildChapterSnapshot(chapter({ id: 'c1', projectId: 'p1', title: 'T', content: 'C', summary: 'S' }), 123);
+    expect(s).toEqual({
+      id: 'c1:123',
+      chapterId: 'c1',
+      projectId: 'p1',
+      title: 'T',
+      content: 'C',
+      summary: 'S',
+      createdAt: 123,
+    });
   });
 });

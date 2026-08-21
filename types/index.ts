@@ -97,6 +97,23 @@ export interface SceneSnapshot {
   createdAt: number;
 }
 
+/**
+ * U2 — Chapter versioning / snapshots. A point-in-time copy of a chapter's
+ * direct-content editable fields (title, content, summary), captured each time
+ * the chapter is saved. Stored in a dedicated `chapterSnapshots` store (keyed
+ * by `id`), indexed by `chapterId` + `createdAt` so the history can be listed
+ * newest-first. Mirrors `SceneSnapshot` for chapters edited without scenes.
+ */
+export interface ChapterSnapshot {
+  id: string;
+  chapterId: string;
+  projectId: string;
+  title: string;
+  content: string;
+  summary: string;
+  createdAt: number;
+}
+
 export type CharacterType =
   | 'protagonist'
   | 'antagonist'

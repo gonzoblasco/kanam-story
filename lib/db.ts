@@ -12,6 +12,7 @@ import type {
   Message,
   Beat,
   SceneSnapshot,
+  ChapterSnapshot,
 } from '@/types';
 import {
   migrateProjectStyle,
@@ -21,7 +22,7 @@ import {
 } from '@/lib/migrations';
 
 const DB_NAME = 'kanam-story';
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -143,6 +144,19 @@ function getDB() {
           db.createObjectStore('chapters', { keyPath: 'id' });
         }
 
+        // v10 → v11: U2 — chapter versioning/snapshots. Purely additive: creates
+        // a new `chapterSnapshots` store (mirror of `sceneSnapshots`) for chapters
+        // edited directly without scenes. No existing data is touched.
+        if (!db.objectStoreNames.contains('chapterSnapshots')) {
+          db.createObjectStore('chapterSnapshots', { keyPath: 'id' });
+        }
+        if (db.objectStoreNames.contains('chapterSnapshots')) {
+          const store = transaction.objectStore('chapterSnapshots');
+          ensureIndex(store, 'by-project', 'projectId');
+          ensureIndex(store, 'by-chapter', 'chapterId');
+          ensureIndex(store, 'by-chapter-created', ['chapterId', 'createdAt']);
+        }
+
         // v3 → v4: migrate `style` from string to ProjectStyle object.
         if (oldVersion < 4 && db.objectStoreNames.contains('projects')) {
           const store = transaction.objectStore('projects');
@@ -206,7 +220,7 @@ export const projectsDB = {
   async delete(id: string): Promise<void> {
     const db = await getDB();
     const tx = db.transaction(
-      ['projects', 'chapters', 'scenes', 'characters', 'world', 'brainstorm', 'storyBible', 'conversations', 'messages', 'beats', 'sceneSnapshots'],
+      ['projects', 'chapters', 'scenes', 'characters', 'world', 'brainstorm', 'storyBible', 'conversations', 'messages', 'beats', 'sceneSnapshots', 'chapterSnapshots'],
       'readwrite',
     );
     await tx.objectStore('projects').delete(id);
@@ -251,6 +265,10 @@ export const projectsDB = {
     for await (const cursor of snapIdx.iterate(id)) {
       await cursor.delete();
     }
+    const chapterSnapIdx = tx.objectStore('chapterSnapshots').index('by-project');
+    for await (const cursor of chapterSnapIdx.iterate(id)) {
+      await cursor.delete();
+    }
     await tx.done;
   },
 };
@@ -260,6 +278,10 @@ export const chaptersDB = {
     const db = await getDB();
     const all = await db.getAllFromIndex('chapters', 'by-project', projectId);
     return all.sort((a, b) => a.order - b.order);
+  },
+  async get(id: string): Promise<Chapter | undefined> {
+    const db = await getDB();
+    return db.get('chapters', id);
   },
   async create(data: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>): Promise<Chapter> {
     const db = await getDB();
@@ -283,8 +305,12 @@ export const chaptersDB = {
   },
   async delete(id: string): Promise<void> {
     const db = await getDB();
-    const tx = db.transaction(['chapters', 'scenes', 'beats'], 'readwrite');
+    const tx = db.transaction(['chapters', 'scenes', 'beats', 'chapterSnapshots'], 'readwrite');
     await tx.objectStore('chapters').delete(id);
+    const snapIdx = tx.objectStore('chapterSnapshots').index('by-chapter');
+    for await (const cursor of snapIdx.iterate(id)) {
+      await cursor.delete();
+    }
     const sceneIdx = tx.objectStore('scenes').index('by-chapter');
     // Delete chapter beats and the beats of each scene in the chapter.
     const beatChapterIdx = tx.objectStore('beats').index('by-chapter');
@@ -383,6 +409,47 @@ export const sceneSnapshotsDB = {
     const tx = db.transaction('sceneSnapshots', 'readwrite');
     const idx = tx.objectStore('sceneSnapshots').index('by-scene');
     for await (const cursor of idx.iterate(sceneId)) {
+      await cursor.delete();
+    }
+    await tx.done;
+  },
+};
+
+// --- U2: chapter versioning / snapshots ---
+
+export const chapterSnapshotsDB = {
+  /** Lista las snapshots de un capítulo, de más reciente a más antigua. */
+  async listByChapter(chapterId: string): Promise<ChapterSnapshot[]> {
+    const db = await getDB();
+    const all = await db.getAllFromIndex('chapterSnapshots', 'by-chapter', chapterId);
+    return all.sort((a, b) => b.createdAt - a.createdAt);
+  },
+  /** Última snapshot guardada de un capítulo (para dedupe de idénticos). */
+  async getLatest(chapterId: string): Promise<ChapterSnapshot | undefined> {
+    const db = await getDB();
+    const all = await db.getAllFromIndex('chapterSnapshots', 'by-chapter', chapterId);
+    if (all.length === 0) return undefined;
+    return all.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
+  },
+  async get(id: string): Promise<ChapterSnapshot | undefined> {
+    const db = await getDB();
+    return db.get('chapterSnapshots', id);
+  },
+  async create(snapshot: ChapterSnapshot): Promise<ChapterSnapshot> {
+    const db = await getDB();
+    await db.put('chapterSnapshots', snapshot);
+    return snapshot;
+  },
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('chapterSnapshots', id);
+  },
+  /** Borra todas las snapshots de un capítulo (cascade al borrar el capítulo). */
+  async deleteByChapter(chapterId: string): Promise<void> {
+    const db = await getDB();
+    const tx = db.transaction('chapterSnapshots', 'readwrite');
+    const idx = tx.objectStore('chapterSnapshots').index('by-chapter');
+    for await (const cursor of idx.iterate(chapterId)) {
       await cursor.delete();
     }
     await tx.done;

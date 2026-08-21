@@ -31,6 +31,7 @@ import {
   messagesDB,
   beatsDB,
   sceneSnapshotsDB,
+  chapterSnapshotsDB,
 } from '@/lib/db';
 import {
   parseCharacterEntries,
@@ -46,7 +47,7 @@ import { buildAgentContext, buildSuggestBeatsPrompt, buildGenerateCharacterPromp
 import { parseBeatList, parseSuggestedCharacterList, parseEnrichedCharacter, parseEnrichedWorld, parseStyleProfile } from '@/lib/agentReply';
 import { mapRoleToType, mapCategoryToKind } from '@/lib/labels';
 import { buildCharacterSyncPlan, buildWorldSyncPlan } from '@/lib/bibleSync';
-import { shouldSnapshot, buildSnapshot } from '@/lib/snapshots';
+import { shouldSnapshot, buildSnapshot, shouldChapterSnapshot, buildChapterSnapshot } from '@/lib/snapshots';
 import { ollamaChat } from '@/lib/ollama';
 import { BIBLE_SECTION_DEFAULTS } from '@/lib/db';
 import { parseBibleSections } from '@/lib/bibleParse';
@@ -121,6 +122,8 @@ interface AppState {
   createChapter: (data: Omit<Chapter, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Chapter>;
   updateChapter: (id: string, data: Partial<Chapter>) => Promise<void>;
   deleteChapter: (id: string) => Promise<void>;
+  /** U2: selecciona un capítulo para editar su contenido directo (sin escenas). */
+  selectChapter: (id: string | null) => void;
 
   createScene: (data: Omit<Scene, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Scene>;
   updateScene: (id: string, data: Partial<Scene>) => Promise<void>;
@@ -536,10 +539,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateChapter = useCallback(
     async (id: string, data: Partial<Chapter>) => {
+      // U2: capture a snapshot of the chapter's PREVIOUS state before applying
+      // the change, so the history always reflects what the chapter looked like
+      // at each save. Dedupe identical snapshots (no noise when autosave fires
+      // without real changes). The snapshot is taken from the DB (source of
+      // truth), not the React snapshot, so concurrent saves capture the correct
+      // intermediate value. If the chapterSnapshots store is unavailable
+      // (corrupted/interrupted upgrade), skip the snapshot and continue saving.
+      try {
+        const existing = await chaptersDB.get(id);
+        if (existing) {
+          const last = await chapterSnapshotsDB.getLatest(id);
+          if (shouldChapterSnapshot(existing, last)) {
+            await chapterSnapshotsDB.create(buildChapterSnapshot(existing, Date.now()));
+          }
+        }
+      } catch (err) {
+        console.warn('Chapter snapshot skipped (store unavailable):', err);
+      }
       await chaptersDB.update(id, data);
       if (currentProject) await loadProjectData(currentProject.id);
     },
     [currentProject, loadProjectData],
+  );
+
+  const selectChapter = useCallback(
+    (id: string | null) => {
+      setCurrentChapterIdState(id);
+      if (id) setCurrentSceneId(null);
+    },
+    [],
   );
 
   const deleteChapter = useCallback(
@@ -1706,6 +1735,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createChapter,
     updateChapter,
     deleteChapter,
+    selectChapter,
     createScene,
     updateScene,
     deleteScene,

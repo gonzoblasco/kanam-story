@@ -1,4 +1,4 @@
-import type { Scene, SceneSnapshot } from '@/types';
+import type { Scene, SceneSnapshot, Chapter, ChapterSnapshot } from '@/types';
 
 /**
  * B6 — Versioning / snapshots.
@@ -67,6 +67,61 @@ export function buildSnapshot(
 /** Ordena snapshots de más reciente a más antigua (para el historial). */
 export function sortSnapshotsNewestFirst(snapshots: SceneSnapshot[]): SceneSnapshot[] {
   return [...snapshots].sort((a, b) => b.createdAt - a.createdAt);
+}
+
+// --- U2: chapter versioning / snapshots ---
+
+/** Campos editables de un capítulo que se versionan (contenido directo). */
+export interface ChapterEditable {
+  title: string;
+  content: string;
+  summary: string;
+}
+
+/** Extrae los campos versionables de un capítulo. */
+export function chapterEditable(chapter: Pick<Chapter, 'title' | 'content' | 'summary'>): ChapterEditable {
+  return {
+    title: chapter.title ?? '',
+    content: chapter.content ?? '',
+    summary: chapter.summary ?? '',
+  };
+}
+
+/** Compara dos snapshots de capítulo por su contenido (ignora id/timestamps). */
+export function sameChapterContent(a: ChapterEditable, b: ChapterEditable): boolean {
+  return a.title === b.title && a.content === b.content && a.summary === b.summary;
+}
+
+/**
+ * Decide si conviene guardar una snapshot nueva para `chapter` dado el estado
+ * guardado previo (`lastSnapshot`). Devuelve `true` solo si el contenido cambió
+ * respecto a la última snapshot (o si no hay ninguna previa).
+ */
+export function shouldChapterSnapshot(
+  chapter: Pick<Chapter, 'title' | 'content' | 'summary'>,
+  lastSnapshot: ChapterSnapshot | undefined,
+): boolean {
+  if (!lastSnapshot) return true;
+  return !sameChapterContent(chapterEditable(chapter), chapterEditable(lastSnapshot));
+}
+
+/**
+ * Arma una snapshot nueva a partir de un capítulo. `createdAt` se pasa por
+ * parámetro para poder testear el orden de forma determinista.
+ */
+export function buildChapterSnapshot(
+  chapter: Pick<Chapter, 'id' | 'projectId' | 'title' | 'content' | 'summary'>,
+  createdAt: number,
+): ChapterSnapshot {
+  return {
+    id: `${chapter.id}:${createdAt}`,
+    chapterId: chapter.id,
+    projectId: chapter.projectId,
+    title: chapter.title ?? '',
+    content: chapter.content ?? '',
+    summary: chapter.summary ?? '',
+    createdAt,
+  };
 }
 
 /** Formatea un timestamp como fecha/hora legible en español. */
