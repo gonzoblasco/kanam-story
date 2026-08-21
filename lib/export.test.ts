@@ -127,6 +127,37 @@ describe('buildManuscriptMarkdown', () => {
     // "Santiago abrió el bolso. Adentro había una carta." = 8 palabras.
     expect(md).toContain('*8 palabras*');
   });
+
+  it('exporta el content directo de un capítulo sin escenas', () => {
+    const directChapter: Chapter = {
+      ...chapter,
+      content: '<p>El capítulo entero, sin escenas.</p>',
+    };
+    const md = buildManuscriptMarkdown({ project, chapters: [directChapter], scenes: [], characters: [], world: [], beats: [] });
+    expect(md).toContain('## Capítulo 1');
+    expect(md).toContain('El capítulo entero, sin escenas.');
+    expect(md).not.toContain('<p>');
+  });
+
+  it('cuenta las palabras del content directo de un capítulo', () => {
+    const directChapter: Chapter = {
+      ...chapter,
+      content: '<p>Uno dos tres.</p>',
+    };
+    const md = buildManuscriptMarkdown({ project, chapters: [directChapter], scenes: [], characters: [], world: [], beats: [] });
+    expect(md).toContain('*3 palabras*');
+  });
+
+  it('exporta el content directo como intro cuando el capítulo también tiene escenas', () => {
+    const mixedChapter: Chapter = {
+      ...chapter,
+      content: '<p>Intro del capítulo.</p>',
+    };
+    const md = buildManuscriptMarkdown({ project, chapters: [mixedChapter], scenes: [scene], characters: [], world: [], beats: [] });
+    expect(md).toContain('Intro del capítulo.');
+    expect(md).toContain('### El bolso');
+    expect(md).toContain('Santiago abrió el bolso.');
+  });
 });
 
 describe('countWords', () => {

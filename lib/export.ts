@@ -74,6 +74,14 @@ export function buildManuscriptMarkdown(sources: ExportSources): string {
   let wordCount = 0;
   for (const ch of sortedChapters) {
     parts.push(`\n## ${ch.title}`);
+    // U7: capítulos-directo. Si el capítulo tiene contenido directo (trabajo
+    // sin escenas), se exporta como el texto del capítulo. Si además tiene
+    // escenas, el content actúa como intro y las escenas siguen después.
+    const chapterText = stripHtml(ch.content ?? '');
+    if (chapterText) {
+      parts.push(`\n${chapterText}`);
+      wordCount += countWords(markdownToPlainText(chapterText));
+    }
     const scs = (byChapter.get(ch.id) ?? []).sort((a, b) => a.order - b.order);
     for (let i = 0; i < scs.length; i++) {
       const s = scs[i];

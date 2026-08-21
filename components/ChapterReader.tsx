@@ -54,7 +54,13 @@ export default function ChapterReader() {
         </span>
       </div>
       <h1 className="chapter-reader-title">{chapter.title}</h1>
-      {chapterScenes.length === 0 ? (
+      {chapter.content ? (
+        <div
+          className="chapter-reader-content"
+          dangerouslySetInnerHTML={{ __html: chapter.content || '<p>(Sin contenido)</p>' }}
+        />
+      ) : null}
+      {chapterScenes.length === 0 && !chapter.content ? (
         <div className="small text-muted">Este capítulo todavía no tiene escenas escritas.</div>
       ) : (
         chapterScenes.map((scene, index) => (
