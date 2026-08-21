@@ -120,6 +120,7 @@ export default function Editor() {
   useEffect(() => {
     targetIdRef.current = scene?.id ?? chapter?.id ?? null;
     targetModeRef.current = scene ? 'scene' : chapter ? 'chapter' : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the ids drive the refs
   }, [scene?.id, chapter?.id]);
 
   // Keep the TipTap editor in sync with the selected target (scene or chapter).
