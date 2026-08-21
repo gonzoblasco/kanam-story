@@ -156,6 +156,8 @@ describe('OutlineView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockApp.scenes = [];
+    mockApp.beats = [beat1];
+    mockApp.createScene = vi.fn();
   });
 
   it('renders the current chapter in chapter mode', () => {
@@ -270,6 +272,90 @@ describe('OutlineView', () => {
     await user.click(screen.getByRole('button', { name: /Global/i }));
     await user.click(screen.getByRole('button', { name: /Ver escena "Escena huérfana" en el editor/i }));
     expect(mockApp.selectScene).toHaveBeenCalledWith('s2');
+    expect(mockApp.setView).toHaveBeenCalledWith('editor');
+  });
+
+  // --- U4: chapter-direct mode (chapter without scenes) ---
+
+  it('shows chapter-level beats for a chapter-direct chapter (no scenes)', () => {
+    mockApp.scenes = [];
+    render(<OutlineView />);
+
+    // The chapter-level beat (no sceneId) is rendered in the chapter section.
+    expect(screen.getByDisplayValue('Beat 1')).toBeInTheDocument();
+    // No scene sections are rendered.
+    expect(screen.queryByRole('heading', { name: /Escena 1/i })).not.toBeInTheDocument();
+  });
+
+  it('adds a chapter-level beat to a chapter-direct chapter', async () => {
+    mockApp.scenes = [];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Agregar beat a capítulo/i }));
+
+    expect(createBeat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chapterId: 'c1',
+        sceneId: undefined,
+        title: 'Nuevo beat',
+      }),
+    );
+    expect(announce).toHaveBeenCalled();
+  });
+
+  it('edits a chapter-level beat of a chapter-direct chapter', async () => {
+    mockApp.scenes = [];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    const titleInput = screen.getByDisplayValue('Beat 1');
+    await user.clear(titleInput);
+    await user.type(titleInput, 'Beat editado');
+    await user.tab();
+
+    expect(updateBeat).toHaveBeenCalledWith('b1', expect.objectContaining({ title: 'Beat editado' }));
+  });
+
+  it('moves a chapter-level beat up/down within a chapter-direct chapter', async () => {
+    mockApp.scenes = [];
+    mockApp.beats = [
+      { ...beat1, id: 'b1', position: 0 },
+      { ...beat1, id: 'b2', title: 'Beat 2', position: 1 },
+    ];
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    // Move the second beat up.
+    const downButtons = screen.getAllByRole('button', { name: /Subir beat/i });
+    await user.click(downButtons[1]);
+
+    expect(updateBeat).toHaveBeenCalledWith('b2', { position: 0 });
+    expect(updateBeat).toHaveBeenCalledWith('b1', { position: 1 });
+  });
+
+  it('generates a scene from a chapter-direct beat, creating the scene inside the chapter', async () => {
+    mockApp.scenes = [];
+    mockApp.createScene = vi.fn(async (data) => ({
+      id: 'new-scene',
+      ...data,
+      createdAt: 0,
+      updatedAt: 0,
+    }));
+    const user = userEvent.setup();
+    render(<OutlineView />);
+
+    await user.click(screen.getByRole('button', { name: /Generar escena para "Beat 1"/i }));
+
+    expect(mockApp.createScene).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chapterId: 'c1',
+        title: 'Beat 1',
+      }),
+    );
+    // The beat is relinked to the new scene.
+    expect(updateBeat).toHaveBeenCalledWith('b1', expect.objectContaining({ sceneId: 'new-scene' }));
+    expect(mockApp.selectScene).toHaveBeenCalledWith('new-scene');
     expect(mockApp.setView).toHaveBeenCalledWith('editor');
   });
 });
